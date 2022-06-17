@@ -1,0 +1,207 @@
+use threads; use threads::shared;
+$scene = $ARGV[0];
+
+$outbase = "/gpfs/glad3/HLSDIST/000_HLS_Alert_Test";
+$calWindow = 31; #number of days of moving window
+$Nyears = 3; #Nyears of baseline
+$version = "v_Newtrain";
+if($version eq "v_Newtrain"){$VFsource = "/gpfs/glad3/HLSDIST/007_HLS_VF_Test_Newtrain";}
+if($version eq "v_NewtrainD"){$VFsource = "/gpfs/glad3/HLSDIST/007_HLS_VF_Test_Newtrain";}
+if($version eq "v_S"){$VFsource = "/gpfs/glad3/HLSDIST/006_HLS_Test_S";}
+if($version eq "v_"){$VFsource = "/gpfs/glad3/HLSDIST/005_HLS_Test";}
+$VFsource = "$outbase";
+
+&runScene();
+#my @list :shared;
+#open(DAT,"newScenes.txt");@list = <DAT>; close(DAT);foreach (@list) {chomp;}
+#$Ntiles = @list;
+#push(@serverlist, "17,50");
+#push(@serverlist, "19,50");
+#
+#@ClassThreads=();
+#for $line (@serverlist){
+#($server,$threads)=split(',',$line);
+#for($threadID=1;$threadID<=$threads;$threadID++){$sline=$server."_".$threadID; push @ClassThreads, threads->create(\&runScene, $sline);} }
+#foreach $thread (@ClassThreads)  {$thread->join();} @ClassThreads=();
+
+#sub runScene(){while($scene=shift(@list)){
+#  $size = @list;
+#  print("$size/$Ntiles");
+sub runScene(){
+  ($HLS,$sensor,$Ttile,$datetime,$majorV,$minorV)= split('\.',$scene);
+  
+  $VFfile = "VEG_IND.tif";
+  $year = substr($datetime,0,4);
+  $doy = substr($datetime,4,3);
+  $tile = substr($Ttile,1,5);
+  $zone = substr($tile,0,2);
+  $tilepathstring = "$zone/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($tile,4,1);
+  $output = "$outbase/$year/$tilepathstring/$scene";
+  
+  $zoneInt = $zone+0;
+
+  if(!-e "$output/$VFfile"){print "$output/$VFfile does not exist\n";}
+  else{
+    &compileTileDOY($scene,$tile,$doy,$year);
+    system"./veg_anom_$scene; rm veg_anom_$scene; rm veg_anom_$scene.cpp";
+  }
+}
+#}}
+
+sub compileTileDOY(){
+  $doyStr = substr("00$doy",-3);
+  @selectedfiles = readpipe"python histVFfiles.py $VFsource $tile $doy $year $calWindow $Nyears";#tile,doy,curryear,window size,Nyears
+  foreach(@selectedfiles){chomp;}
+  $Nsensordates = @selectedfiles;
+    
+  if($Nsensordates >0){
+    if(!-d "$output"){print"$output does not exist\n";}
+    open(LOG,">$output/VFsourceFiles.txt");
+    print LOG"@selectedfiles";close(LOG);
+    
+open (OUT, ">veg_anom_$scene.cpp");
+print OUT"#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <fstream>
+#include <sys/stat.h>
+#include <math.h>
+#include <algorithm>
+#include <string.h>
+#include <stdint.h>
+#include <exception>
+#include <gdal_priv.h>
+#include <cpl_conv.h>
+#include <ogr_spatialref.h>
+using namespace std;
+
+int main(int argc, char* argv[])
+{
+//arguments
+if (argc != 1){cout << \"wrong argument\" <<endl; exit (1);}
+string filename;
+
+//cout<<\"$scene started\"<<endl;
+//GDAL
+GDALAllRegister();
+GDALDataset  *INGDAL;
+GDALRasterBand  *INBAND;
+
+//counters
+int ysize, xsize;
+int y, x;
+int Nsensordates = $Nsensordates;
+int zone = $zoneInt;
+";
+@filename = ();
+#($im1,$im2)=split(',',$currfiles);#$selectedfiles[0]
+$im1 = $scene;
+$year = substr($im1,15,4);
+$filename[0]=$im1;
+$filename[1]=$im2;
+print OUT"
+filename=\"$output/VEG_IND.tif\";
+INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
+ysize = INBAND->GetYSize();xsize = INBAND->GetXSize();
+double GeoTransform[6];
+INGDAL->GetGeoTransform(GeoTransform);
+
+uint8_t histVF[Nsensordates][ysize][xsize];
+uint8_t currVF[ysize][xsize];
+uint8_t temp[ysize][xsize];
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, currVF, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+";
+if($im2 ne ""){
+print OUT"filename=\"$output/VEG_IND.tif\";
+INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, temp, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+
+for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {if(currVF[y][x]==255){currVF[y][x]=temp[y][x];}}}
+";
+}
+
+for($i=0;$i<$Nsensordates;$i++){
+($im1,$im2)=split(',',$selectedfiles[$i]);
+$year = substr($im1,15,4);
+print OUT"
+filename=\"$VFsource/$year/$tilepathstring/$im1/VEG_IND.tif\";
+INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, histVF[$i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+";
+if($im2 ne ""){
+print OUT"filename=\"$VFsource/$year/$tilepathstring/$im2/VEG_IND.tif\";
+INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, temp, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+
+for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {if(histVF[$i][y][x]==255){histVF[$i][y][x]=temp[y][x];}}}
+";
+}
+}
+
+print OUT"
+int vfarray[Nsensordates];
+uint8_t countOUT[ysize][xsize];memset(countOUT, 0, sizeof(countOUT[0][0]) * ysize * xsize);
+uint8_t minOUT[ysize][xsize];memset(minOUT, 0, sizeof(minOUT[0][0]) * ysize * xsize);
+uint8_t anomaly[ysize][xsize];memset(anomaly, 0, sizeof(anomaly[0][0]) * ysize * xsize);
+//uint8_t sminOUT[ysize][xsize];memset(sminOUT, 0, sizeof(sminOUT[0][0]) * ysize * xsize);
+int count,min,smin,med,amp,max;
+//uint8_t med[ysize][xsize];memset(med, 0, sizeof(med[0][0]) * ysize * xsize);
+//uint8_t amp[ysize][xsize];memset(amp, 0, sizeof(amp[0][0]) * ysize * xsize);
+
+
+for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
+  if(currVF[y][x] != 255){//valid land observation
+    count = 0;
+    for(int i =0;i<Nsensordates;i++){
+      if(histVF[i][y][x]!=255){count++;}
+      vfarray[i]=histVF[i][y][x];
+    }
+    std::sort(vfarray,vfarray+Nsensordates);
+    min=vfarray[0];
+    smin=vfarray[1];
+    if(count>=6){
+      //max=vfarray[count-1];
+      //if((count % 2) == 0){med=(int)((double)(vfarray[count/2 - 1] +vfarray[count/2]) / 2);}
+      //else{med=vfarray[count/2];}
+      //amp[y][x]=max-min[y][x];  
+      if((min - currVF[y][x])>0){anomaly[y][x] = min - currVF[y][x];}
+      else{anomaly[y][x] = 0;}
+      minOUT[y][x] = min;
+      countOUT[y][x] = count;
+    }else{minOUT[y][x]=200; countOUT[y][x] = 0; anomaly[y][x]=200;}
+  }else{minOUT[y][x]=255;anomaly[y][x]=255;}
+}}
+
+//export results
+GDALDriver *OUTDRIVER;
+GDALDataset *OUTGDAL;
+GDALRasterBand *OUTBAND;
+OGRSpatialReference oSRS;
+char *OUTPRJ = NULL;
+char **papszOptions = NULL;
+OUTDRIVER = GetGDALDriverManager()->GetDriverByName(\"GTiff\"); if( OUTDRIVER == NULL ) {cout << \"no driver\" << endl; exit( 1 );};
+oSRS.SetWellKnownGeogCS( \"WGS84\" );
+oSRS.SetUTM( zone, TRUE);
+oSRS.exportToWkt( &OUTPRJ );
+papszOptions = CSLSetNameValue( papszOptions, \"COMPRESS\", \"LZW\");
+";
+foreach $met ("min","count"){
+  print OUT"
+OUTGDAL = OUTDRIVER->Create( \"$output/hist${met}_${Nyears}year_${calWindow}day.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
+OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetNoDataValue(255);
+OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, ${met}OUT, xsize, ysize, GDT_Byte, 0, 0 ); GDALClose((GDALDatasetH)OUTGDAL);
+";}
+
+print OUT"
+OUTGDAL = OUTDRIVER->Create( \"$output/VEG_ANOM.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
+OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetNoDataValue(255);
+OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, anomaly, xsize, ysize, GDT_Byte, 0, 0 ); GDALClose((GDALDatasetH)OUTGDAL);
+
+return 0;
+}";
+    close (OUT);
+    system("g++ veg_anom_$scene.cpp -o veg_anom_$scene -lgdal -Wno-unused-result -std=gnu++11");
+  }
+}
