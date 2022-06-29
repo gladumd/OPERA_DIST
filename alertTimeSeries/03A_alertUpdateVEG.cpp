@@ -22,7 +22,7 @@ string scene = argv[2];
 int currDate = atoi (argv[3]);
 string outpath = argv[4];
 int zone = atoi (argv[5]);
-string version = "_1SD_p33_t10";
+string version = "";//_1SD_p33_t10";
 //GDAL
 GDALAllRegister();
 GDALDataset  *INGDAL;

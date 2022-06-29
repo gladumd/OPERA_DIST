@@ -3645,8 +3645,8 @@ int calVF(string sceneName,string sceneNameOUT)
     string strYear = sceneName.substr(15, 4);
 
 	//input and output directory for HLS data
-    string indir = "/gpfs/glad3/HLS/";
-    string outbase = "/gpfs/glad3/HLSDIST/000_HLS_Alert_Test/";
+    string indir = "/cephfs/glad4/HLS/";
+    string outbase = "/cephfs/glad4/HLSDIST/000_HLS_Alert_Test/";
     string indirTile = indir + sateFlag + "/" + strYear + "/" + utmID + "/" + div1 + "/" + div2 + "/" + div3 + "/"+sceneName + "/";
     string outdir = outbase + strYear + "/" + utmID + "/" + div1 + "/" + div2 + "/" + div3 + "/"+sceneNameOUT + "/";
     //output filename for VF and QA

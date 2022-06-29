@@ -8,17 +8,17 @@ $now = localtime();
 print"starting 02_scene_manager.pl $filelist $now\n";
 
 $DISTversion = "v0.1";
-$HLSsource = "/gpfs/glad3/HLS";
-$outbase = "/gpfs/glad3/HLSDIST/000_HLS_Alert_Test";
+$HLSsource = "/cephfs/glad4/HLS";
+$outbase = "/cephfs/glad4/HLSDIST/000_HLS_Alert_Test";
 system"g++ 02A_VF_QA_COG.cpp -o 02A_VF_QA_COG -lgdal -std=gnu++11 -Wno-unused-result";
 
 #push(@serverlist, "15,60");
-#push(@serverlist, "16,60");
+push(@serverlist, "16,50");
 #push(@serverlist, "17,60");
-#push(@serverlist, "18,30");
+push(@serverlist, "18,30");
 #push(@serverlist, "19,60");
-push(@serverlist, "20,60");
-push(@serverlist, "21,60");
+push(@serverlist, "20,50");
+push(@serverlist, "21,50");
 
 my @list :shared;
 open(DAT,$filelist) or die"Filelist: $filelist does not exist.";
@@ -27,7 +27,7 @@ $Nscenes = @list;
 
 $vname = strftime("%F",localtime());
 open(LOG,">log$vname.txt");
-
+my @commands :shared;
 #open(NEX,">scenesUpd21LYG.txt");
 
 @ClassThreads=();
@@ -68,20 +68,26 @@ sub runScene {($server,$threads)=split('_',$sline);
     }
     
     if(!-e "$outdir/GEN_ANOM.tif"){
-      if(-d "/gpfs/glad3/HLS/$sensor/$year/$tilepathstring/$scene"){
+      if(-d "/cephfs/glad4/HLS/$sensor/$year/$tilepathstring/$scene"){
         $log = readpipe"ssh gladapp$server \'cd $currdir; perl 02C_GEN_ANOM.pl $scene $outscene\'";  
         #system"ssh gladapp$server \'cd $currdir; perl 02C_GEN_ANOM.pl $scene\'";
         print LOG"$log";
-      }else{print LOG"/gpfs/glad3/HLS/$sensor/$year/$tilepathstring/$scene missing\n";}
+      }else{print LOG"/cephfs/glad4/HLS/$sensor/$year/$tilepathstring/$scene missing\n";}
     }
     if(-e "$outdir/VEG_IND.tif" and "$outdir/VEG_ANOM.tif" and "$outdir/GEN_ANOM.tif"){
       $statusFlag = 3;
-      system"sqlite3 database.db \"UPDATE fulltable SET statusFlag = $statusFlag where HLS_ID=\'$scene\';\" \".exit\"";
+      push(@commands,"sqlite3 database.db \"UPDATE fulltable SET statusFlag = $statusFlag where HLS_ID=\'$scene\';\" \".exit\";");
+      #system"sqlite3 database.db \"UPDATE fulltable SET statusFlag = $statusFlag where HLS_ID=\'$scene\';\" \".exit\"";
     }else{
       $statusFlag = 103;
-      system"sqlite3 database.db \"UPDATE fulltable SET Errors = 'VEG_IND/VEG_ANOM/GEN_ANOM failed', statusFlag = $statusFlag where HLS_ID=\'$scene\';\" \".exit\"";
+      push(@commands,"sqlite3 database.db \"UPDATE fulltable SET Errors = 'VEG_IND/VEG_ANOM/GEN_ANOM failed', statusFlag = $statusFlag where HLS_ID=\'$scene\';\" \".exit\";");
+      #system"sqlite3 database.db \"UPDATE fulltable SET Errors = 'VEG_IND/VEG_ANOM/GEN_ANOM failed', statusFlag = $statusFlag where HLS_ID=\'$scene\';\" \".exit\"";
     }
   }
 }
+
+#foreach $c (@commands){
+  system"module load sqlite; @commands";
+#}
 
 close(LOG);close(NEX);

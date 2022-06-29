@@ -55,23 +55,25 @@ def main(ID,sensor,sourceXML,outdir,version,Errors):
   for atr in ['CLOUD_COVERAGE','SPATIAL_COVERAGE','MGRS_TILE_ID','HLS_PROCESSING_TIME','SENSING_TIME','HORIZONTAL_CS_CODE','HORIZONTAL_CS_NAME','ULX','ULY']:
     outDict['Granule']['AdditionalAttributes']['HLSAttributes'][atr] = findAdditionalAttribute(atr,sourceDict)
   written = False
+  tries = 0
   while written == False:
     try:
+      tries+=1
       with closing(sqlite3.connect("database.db")) as connection:
         with closing(connection.cursor()) as cursor:
           if Errors == "NA":
-            cursor.execute("UPDATE fulltable SET processedTime = ?, availableTime = ?, Errors = ?, statusFlag = ? where HLS_ID = ?",(outDict    ['Granule']['DataGranule']['ProductionDateTime'],sourceDict['Granule']['InsertTime'],Errors,4, sourceDict['Granule']['GranuleUR']))
+            cursor.execute("UPDATE fulltable SET processedTime = ?, availableTime = ?, Errors = ?, statusFlag = ? where HLS_ID = ?",(outDict['Granule']['DataGranule']['ProductionDateTime'],sourceDict['Granule']['InsertTime'],Errors,4, sourceDict['Granule']['GranuleUR']))
           else:
             cursor.execute("UPDATE fulltable SET availableTime = ?, Errors = ?, statusFlag = ? where HLS_ID = ?",(sourceDict['Granule']   ['InsertTime'],Errors,104,sourceDict['Granule']['GranuleUR']))
           cursor.execute("COMMIT;")
       written = True
     except:
-      time.sleep(0.5)
-      tries =tries +1;
+      time.sleep(0.2)
+      #print("\rNtries "+ tries ,end=",")
       
 
   writeJSON(outDict, outdir+"/"+ID+"_metadata.json")
   
 if __name__ == "__main__":
-  main(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5])
+  main(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6])
  
