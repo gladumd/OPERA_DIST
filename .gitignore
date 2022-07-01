@@ -128,3 +128,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# VS code files
+.vscode/
+
+alertTimeSeries/database.db
+alertTimeSeries/database.db-journal
