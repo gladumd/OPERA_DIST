@@ -22,7 +22,7 @@ def checkDownloadComplete(sourcepath,scene,sensor):
   if int(count) != Nbands[sensor]:
     return "missing bands only "+count+"/"+str(Nbands[sensor])+" bands "+sensor
   for band in bands[sensor]:
-    sout = os.popen("gdalinfo "+sourcepath+"/"+scene + "."+band+".tif");
+    sout = os.popen("gdalinfo "+sourcepath+"/"+scene + "."+band+".tif 2>/dev/null");
     info = sout.read()
     if info == "": 
       goodFile=False
@@ -56,6 +56,7 @@ def getScenes(tile,startdate,enddate):
     except:
       time.sleep(0.1)
   existingScenes = [item for t in existingScenes for item in t]
+  #print("\r",tile, len(existingScenes),"exist",end=" ")
   for sensor in ['S30','L30']:
     for yr in range(int(startdate[0:4]),int(enddate[0:4])+1):
       sout = os.popen("ls "+source+"/"+sensor+"/"+str(yr)+"/"+tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+" 2>/dev/null");#last part removes STDERR
@@ -71,46 +72,91 @@ def getScenes(tile,startdate,enddate):
 def looplist(tilelist,startdate,enddate,columns):
   print("Ntiles", len(tilelist))
   i=0
-  fill = ",".join(["?"] * len(columns))
   for tile in tilelist:
     tile = tile.strip()
     i+=1
+    #print("\r",i,tile,end=" ")
     scenelist = getScenes(tile,startdate,enddate)
-    print("\r",i,tile,len(scenelist),end=" ")
+    #print("\r",i,tile,len(scenelist),end=" ")
+    print(i,tile,len(scenelist),datetime.datetime.now())
     for scene in scenelist:
       database = {}
-      (HLS,sensor,Ttile,datetime,majorV,minorV)= scene.split('.')
-      year = datetime[0:4]
+      (HLS,sensor,Ttile,Fdatetime,majorV,minorV)= scene.split('.')
+      year = Fdatetime[0:4]
       tile = Ttile[1:6]
-      for col in columns:
-        database[col] = None
-      database['HLS_ID'] = scene
-      database['DIST_ID'] = "DIST-ALERT_"+datetime+"_"+sensor+"_"+Ttile+"_"+DISTversion;
-      database['MGRStile'] = tile
+      HLS_ID = scene
+      DIST_ID = "DIST-ALERT_"+Fdatetime+"_"+sensor+"_"+Ttile+"_"+DISTversion
+      MGRStile = tile
       sourcepath = source+"/"+sensor+"/"+year+"/"+tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/"+scene
       check = checkDownloadComplete(sourcepath,scene,sensor)
       if check == "complete":
-        database['downloadTime'] = getDownloadTime(sourcepath)
-        database['statusFlag'] = 2
-        database['Errors'] = 'NA'
+        downloadTime = getDownloadTime(sourcepath)
+        statusFlag = 2
+        Errors = 'NA'
       else:
-        database['statusFlag'] = 102
-        database['downloadTime'] = 'NA'
-        database['Errors'] = check
-      datalist = []
-      for col in columns:
-        datalist.append(database[col])
+        statusFlag = 102
+        downloadTime = 'NA'
+        Errors = check
       written = False
       while written == False:
         try:
           with closing(sqlite3.connect("database.db")) as connection:
             with closing(connection.cursor()) as cursor:
-              cursor.execute("INSERT or REPLACE INTO fulltable VALUES("+fill+")",datalist)
+              #cursor.execute("INSERT or REPLACE INTO fulltable VALUES("+fill+")",datalist)
+              cursor.execute("INSERT or REPLACE INTO fulltable(HLS_ID,DIST_ID,MGRStile,downloadTime,statusFlag,Errors) VALUES(?,?,?,?,?,?)",(HLS_ID,DIST_ID,MGRStile,downloadTime,statusFlag,Errors))
               cursor.execute("COMMIT;")
+              written = True
         except:
           time.sleep(0.1) 
-  print()
-  return database
+  print("Done!")
+  return 0
+
+#def looplist(tilelist,startdate,enddate,columns):
+#  print("Ntiles", len(tilelist))
+#  i=0
+#  fill = ",".join(["?"] * len(columns))
+#  for tile in tilelist:
+#    tile = tile.strip()
+#    i+=1
+#    #print("\r",i,tile,end=" ")
+#    scenelist = getScenes(tile,startdate,enddate)
+#    print("\r",i,tile,len(scenelist),end=" ")
+#    for scene in scenelist:
+#      database = {}
+#      (HLS,sensor,Ttile,datetime,majorV,minorV)= scene.split('.')
+#      year = datetime[0:4]
+#      tile = Ttile[1:6]
+#      for col in columns:
+#        database[col] = None
+#      database['HLS_ID'] = scene
+#      database['DIST_ID'] = "DIST-ALERT_"+datetime+"_"+sensor+"_"+Ttile+"_"+DISTversion;
+#      database['MGRStile'] = tile
+#      sourcepath = source+"/"+sensor+"/"+year+"/"+tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/"+scene
+#      check = checkDownloadComplete(sourcepath,scene,sensor)
+#      if check == "complete":
+#        database['downloadTime'] = getDownloadTime(sourcepath)
+#        database['statusFlag'] = 2
+#        database['Errors'] = 'NA'
+#      else:
+#        database['statusFlag'] = 102
+#        database['downloadTime'] = 'NA'
+#        database['Errors'] = check
+#      #datalist = []
+#      #for col in columns:
+#      #  datalist.append(database[col])
+#      written = False
+#      while written == False:
+#        try:
+#          with closing(sqlite3.connect("database.db")) as connection:
+#            with closing(connection.cursor()) as cursor:
+#              #cursor.execute("INSERT or REPLACE INTO fulltable VALUES("+fill+")",datalist)
+#              cursor.execute("INSERT or REPLACE INTO fulltable(HLS_ID,DIST_ID,MGRStile,downloadTime,statusFlag,Errors) VALUES(?,?,?,?,?,?)",(database['HLS_ID'],database['DIST_ID'],database['MGRStile'],database['downloadTime'],database['statusFlag'],database['Errors']))
+#              cursor.execute("COMMIT;")
+#              written = True
+#        except:
+#          time.sleep(0.1) 
+#  print()
+#  return database
 
 def writeTable(dict,columns):
   try:
