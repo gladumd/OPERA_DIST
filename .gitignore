@@ -132,5 +132,6 @@ dmypy.json
 # VS code files
 .vscode/
 
-alertTimeSeries/database.db
 alertTimeSeries/database.db-journal
+alertTimeSeries/database.db
+alertTimeSeries/download/CMR_granules_2017350_2022180.txt
