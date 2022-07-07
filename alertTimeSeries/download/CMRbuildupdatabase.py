@@ -157,11 +157,14 @@ def addGranulesToDatabase(infile):
     written = False
     while written == False:
       try:
-        with closing(sqlite3.connect("database.db")) as connection:
+        with closing(sqlite3.connect("../database.db")) as connection:
           with closing(connection.cursor()) as cursor:
             for g in list:
               HLS_ID = g.strip()
-              cursor.execute("INSERT or IGNORE INTO fulltable(HLS_ID,statusFlag) VALUES(?,?)",(HLS_ID,0))
+              (HLS,sensor,Ttile,datetime,majorV,minorV)= HLS_ID.split('.')
+              sensingTime = datetime
+              print("\r", sensingTime,end=" ")
+              cursor.execute("INSERT or IGNORE INTO fulltable(HLS_ID,statusFlag,sensingTime) VALUES(?,?,?)",(HLS_ID,0,sensingTime))
             cursor.execute("COMMIT;")
             written = True
       except:

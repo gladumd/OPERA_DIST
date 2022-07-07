@@ -3,9 +3,11 @@ use threads; use threads::shared;
 $currdir = `pwd`; chomp $currdir;
 $filelist = $ARGV[0];
 if($filelist eq ""){die"must enter filelist: perl 02_scene_manager.pl filelist.txt\n";}
+if(-e "02_scene_manager_RUNNING"){die"02_scene_manager.pl already running (or died with an error)\n";}
 
 $now = localtime();
 print"starting 02_scene_manager.pl $filelist $now\n";
+open(OUT,">02_scene_manager_RUNNING") or die"failed to create 02_scene_manager_RUNNING"; print OUT"started: $now";close(OUT);
 
 $DISTversion = "v0.1";
 $HLSsource = "/cephfs/glad4/HLS";
@@ -37,6 +39,11 @@ for($threadID=1;$threadID<=$threads;$threadID++){$sline=$server."_".$threadID; p
 foreach $thread (@ClassThreads)  {$thread->join();} @ClassThreads=();
 
 print"\n";
+
+system"module load sqlite; @commands";
+
+close(LOG);#close(NEX);
+system"rm 02_scene_manager_RUNNING";
 
 sub runScene {($server,$threads)=split('_',$sline);
   while($scene =shift(@list)){
@@ -86,6 +93,3 @@ sub runScene {($server,$threads)=split('_',$sline);
   }
 }
 
-system"module load sqlite; @commands";
-
-close(LOG);#close(NEX);

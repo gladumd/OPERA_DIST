@@ -2,6 +2,7 @@ import os
 import sys
 import sqlite3
 import time
+import datetime
 from contextlib import closing
 
 source = "/cephfs/glad4/HLS"
@@ -38,20 +39,22 @@ def getDownloadTime(sourcepath):
   return sout.read().strip()
   
 def loopSceneList(scenelist):
+  print(len(scenelist),"scenes to check", datetime.datetime.now())
   for scene in scenelist:
-    scene.strip() #maybe
-    (HLS,sensor,Ttile,datetime,majorV,minorV)= scene.split('.')
-    year = datetime[0:4]
+    #scene.strip() #maybe
+    print("\r", scene,end=" ")
+    (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= scene.split('.')
+    year = Sdatetime[0:4]
     tile = Ttile[1:6]
     HLS_ID = scene
-    DIST_ID = "DIST-ALERT_"+datetime+"_"+sensor+"_"+Ttile+"_"+DISTversion
+    DIST_ID = "DIST-ALERT_"+Sdatetime+"_"+sensor+"_"+Ttile+"_"+DISTversion
     MGRStile = tile
     sourcepath = source+"/"+sensor+"/"+year+"/"+tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/"+scene
     check = checkDownloadComplete(sourcepath,scene,sensor)
     if check == "complete":
       downloadTime = getDownloadTime(sourcepath)
       statusFlag = 2
-      Errors = 'NA'
+      Errors = None
     else:
       statusFlag = 102
       downloadTime = 'NA'
@@ -69,15 +72,18 @@ def loopSceneList(scenelist):
   return 0;
 
 if __name__ == "__main__":
+  (startdate,enddate) = (sys.argv[1],sys.argv[2])
   databaseChecked = False
   downloadedScenes = []
   while databaseChecked == False:
     try:
       with closing(sqlite3.connect("database.db")) as connection:
         with closing(connection.cursor()) as cursor:
-          cursor.execute("SELECT HLS_ID FROM fulltable WHERE statusFlag = 1")#Set to 0 for building out table, but to 1 for operations
+          cursor.execute("SELECT HLS_ID FROM fulltable WHERE statusFlag = 0 and sensingTime >= ? and sensingTime < ?",(startdate,enddate,))#Set to 0 for building out table, but to 1 for operations
           downloadedScenes = cursor.fetchall()
+          downloadedScenes = [s for t in downloadedScenes for s in t]
           databaseChecked = True
     except:
       time.sleep(0.1)
   loopSceneList(downloadedScenes)
+  print("Done!", datetime.datetime.now())
