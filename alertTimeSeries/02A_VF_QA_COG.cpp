@@ -3671,7 +3671,7 @@ int calVF(string sceneName,string sceneNameOUT)
     f = (access(fnameOutVF.c_str(), F_OK) == 0 && access(fnameOutQA.c_str(), F_OK) == 0);
     if (f)
     {
-        cout << fnameOutVF << " has already been processed!" << endl;
+        //cout << fnameOutVF << " has already been processed!" << endl;
         return SUCCESS;
     }
 
@@ -3902,19 +3902,19 @@ int calVF(string sceneName,string sceneNameOUT)
 	
 int main(int argc, char **argv){
 	if (argc != 3){
-		cout << "Please includ sceneNameIn and sceneNameOut:" << argv[0] <<" sceneNameIn sceneNameOut\n";
+		cout << "Please include sceneNameIn and sceneNameOut:" << argv[0] <<" sceneNameIn sceneNameOut\n";
 		return 0;
 	}
 	else{
         string sceneName = argv[1];
         string sceneNameOUT = argv[2];
 	    if (calVF(sceneName,sceneNameOUT)){
-		    cout << "VF calculation for " << sceneNameOUT << " completed!" << "\n";
+		    //cout << "VF calculation for " << sceneNameOUT << " completed!" << "\n";
 		    return 0;
 	    }
 	    else{
 		    cout << "VF calculation for " << sceneNameOUT << " failed!" << "\n";
-		    return 0;
+		    return 1;
 		}
 	}
 	return 0;

@@ -4,6 +4,7 @@ import sqlite3
 import time
 import datetime
 from contextlib import closing
+from multiprocessing import Pool
 
 source = "/cephfs/glad4/HLS"
 
@@ -17,7 +18,7 @@ DISTversion = "v0.1"
 
 def checkDownloadComplete(sourcepath,scene,sensor):
   goodFile = True
-  sout = os.popen("ls "+sourcepath+"/"+scene + ".B*.tif | wc -l");
+  sout = os.popen("ls "+sourcepath+"/"+scene + ".B*.tif 2>/dev/null | wc -l");
   count = sout.read().strip()
   if int(count) != Nbands[sensor]:
     return "missing bands only "+count+"/"+str(Nbands[sensor])+" bands "+sensor
@@ -38,38 +39,57 @@ def getDownloadTime(sourcepath):
   sout = os.popen("date -u -r `ls -t "+sourcepath+"/* | head -1` +%Y-%m-%dT%TZ")
   return sout.read().strip()
   
-def loopSceneList(scenelist):
-  print(len(scenelist),"scenes to check", datetime.datetime.now())
-  for scene in scenelist:
-    #scene.strip() #maybe
-    print("\r", scene,end=" ")
-    (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= scene.split('.')
-    year = Sdatetime[0:4]
-    tile = Ttile[1:6]
-    HLS_ID = scene
-    DIST_ID = "DIST-ALERT_"+Sdatetime+"_"+sensor+"_"+Ttile+"_"+DISTversion
-    MGRStile = tile
-    sourcepath = source+"/"+sensor+"/"+year+"/"+tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/"+scene
-    check = checkDownloadComplete(sourcepath,scene,sensor)
-    if check == "complete":
-      downloadTime = getDownloadTime(sourcepath)
-      statusFlag = 2
-      Errors = None
-    else:
-      statusFlag = 102
-      downloadTime = 'NA'
-      Errors = check
-    written = False
-    while written == False:
-      try:
-        with closing(sqlite3.connect("database.db")) as connection:
-          with closing(connection.cursor()) as cursor:
-            cursor.execute("UPDATE fulltable SET statusFlag = ?, downloadTime = ?, Errors = ?, DIST_ID = ?, MGRStile = ? WHERE HLS_ID = ?",(statusFlag,downloadTime,Errors,DIST_ID,MGRStile,HLS_ID))
-            cursor.execute("COMMIT;")
-            written = True
-      except:
+def checkGranule(granule):
+  #granule.strip() #maybe
+  print("\r", granule,end=" ")
+  (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= granule.split('.')
+  year = Sdatetime[0:4]
+  tile = Ttile[1:6]
+  HLS_ID = granule
+  DIST_ID = "DIST-ALERT_"+Sdatetime+"_"+sensor+"_"+Ttile+"_"+DISTversion
+  MGRStile = tile
+  sourcepath = source+"/"+sensor+"/"+year+"/"+tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/"+granule
+  check = checkDownloadComplete(sourcepath,granule,sensor)
+  if check == "complete":
+    downloadTime = getDownloadTime(sourcepath)
+    statusFlag = 2
+    sqliteCommand = "UPDATE fulltable SET statusFlag = ?, downloadTime = ?, DIST_ID = ?, MGRStile = ? WHERE HLS_ID = ?"
+    sqliteTuple = (statusFlag,downloadTime,DIST_ID,MGRStile,HLS_ID)
+  else:
+    statusFlag = 102
+    Errors = check
+    sqliteCommand = "UPDATE fulltable SET statusFlag = ?, Errors = ? WHERE HLS_ID = ?"
+    sqliteTuple = (statusFlag,Errors,HLS_ID)
+  written = False
+  while written == False:
+    try:
+      with closing(sqlite3.connect("database.db")) as connection:
+        with closing(connection.cursor()) as cursor:
+          cursor.execute(sqliteCommand,sqliteTuple)
+          cursor.execute("COMMIT;")
+          written = True
+    except sqlite3.OperationalError as error:
+      if error.args[0] == 'database is locked':
         time.sleep(0.1) 
-  return 0;
+      else:
+        print(error.args)
+    except:
+      print(sys.exc_info())
+  return statusFlag
+
+def checkGranuleList(granulelist):
+  print(len(granulelist),"granules to check", datetime.datetime.now())
+  Nsim = 40
+  results = Pool(Nsim).imap_unordered(checkGranule,granulelist)
+  success = 0
+  errors = 0
+  for result in results:
+    if result == 2:
+      success +=1
+    else: 
+      errors +=1
+  print(success,"granules successfully downloaded,", errors,"granules with errors",datetime.datetime.now())
+
 
 if __name__ == "__main__":
   (startdate,enddate) = (sys.argv[1],sys.argv[2])
@@ -83,7 +103,12 @@ if __name__ == "__main__":
           downloadedScenes = cursor.fetchall()
           downloadedScenes = [s for t in downloadedScenes for s in t]
           databaseChecked = True
+    except sqlite3.OperationalError as error:
+      if error.args[0] == 'database is locked':
+        time.sleep(0.1) 
+      else:
+        print(error.args)
     except:
-      time.sleep(0.1)
-  loopSceneList(downloadedScenes)
+      print(sys.exc_info())
+  checkGranuleList(downloadedScenes)
   print("Done!", datetime.datetime.now())

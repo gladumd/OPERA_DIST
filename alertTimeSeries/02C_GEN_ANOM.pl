@@ -32,7 +32,6 @@ sub compileTileDOY(){
   @selectedfiles = readpipe"python hist4bandFiles.py $tile $doy $year $calWindow $Nyears";
   foreach(@selectedfiles){chomp;}
   $Nsensordates = @selectedfiles;
-  #print"$Nsensordates\n";
   
   if($Nsensordates >-1){
     open(LOG,">$output/additional/HLSsourceFiles.txt");
@@ -300,6 +299,6 @@ system(\"rm ${filename}TEMP.tif\");
 return 0;
 }";
     close (OUT);
-    system("g++ gen_anom_$scene.cpp -o gen_anom_$scene -lgdal -Wno-unused-result -std=gnu++11 -I /cephfs/glad4/HLSDIST/Code/Amy/eigen-3.4.0");
+    system("g++ gen_anom_$scene.cpp -o gen_anom_$scene -lgdal -Wno-unused-result -std=gnu++11 -I /cephfs/glad4/HLSDIST/Code/Amy/eigen-3.4.0 &>>errorLOG.txt");
   }
 }

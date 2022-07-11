@@ -62,9 +62,9 @@ def main(ID,sensor,sourceXML,outdir,version,Errors):
       with closing(sqlite3.connect("database.db")) as connection:
         with closing(connection.cursor()) as cursor:
           if Errors == "NA":
-            cursor.execute("UPDATE fulltable SET processedTime = ?, availableTime = ?, Errors = ?, statusFlag = ? where HLS_ID = ?",(outDict['Granule']['DataGranule']['ProductionDateTime'],sourceDict['Granule']['InsertTime'],Errors,4, sourceDict['Granule']['GranuleUR']))
+            cursor.execute("UPDATE fulltable SET processedTime = ?, availableTime = ?, statusFlag = ? where HLS_ID = ?",(outDict['Granule']['DataGranule']['ProductionDateTime'],sourceDict['Granule']['InsertTime'],5, sourceDict['Granule']['GranuleUR']))
           else:
-            cursor.execute("UPDATE fulltable SET availableTime = ?, Errors = ?, statusFlag = ? where HLS_ID = ?",(sourceDict['Granule']   ['InsertTime'],Errors,104,sourceDict['Granule']['GranuleUR']))
+            cursor.execute("UPDATE fulltable SET availableTime = ?, Errors = ?, statusFlag = ? where HLS_ID = ?",(sourceDict['Granule']   ['InsertTime'],Errors,105,sourceDict['Granule']['GranuleUR']))
           cursor.execute("COMMIT;")
       written = True
     except:

@@ -2,7 +2,7 @@ use POSIX qw(strftime);
 use threads; use threads::shared;
 $currdir = `pwd`; chomp $currdir;
 $filelist = $ARGV[0];
-if($filelist eq ""){die"mutst enter filelist: perl 03B_GEN_DIST_UPD.pl filelist.txt\n";}
+if($filelist eq ""){die"must enter filelist: perl _02_VEG_IND_only.pl filelist.txt\n";}
 
 $DISTversion = "v0.1";
 $HLSsource = "/cephfs/glad4/HLS";

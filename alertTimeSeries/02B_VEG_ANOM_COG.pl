@@ -15,23 +15,8 @@ if($version eq "v_"){$VFsource = "/cephfs/glad4/HLSDIST/005_HLS_Test";}
 $VFsource = "$outbase";
 
 &runScene();
-#my @list :shared;
-#open(DAT,"newScenes.txt");@list = <DAT>; close(DAT);foreach (@list) {chomp;}
-#$Ntiles = @list;
-#push(@serverlist, "17,50");
-#push(@serverlist, "19,50");
-#
-#@ClassThreads=();
-#for $line (@serverlist){
-#($server,$threads)=split(',',$line);
-#for($threadID=1;$threadID<=$threads;$threadID++){$sline=$server."_".$threadID; push @ClassThreads, threads->create(\&runScene, $sline);} }
-#foreach $thread (@ClassThreads)  {$thread->join();} @ClassThreads=();
 
-#sub runScene(){while($scene=shift(@list)){
-#  $size = @list;
-#  print("$size/$Ntiles");
 sub runScene(){
-  print("$scene\n");
   ($HLS,$sensor,$Ttile,$datetime,$majorV,$minorV)= split('\.',$scene);
   
   $VFfile = "VEG_IND.tif";
@@ -41,7 +26,6 @@ sub runScene(){
   $zone = substr($tile,0,2);
   $tilepathstring = "$zone/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($tile,4,1);
   $output = "$outbase/$year/$tilepathstring/$outscene";
-  #print"$output\n";
   $zoneInt = $zone+0;
 
   if(!-e "$output/$VFfile"){print "$output/$VFfile does not exist\n";}
@@ -51,7 +35,7 @@ sub runScene(){
     system"./veg_anom_$scene; rm veg_anom_$scene; rm veg_anom_$scene.cpp";
   }
 }
-#}}
+
 
 sub compileTileDOY(){
   $doyStr = substr("00$doy",-3);
@@ -68,17 +52,16 @@ sub compileTileDOY(){
   foreach$f(@selectedfilesZ){
     ($HLS,$sensor,$Ttile,$datetime,$majorV,$minorV)= split('\.',$f);
     $outscene = "DIST-ALERT_${datetime}_${sensor}_${Ttile}_${DISTversion}";
-    print"$outscene\n";
     if(!exists $hash{$outscene}){push(@oldfiles,$f);}
   }
   $NsensordatesNew = @selectedfiles;
   $NsensordatesZhen = @oldfiles;
   $Nsensordates = $NsensordatesNew + $NsensordatesZhen;
-  print"$scene: $NsensordatesNew hist, $NsensordatesZhen Zhen\n";
+  #print"$scene: $NsensordatesNew hist, $NsensordatesZhen Zhen\n";
   if($Nsensordates >0){
     if(!-d "$output"){print"$output does not exist\n";}
     open(LOG,">$output/additional/VFsourceFiles.txt");
-    print LOG"@selectedfiles\n";close(LOG);
+    print LOG"@selectedfiles\n";
     print LOG"@oldfiles\n";close(LOG);
     
 open (OUT, ">veg_anom_$scene.cpp");
@@ -307,6 +290,6 @@ system(\"rm ${filename}TEMP.tif\");
 return 0;
 }";
     close (OUT);
-    system("g++ veg_anom_$scene.cpp -o veg_anom_$scene -lgdal -Wno-unused-result -std=gnu++11");
+    system("g++ veg_anom_$scene.cpp -o veg_anom_$scene -lgdal -Wno-unused-result -std=gnu++11 1>/dev/null &>>errorLOG.txt");
   }
 }
