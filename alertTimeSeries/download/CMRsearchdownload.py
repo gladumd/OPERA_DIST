@@ -29,7 +29,7 @@ from contextlib import closing
 from multiprocessing import Pool
 
 collections = ['C2021957657-LPCLOUD', 'C2021957295-LPCLOUD']
-source = "/cephfs/glad4/HLS"
+source = "/gpfs/glad3/HLS" #"/cephfs/glad4/HLS"
 bands = {}
 bands['S30'] = ['B04','B8A','B11','B12','Fmask']
 bands['L30'] = ['B04','B05','B06','B07','Fmask']
@@ -105,13 +105,13 @@ def moveOldFiles(cutoffdate):
 
 #search CMR for last X days. Add new granules to database and return dictionary of urls to download.
 def searchCMR(startdate,enddate):
-  print("start search", datetime.datetime.now())
   #endstring = enddate.strftime("%Y-%m-%dT%H:%M:%SZ")
   startYJT = startdate.strftime("%Y%jT000000")
   startYMD = startdate.strftime("%Y-%m-%d")
   endYJT = enddate.strftime("%Y%jT%H%M%S")
   endYMD = enddate.strftime("%Y-%m-%d")
   searchdates = startYMD+'T00:00:00Z/'+endYMD+'T23:59:59Z' #may have to loop through days depending on search time
+  print("start search", searchdates,"at",datetime.datetime.now())
   try:
     cmr_pg = get_cmr_pages_urls(collections, searchdates)
     url_dict = asyncio.run(get_granules_url_dict(cmr_pg))
@@ -121,6 +121,7 @@ def searchCMR(startdate,enddate):
       log.write("CMR error, unable to search "+str(datetime.datetime.now())+"\n")
     return "CMR error"
   granules = url_dict.keys()
+  #print(len(granules))
   download_dict = {}
   downloadlinks = []
   databaseChecked = False
@@ -143,15 +144,19 @@ def searchCMR(startdate,enddate):
           newgranules = set(granules) - set(downloadedGrans) - set(alreadyFoundGrans)
           notdownloadedgranules = set(granules).intersection(set(alreadyFoundGrans))
           retrygranules = set(granules).intersection(set(failedGrans))
+          print(len(newgranules),"new granules,",len(notdownloadedgranules),
+              "already found granules,",len(retrygranules),
+              "granules to retry for",searchdates)
+          databaseChecked = True
           for HLS_ID in newgranules:
             (HLS,sensor,Ttile,sensingTime,majorV,minorV)= HLS_ID.split('.')
-            cursor.execute("INSERT or REPLACE INTO fulltable(HLS_ID,statusFlag,sensingTime) VALUES(?,?,?)",(HLS_ID,0,sensingTime))
-            cursor.execute("COMMIT")
+            #cursor.execute("INSERT or REPLACE INTO fulltable(HLS_ID,statusFlag,sensingTime) VALUES(?,?,?)",(HLS_ID,0,sensingTime))
+            #cursor.execute("COMMIT")
             download_dict[HLS_ID] = url_dict[HLS_ID]
           for HLS_ID in retrygranules:
-            cursor.execute("UPDATE fulltable SET statusFlag = 0 WHERE HLS_ID = ?",(HLS_ID,))
-            cursor.execute("COMMIT")
-          databaseChecked = True
+            #cursor.execute("UPDATE fulltable SET statusFlag = 0 WHERE HLS_ID = ?",(HLS_ID,))
+            #cursor.execute("COMMIT")
+            download_dict[HLS_ID] = url_dict[HLS_ID]
       for HLS_ID in notdownloadedgranules: #moved outside of database open portion
         download_dict[HLS_ID] = url_dict[HLS_ID]
     except sqlite3.OperationalError as error:
@@ -161,16 +166,14 @@ def searchCMR(startdate,enddate):
         print(error.args)
     except:
       print(sys.exc_info())
-
-  print(len(newgranules),"new granules,",len(notdownloadedgranules),
-        "already found granules,",len(retrygranules),
-        "granules to retry for",searchdates)
   return download_dict
 
 #download all the links associated with a granule
 def download_granule(links):
+  if os.path.exists("KILL_download") or os.path.exists("KILL_ALL"):
+    sys.exit("CMRsearchdownload.py shut down with kill file")
   img_url = links[0]
-  basepath = "/cephfs/glad4/HLS/"
+  basepath = source +"/" #"/cephfs/glad4/HLS/"
   
   # Extract subdir name from url
   HLS_ID = img_url.split('/')[5]
@@ -198,6 +201,7 @@ def download_granule(links):
         #run earthengine_authenticate.py
     lastLine = report.stderr.decode().split("\n")[-3]
     if report.returncode == 0:
+      #status = "success"
       with open("wgetlog.txt","a") as log:
         log.write(lastLine+"\n")
     else:
@@ -208,11 +212,11 @@ def download_granule(links):
   statusFlag = checkGranule(HLS_ID)
   if statusFlag == 2:
     status = "success"
-  return HLS_ID+','+status
+  return [HLS_ID,status]
 
 #concurrently download all the links in the dictionary
 def download_parallel(granuledictionary):
-  Nsim = 15
+  Nsim = 200
   starttime = datetime.datetime.now()
   granulelist = list(granuledictionary.values())
   print("Start download", len(granulelist),"granules", starttime)
@@ -220,7 +224,7 @@ def download_parallel(granuledictionary):
   Nsuccess = 0
   Nerrors = 0
   for result in results:
-    (HLS_ID,status) = result.split(',')
+    (HLS_ID,status) = result
     if status == "success":
       Nsuccess +=1
     else:
@@ -231,7 +235,7 @@ def download_parallel(granuledictionary):
         try:
           with closing(sqlite3.connect("../database.db")) as connection:
             with closing(connection.cursor()) as cursor:
-              cursor.execute("UPDATE fulltable SET statusFlag = 102, Errors = ?, WHERE HLS_ID = ?",(status,HLS_ID)) 
+              cursor.execute("UPDATE fulltable SET statusFlag = 102, Errors = ? WHERE HLS_ID = ?",(status,HLS_ID)) 
               cursor.execute("COMMIT")
               databaseChecked = True
         except sqlite3.OperationalError as error:
@@ -246,7 +250,7 @@ def download_parallel(granuledictionary):
 #check download is complete and not corrupted for a given granule
 def checkDownloadComplete(sourcepath,granule,sensor):
   goodFile = True
-  sout = os.popen("ls "+sourcepath+"/"+granule + ".B*.tif | wc -l");
+  sout = os.popen("ls "+sourcepath+"/"+granule + ".B*.tif 2>/dev/null | wc -l");
   count = sout.read().strip()
   if int(count) != Nbands[sensor]:
     return "missing bands only "+count+"/"+str(Nbands[sensor])+" bands "+sensor
@@ -270,24 +274,28 @@ def getDownloadTime(sourcepath):
 
 #check a granule for correctness and update it in the database with download success (2) or download failed (102)
 def checkGranule(granule):
-  (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= granule.split('.')
-  year = Sdatetime[0:4]
+  (HLS,sensor,Ttile,sensingTime,majorV,minorV)= granule.split('.')
+  year = sensingTime[0:4]
   tile = Ttile[1:6]
   HLS_ID = granule
-  DIST_ID = "DIST-ALERT_"+Sdatetime+"_"+sensor+"_"+Ttile+"_"+DISTversion
+  DIST_ID = "DIST-ALERT_"+sensingTime+"_"+sensor+"_"+Ttile+"_"+DISTversion
   MGRStile = tile
   sourcepath = source+"/"+sensor+"/"+year+"/"+tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/"+granule
   check = checkDownloadComplete(sourcepath,granule,sensor)
   if check == "complete":
     downloadTime = getDownloadTime(sourcepath)
     statusFlag = 2
-    sqliteCommand = "UPDATE fulltable SET statusFlag = ?, downloadTime = ?, DIST_ID = ?, MGRStile = ? WHERE HLS_ID = ?"
-    sqliteTuple = (statusFlag,downloadTime,DIST_ID,MGRStile,HLS_ID)
+    sqliteCommand = "INSERT or REPLACE INTO fulltable(HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID) VALUES(?,?,?,?,?,?)"
+    sqliteTuple = (HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID)
+    #sqliteCommand = "UPDATE fulltable SET statusFlag = ?, downloadTime = ?, DIST_ID = ?, MGRStile = ? WHERE HLS_ID = ?"
+    #sqliteTuple = (statusFlag,downloadTime,DIST_ID,MGRStile,HLS_ID)
   else:
     statusFlag = 102
     Errors = check
-    sqliteCommand = "UPDATE fulltable SET statusFlag = ?, Errors = ? WHERE HLS_ID = ?"
-    sqliteTuple = (statusFlag,Errors,HLS_ID)
+    sqliteCommand = "INSERT or REPLACE INTO fulltable(HLS_ID,statusFlag,sensingTime,MGRStile,DIST_ID,Errors) VALUES(?,?,?,?,?,?)"
+    sqliteTuple = (HLS_ID,statusFlag,sensingTime,MGRStile,DIST_ID,Errors)
+    #sqliteCommand = "UPDATE fulltable SET statusFlag = ?, Errors = ? WHERE HLS_ID = ?"
+    #sqliteTuple = (statusFlag,Errors,HLS_ID)
   written = False
   while written == False:
     try:
@@ -296,15 +304,19 @@ def checkGranule(granule):
           cursor.execute(sqliteCommand,sqliteTuple)
           cursor.execute("COMMIT;")
           written = True
+    except sqlite3.OperationalError as error:
+      if error.args[0] == 'database is locked':
+        time.sleep(0.1) 
+      else:
+        print(error.args)
     except:
       print(sys.exc_info())
-      time.sleep(0.1) 
   return statusFlag
 
 #parallel checking of all granules in list
 def checkGranuleList(granulelist):
   print(len(granulelist),"granules to check", datetime.datetime.now())
-  Nsim = 15
+  Nsim = 12
   results = Pool(Nsim).imap_unordered(checkGranule,granulelist)
   success = 0
   errors = 0
@@ -322,7 +334,7 @@ def getGranulesToCheck():
     try:
       with closing(sqlite3.connect("../database.db")) as connection:
         with closing(connection.cursor()) as cursor:
-          cursor.execute("SELECT HLS_ID from fulltable WHERE statusFlag = 1") #select all that have been started or potentially queued for download but not yet checked.
+          cursor.execute("SELECT HLS_ID from fulltable WHERE statusFlag <=1") #select all that have been started or potentially queued for download but not yet checked.
           uncheckedGrans = cursor.fetchall()
           uncheckedGrans = [s for t in uncheckedGrans for s in t]
           databaseChecked=True
@@ -335,6 +347,34 @@ def getGranulesToCheck():
       print(sys.exc_info())
   return uncheckedGrans
 
+def checkDownloadSpeed(filename,Nprocesses):
+  totalSeconds = 0
+  totalSize = 0
+  with open(filename, 'r') as log:
+    first = True
+    for line in log:
+      temp = line.split(' ')
+      speed = float(temp[2][1:])
+      units = temp[3]
+      size = temp[7].split('/')[0][1:]
+      MB = float(size)/1024/1024
+      if first:
+        startTime = temp[1]
+        first = False
+      if units[0:2] == "MB":
+        totalSeconds += MB/speed
+      elif units[0:2] == "KB":
+        speed = speed/1024
+        totalSeconds += MB/speed
+      totalSize += MB
+  startTime = datetime.datetime(2022,7,11,int(startTime.split(':')[0]),int(startTime.split(':')[1]),int(startTime.split(':')[2]))
+  endTime = datetime.datetime(2022,7,11,int(temp[1].split(':')[0]),int(temp[1].split(':')[1]),int(temp[1].split(':')[2]))
+  timediff = endTime - startTime
+  avrate = totalSize/totalSeconds
+  print(totalSize/1024,"GB downloaded over ",timediff.seconds/60,"minutes, with",
+    Nprocesses,"processes, average printed rate of",avrate,"MB/s, and functional average of",totalSize/timediff.seconds,"MB/s")
+#2022-07-11 16:13:27 (5.20 MB/s) - ‘/cephfs/glad4/HLS/S30/2022/52/U/C/B/HLS.S30.T52UCB.2022190T022601.v2.0/HLS.S30.T52UCB.2022190T022601.v2.0.B8A.tif’ saved [2367388/2367388]
+
 ################################### Main ######################################
 #                                                                             #
 #                                                                             #
@@ -344,22 +384,29 @@ if __name__=='__main__':
     enddate = datetime.datetime.utcnow()
     startdate = (enddate + datetime.timedelta(days=-2)) #15 days may want to shrink
   if len(sys.argv) == 2:
-    Ndays = sys.argv[1]
+    Ndays = int(sys.argv[1])
     enddate = datetime.datetime.utcnow()
     startdate = (enddate + datetime.timedelta(days = (-1*Ndays))) #15 days may want to shrink
   elif len(sys.argv) == 3:
-    startdate = sys.argv[1]
-    enddate = sys.argv[2]
+    startdate = datetime.datetime.strptime(sys.argv[1], "%Y-%m-%d")
+    enddate = datetime.datetime.strptime(sys.argv[2], "%Y-%m-%d")
   
-  #moveOldFiles(cutoffdate.strftime("%Y%j"))
-  #[granules,downloadlinks] = searchCMR(cutoffdate,today)
-  url_dict = searchCMR(startdate,enddate)
-  if url_dict != "CMR error":
-    print(list(url_dict.values())[0:1])
-    download_parallel(url_dict) #Now check is in the download
-  #else:
-  #  print("CMR error, unable to search.", datetime.datetime.now())
-  #uncheckedGranules = getGranulesToCheck()
-  #checkGranuleList(uncheckedGranules)
+  oneday = datetime.timedelta(days = 1)
+  start = startdate
+  end = start + oneday
+  while end < enddate:
+    #moveOldFiles(cutoffdate.strftime("%Y%j"))
+    #[granules,downloadlinks] = searchCMR(cutoffdate,today)
+    url_dict = searchCMR(start,end)
+    #checkGranuleList(list(url_dict.keys()))
+    if url_dict != "CMR error":
+      #print(list(url_dict.values())[0:1])
+      download_parallel(url_dict) #Now check is in the download
+    else:
+      print("CMR error, unable to search.", datetime.datetime.now())
+    #uncheckedGranules = getGranulesToCheck()
+    #checkGranuleList(uncheckedGranules)
+    start = start + oneday
+    end = start + oneday
 
 

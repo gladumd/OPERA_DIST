@@ -14,6 +14,8 @@ HLSsource = "/cephfs/glad4/HLS"
 outbase = "/cephfs/glad4/HLSDIST/000_HLS_Alert_Test"
 
 def runGranule(server,granule):
+  if os.path.exists("KILL_02_granule_manager") or os.path.exists("KILL_ALL"):
+    sys.exit("02_granule_manger.py shut down with kill file")
   (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= granule.split('.')
   HLS_ID=granule
   year = Sdatetime[0:4]
@@ -37,7 +39,7 @@ def runGranule(server,granule):
       sqliteCommand = "UPDATE fulltable SET statusFlag = 3 where HLS_ID=?;"
       updateSqlite(sqliteCommand,(HLS_ID,))
     else:
-      Errors = response.stderr.decode()
+      Errors = response.stderr#.decode()
       sqliteCommand = "UPDATE fulltable SET statusFlag = 103, Errors = ? where HLS_ID=?;"
       updateSqlite(sqliteCommand,(Errors,HLS_ID,))
   
@@ -54,11 +56,9 @@ def runGranule(server,granule):
     if os.path.exists(outdir+"/VEG_IND.tif") and os.path.exists(outdir+"/VEG_ANOM.tif") and os.path.exists(outdir+"/GEN_ANOM.tif"):
       sqliteCommand = "UPDATE fulltable SET statusFlag = 4 where HLS_ID=?;"
       updateSqlite(sqliteCommand,(HLS_ID,))
-      #system"sqlite3 database.db \"UPDATE fulltable SET statusFlag = $statusFlag where HLS_ID=\'$scene\';\"";
     else:
       sqliteCommand = "UPDATE fulltable SET Errors = 'VEG_IND/VEG_ANOM/GEN_ANOM failed', statusFlag = 104 where HLS_ID=?;"
       updateSqlite(sqliteCommand,(HLS_ID,))
-      #system"sqlite3 database.db \"UPDATE fulltable SET Errors = 'VEG_IND/VEG_ANOM/GEN_ANOM failed', statusFlag = $statusFlag where HLS_ID=\'$scene\';\"";
 
 def updateSqlite(sqliteCommand,sqliteTuple):
   written = False
@@ -86,7 +86,7 @@ def processGranuleQueue(server,procID,queue):
       Nprocess +=1
     except:
       with open("errorLOG.txt",'a') as out:
-        out.write("ERROR: runGranule("+server+","+granule+") process ID:"+procID+": "+sys.exc_info()+"\n")
+        out.write("ERROR: runGranule("+server+","+granule+") process ID:"+procID+": ",sys.exc_info(),"\n")
       sqliteCommand = "UPDATE fulltable SET statusFlag = 103 where HLS_ID=?;"
       updateSqlite(sqliteCommand,(granule,))
   print(Nprocess,"processed by", server, procID,mode)
@@ -124,7 +124,7 @@ if __name__=='__main__':
 
   now = datetime.datetime.now()
 
-  #subprocess.run("g++ 02A_VF_QA_COG.cpp -o 02A_VF_QA_COG -lgdal -std=gnu++11 -Wno-unused-result")
+  subprocess.run(["ssh gladapp18 \'cd "+currdir+"; g++ 02A_VF_QA_COG.cpp -o 02A_VF_QA_COG -lgdal -std=gnu++11 -Wno-unused-result\'"],shell=True)
 
   myqueue = multiprocessing.Queue()
   granulelist = []
@@ -142,9 +142,7 @@ if __name__=='__main__':
 
   print("starting \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",now)
 
-  #my @commands :shared;
-
-  serverlist = [(14,30),(16,30)]
+  serverlist = [(14,30),(16,10),(19,30),(20,30)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp
@@ -160,15 +158,5 @@ if __name__=='__main__':
 
   print(datetime.datetime.now())
 
-  #$Ncommands = @commands;
-  #if($Ncommands>0){
-  #open (OUT,">sqliteCommands_02_scene_manager$Nscenes.sql");
-  #foreach $c (@commands){print OUT"$c\n";}
-  #print OUT"COMMIT;";
-  #close(OUT);
-  #system"module load sqlite; sqlite3 database.db < sqliteCommands_02_scene_manager$Nscenes.sql";
-  ##system"rm sqliteCommands_02_scene_manager$Nscenes.sql";
-  #}
-#
   #close(LOG);#close(NEX);
   #system"rm 02_scene_manager_RUNNING";

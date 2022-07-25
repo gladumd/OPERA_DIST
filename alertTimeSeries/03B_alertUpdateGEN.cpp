@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fstream>
@@ -11,6 +12,7 @@
 #include <gdal_priv.h>
 #include <cpl_conv.h>
 #include <ogr_spatialref.h>
+#include <iomanip>
 using namespace std;
 
 int main(int argc, char* argv[])
@@ -178,6 +180,9 @@ GDALRasterBand *OUTBAND;
 OGRSpatialReference oSRS;
 char *OUTPRJ = NULL;
 char **papszOptions = NULL;
+char **sourceMetadata = NULL;
+char **papszMetadata = NULL;
+char **currMetadata = NULL;
 OUTDRIVER = GetGDALDriverManager()->GetDriverByName("GTiff"); if( OUTDRIVER == NULL ) {cout << "no driver" << endl; exit( 1 );};
 oSRS.SetWellKnownGeogCS( "WGS84" );
 oSRS.SetUTM( zone, TRUE);
@@ -188,63 +193,122 @@ papszOptions = CSLSetNameValue( papszOptions, "TILED", "YES");
 const int Noverviews = 3;
 int overviewList[Noverviews] = {2,4,8};
 
+filename= outpath + "/VEG_IND.tif";
+GDALDataset  *SGDAL;
+SGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); 
+sourceMetadata = SGDAL -> GetMetadata();
+
+papszMetadata = CSLSetNameValue( papszMetadata, "Update_Date", CSLFetchNameValue(sourceMetadata,("SENSING_TIME")));
+double percentupdated = (100.0 - stod(CSLFetchNameValue(sourceMetadata,("cloud_coverage")))/100 * stod(CSLFetchNameValue(sourceMetadata,("spatial_coverage"))));
+char s[6] = {0};
+snprintf(s, 6, "%lf", percentupdated);
+papszMetadata = CSLSetNameValue( papszMetadata, "Percent_Updated", s);
+
 filename = outpath + "/GEN_DIST_STATUSTEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "flag_values", "0,1,2,3,4,255");
+currMetadata = CSLSetNameValue( currMetadata, "flag_meanings", "no_disturbance,provisional_<50%,confirmed_<50%,provisional_>=50%,confirmed_>=50%,no_data");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Byte, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription("Generic_disturbance_status");
 OUTBAND->SetNoDataValue(255);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, status, xsize, ysize, GDT_Byte, 0, 0 );  
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
 
 filename = outpath + "/GEN_ANOM_MAXTEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+//currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+//currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "100");
+//currMetadata = CSLSetNameValue( currMetadata, "Units", "percent");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Int16, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, max, xsize, ysize, GDT_Int16, 0, 0 );  
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
 
 filename = outpath + "/GEN_DIST_CONFTEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "65000");
+currMetadata = CSLSetNameValue( currMetadata, "Units", "unitless");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_UInt16, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription("Confidence_of_generic_disturbance");
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, conf, xsize, ysize, GDT_UInt16, 0, 0 );  
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
 
 filename = outpath + "/GEN_DIST_DATETEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", to_string(currDate).c_str());
+currMetadata = CSLSetNameValue( currMetadata, "Units", "days");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_UInt16, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription("Day_of_generic_disturbance");
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, date, xsize, ysize, GDT_UInt16, 0, 0 );  
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
 
 filename = outpath + "/GEN_DIST_COUNTTEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "254");
+currMetadata = CSLSetNameValue( currMetadata, "Units", "observations");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Byte, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription("Count_of_observations_with_spectral_anomaly");
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, count, xsize, ysize, GDT_Byte, 0, 0 );  
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
 
 filename = outpath + "/GEN_DIST_PERCTEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "100");
+currMetadata = CSLSetNameValue( currMetadata, "Units", "percent");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Byte, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetNoDataValue(255);
+OUTBAND->SetDescription("Percent_of_observations_with_spectral_anomaly_since_initial_detection");
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, percent, xsize, ysize, GDT_Byte, 0, 0 );  
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
 
 filename = outpath + "/GEN_DIST_DURTEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "365");
+currMetadata = CSLSetNameValue( currMetadata, "Units", "days");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_UInt16, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription("Number_of_days_of_ongoing_spectral_anomalies_since_initial_detection");
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, dur, xsize, ysize, GDT_UInt16, 0, 0 );  
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
 
 filename = outpath + "/GEN_LAST_DATETEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", to_string(currDate).c_str());
+currMetadata = CSLSetNameValue( currMetadata, "Units", "days");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_UInt16, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription("Day_of_last_land_observation_for_generic_disturbance_detection");
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, lastObs, xsize, ysize, GDT_UInt16, 0, 0 );  
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
+
+GDALClose(SGDAL);
 
 string outfiles[8] = {"GEN_DIST_STATUS","GEN_ANOM_MAX","GEN_DIST_CONF","GEN_DIST_DATE","GEN_DIST_COUNT","GEN_DIST_PERC","GEN_DIST_DUR","GEN_LAST_DATE"};
 

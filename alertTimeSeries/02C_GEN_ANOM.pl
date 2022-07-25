@@ -288,7 +288,7 @@ $filename = "$output/GEN_ANOM";
 print OUT"
 OUTGDAL = OUTDRIVER->Create( \"${filename}TEMP.tif\", xsize, ysize, 1, GDT_Int16, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
-OUTBAND->SetNoDataValue(255);
+OUTBAND->SetNoDataValue(-1);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, dist, xsize, ysize, GDT_Int16, 0, 0 );
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
 OUTGDAL->SetMetadata(papszMetadata,\"\");

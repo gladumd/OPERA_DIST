@@ -199,11 +199,11 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
           var += (histVF[i][y][x]-mean)*(histVF[i][y][x]-mean);
         }
       }
-      var = var/(count-1);
-      sd = sqrt(var);
-      if((min-sd)<0){minbound=0;}
-      else{minbound=min-sd;}
-      //minbound = min;
+      //var = var/(count-1);
+      //sd = sqrt(var);
+      //if((min-sd)<0){minbound=0;}
+      //else{minbound=min-sd;}
+      minbound = min;
       //max=vfarray[count-1];
       //if((count % 2) == 0){med=(int)((double)(vfarray[count/2 - 1] +vfarray[count/2]) / 2);}
       //else{med=vfarray[count/2];}
@@ -276,10 +276,14 @@ papszMetadata = CSLSetNameValue( papszMetadata, \"Area_Anomalous\", to_string(ar
 papszMetadata = CSLSetNameValue( papszMetadata, \"Area_Anomalous_gte50\", to_string(areaBigAnomaly).c_str());
 papszMetadata = CSLSetNameValue( papszMetadata, \"Percent_Anomalous\", to_string(percentAnomaly).c_str());
 papszMetadata = CSLSetNameValue( papszMetadata, \"Percent_Anomalous_gte50\", to_string(percentBigAnomaly).c_str());
+papszMetadata = CSLSetNameValue( papszMetadata, \"Units\", \"percent\");
+papszMetadata = CSLSetNameValue( papszMetadata, \"Valid_min\", \"0\");
+papszMetadata = CSLSetNameValue( papszMetadata, \"Valid_max\", \"100\");
 
 OUTGDAL = OUTDRIVER->Create( \"${filename}TEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetNoDataValue(255);
+OUTBAND->SetDescription(\"Vegetation_loss\");
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, anomaly, xsize, ysize, GDT_Byte, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
 OUTGDAL->SetMetadata(papszMetadata,\"\");

@@ -22,7 +22,7 @@ string scene = argv[2];
 int currDate = atoi (argv[3]);
 string outpath = argv[4];
 int zone = atoi (argv[5]);
-string version = "";//_1SD_p33_t10";
+string version = "";//_p33_t10";
 //GDAL
 GDALAllRegister();
 GDALDataset  *INGDAL;
@@ -191,6 +191,7 @@ char *OUTPRJ = NULL;
 char **papszOptions = NULL;
 char **sourceMetadata = NULL;
 char **papszMetadata = NULL;
+char **currMetadata = NULL;
 OUTDRIVER = GetGDALDriverManager()->GetDriverByName("GTiff"); if( OUTDRIVER == NULL ) {cout << "no driver" << endl; exit( 1 );};
 oSRS.SetWellKnownGeogCS( "WGS84" );
 oSRS.SetUTM( zone, TRUE);
@@ -200,79 +201,137 @@ papszOptions = CSLSetNameValue( papszOptions, "TILED", "YES");
 
 const int Noverviews = 3;
 int overviewList[Noverviews] = {2,4,8};
-//filename= outpath + "/VEG_IND.tif";
-//SGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); 
-//papszMetadata = SGDAL -> GetMetadata();
-//
-//
-//papszMetadata = CSLSetNameValue( papszMetadata, "Update_Date", CSLFetchNameValue(sourceMetadata,("SENSING_TIME"));
-//double percentupdated = (100.0 - stod(CSLFetchNameValue(sourceMetadata,("cloud_coverage")))/100 * stod(CSLFetchNameValue(sourceMetadata,("spatial_coverage"))
-//papszMetadata = CSLSetNameValue( papszMetadata, "Percent_Updated", percentupdated);
+
+filename= outpath + "/VEG_IND.tif";
+GDALDataset  *SGDAL;
+SGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); 
+sourceMetadata = SGDAL -> GetMetadata();
+
+papszMetadata = CSLSetNameValue( papszMetadata, "Update_Date", CSLFetchNameValue(sourceMetadata,("SENSING_TIME")));
+double percentupdated = (100.0 - stod(CSLFetchNameValue(sourceMetadata,("cloud_coverage")))/100 * stod(CSLFetchNameValue(sourceMetadata,("spatial_coverage"))));
+char s[6] = {0};
+snprintf(s, 6, "%lf", percentupdated);
+papszMetadata = CSLSetNameValue( papszMetadata, "Percent_Updated", s);
 
 filename = outpath + "/VEG_DIST_STATUSTEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "flag_values", "0,1,2,3,4,255");
+currMetadata = CSLSetNameValue( currMetadata, "flag_meanings", "no_disturbance,provisional_<50%,confirmed_<50%,provisional_>=50%,confirmed_>=50%,no_data");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Byte, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription("Vegetation_disturbance_status");
 OUTBAND->SetNoDataValue(255);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, status, xsize, ysize, GDT_Byte, 0, 0 ); 
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
 
 filename = outpath + "/VEG_ANOM_MAXTEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "100");
+currMetadata = CSLSetNameValue( currMetadata, "Units", "percent");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Byte, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription("Maximum_vegetation_loss_anomaly");
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, max, xsize, ysize, GDT_Byte, 0, 0 ); 
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
 
 filename = outpath + "/VEG_DIST_CONFTEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "65000");
+currMetadata = CSLSetNameValue( currMetadata, "Units", "unitless");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_UInt16, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription("Confidence_of_vegetation_disturbance");
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, conf, xsize, ysize, GDT_UInt16, 0, 0 ); 
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
 
 filename = outpath + "/VEG_DIST_DATETEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", to_string(currDate).c_str());
+currMetadata = CSLSetNameValue( currMetadata, "Units", "days");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_UInt16, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription("Day_of_vegetation_disturbance");
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, date, xsize, ysize, GDT_UInt16, 0, 0 ); 
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
 
 filename = outpath + "/VEG_DIST_COUNTTEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "254");
+currMetadata = CSLSetNameValue( currMetadata, "Units", "observations");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Byte, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription("Count_of_observations_with_vegetation_loss");
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, count, xsize, ysize, GDT_Byte, 0, 0 ); 
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
 
 filename = outpath + "/VEG_DIST_PERCTEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "100");
+currMetadata = CSLSetNameValue( currMetadata, "Units", "percent");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Byte, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetNoDataValue(255);
+OUTBAND->SetDescription("Percent_of_observations_with_vegetation_loss_since_initial_detection");
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, percent, xsize, ysize, GDT_Byte, 0, 0 ); 
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
 
 filename = outpath + "/VEG_DIST_DURTEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "365");
+currMetadata = CSLSetNameValue( currMetadata, "Units", "days");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_UInt16, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription("Number_of_days_of_ongoing_loss_anomalies_since_initial_detection");
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, dur, xsize, ysize, GDT_UInt16, 0, 0 ); 
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
 
 filename = outpath + "/LAST_DATETEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", to_string(currDate).c_str());
+currMetadata = CSLSetNameValue( currMetadata, "Units", "days");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_UInt16, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription("Day_of_last_land_observation_for_vegetation_disturbance_detection");
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, lastObs, xsize, ysize, GDT_UInt16, 0, 0 ); 
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
 
 filename = outpath + "/VEG_HISTTEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "100");
+currMetadata = CSLSetNameValue( currMetadata, "Units", "percent");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Byte, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription("Vegetation_precent_of_baseline_at_the_time_of_max_anomaly");
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, histVF, xsize, ysize, GDT_Byte, 0, 0 ); 
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
+
+GDALClose(SGDAL);
 
 string outfiles[9] = {"VEG_DIST_STATUS","VEG_ANOM_MAX","VEG_DIST_CONF","VEG_DIST_DATE","VEG_DIST_COUNT","VEG_DIST_PERC","VEG_DIST_DUR","LAST_DATE","VEG_HIST"};
 

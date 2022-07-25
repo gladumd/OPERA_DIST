@@ -1,0 +1,10 @@
+start date for date files: 2021001 (files will be days since +1 (so that start date =1))
+temporal day window: 31 (+/- 15 days)
+temporal year window: 3
+standard deviation for anomaly: YES/NO
+VEG confidence for confirmed: 400
+GEN confidence for confirmed: ?
+GEN threshold between small and large : 200
+DIST-ALERT version: v0.1
+source: /ceph/glad4/HLS
+outbase: /ceph/glad4/HLSDIST/000_HLS_Alert_Test

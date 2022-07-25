@@ -6,6 +6,9 @@ from subprocess import DEVNULL, STDOUT
 from getpass import getpass
 from sys import platform
 
+######################
+#Create symbolic link to .netrc file on other gladapps (run on each): ln -s /gpfs/glad1/Amy/.netrc /home/hudsona/.netrc
+
 def earthdata_authentication():
     #Verify a netrc is set up with Earthdata Login Username and password
     urs = 'urs.earthdata.nasa.gov'    # Earthdata URL to call for authentication

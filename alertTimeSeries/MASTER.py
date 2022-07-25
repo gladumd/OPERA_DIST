@@ -82,5 +82,6 @@ if __name__=='__main__':
   subprocess.run(["python 02_granule_manager.py 02_granules.txt VEG_IND 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
   #subprocess.run(["module unload python/3.7/anaconda; module unload sqlite; perl 02_scene_manager.pl 02_granules.txt VEG_IND 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
   #granuleList(4,"03_granules.txt",startdate,enddate)
+  #subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
   #subprocess.run("deactivate; module unload python/3.7/anaconda; module unload sqlite; perl 03_DIST_UPD.pl 03_granules.txt UPDATE; 1>>processLOG.txt 2>>errorLOG.txt")
 
