@@ -92,21 +92,6 @@ def processGranuleQueue(server,procID,queue):
   print(Nprocess,"processed by", server, procID,mode)
   return Nprocess
 
-def processGranuleQueueTest(server,procID,queue):
-  Nprocess = 0
-  while not queue.empty():
-    granule = queue.get().strip()
-    try:
-      with open("test.txt",'a') as out:
-        out.write(granule+","+server+","+procID+"\n")
-      Nprocess +=1
-    except:
-      print(sys.exc_info())
-      print("ERROR: runGranule(",server,","+granule+") process ID:",procID)
-  print(Nprocess,"processed by", server, procID,mode)
-  return Nprocess
-  
-
 
 ################################### Main ######################################
 #                                                                             #
