@@ -5,7 +5,6 @@ import sys
 
 
 def selectBaselineFiles(source, tile, doy, curryear, window=15, Nyears=2):
-  doyStr = str(doy).rjust(3,'0')
   currday = datetime.datetime.strptime(str(curryear)+str(int(doy)).rjust(3,'0'),"%Y%j")
   
   zone = tile[0:2]
@@ -40,10 +39,6 @@ def selectBaselineFiles(source, tile, doy, curryear, window=15, Nyears=2):
         
   for value in selectedfiles.values():
     print(value)
-
-
-#files = selectBaselineFiles("20LRM",8,2022)
-#print(files)
 
 if __name__ == "__main__":
   selectBaselineFiles(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6])

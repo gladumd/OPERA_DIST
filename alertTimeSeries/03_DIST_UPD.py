@@ -4,14 +4,16 @@ import time
 import sys
 import sqlite3
 import os
+import re
 import subprocess
 from contextlib import closing
 import multiprocessing
 
 currdir = os.getcwd()
-DISTversion = "v0.1"
-HLSsource = "/cephfs/glad4/HLS"
-outbase = "/cephfs/glad4/HLSDIST/000_HLS_Alert_Test"
+DISTversion = "v0"
+HLSsource = "/gpfs/glad3/HLS"
+outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"
+httpbase = 'https://glad.umd.edu/projects/opera/'
 
 def sortDates(listtosort):
   datetimes = {}
@@ -26,7 +28,7 @@ def sortDates(listtosort):
     sorted.append(Fscene)
   return sorted
 
-def runTile(server,tile):
+def runTile(server,tile,h):
   if os.path.exists("KILL_03_DIST_UPD") or os.path.exists("KILL_ALL"):
     sys.exit("03_DIST_UPD.py shut down with kill file")
   tempscenes = h[tile]
@@ -40,14 +42,14 @@ def runTile(server,tile):
     HLS_ID = granule
     DIST_ID = "DIST-ALERT_"+Sdatetime+"_"+sensor+"_"+Ttile+"_"+DISTversion
     year = Sdatetime[0:4]
-    if os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/VEG_ANOM.tif") and os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/GEN_ANOM.tif"):
+    if os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-ANOM.tif") and os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-ANOM.tif"):
       scenes.append(DIST_ID)
   
   sortedScenes = sortDates(scenes)
   
   if updateMode == "UPDATE":
     prev = ()
-    response = subprocess.run(["ls "+outbase+"/*/"+tilepathstring+"/*/VEG_DIST_STATUS.tif"],shell=True)
+    response = subprocess.run(["ls "+outbase+"/*/"+tilepathstring+"/*/*VEG-DIST-STATUS.tif"],shell=True)
     tempfiles = response.stdout.decode().split('\n')
     NumPrev = len(tempfiles)
     if NumPrev >0:
@@ -60,7 +62,7 @@ def runTile(server,tile):
       previous = sortedprev[-1]
       (t0,t1,t2,prevdatetime,t4,t5)= previous.split('\.')
       prevyear = prevdatetime[0:4]
-      previousSource = outbase+"/"+prevyear+"/"+tilepathstring+"/"+previous
+      previousSource = outbase+"/"+prevyear+"/"+tilepathstring+"/"+previous+"/"+previous
     else:
       previousSource = "first"
   elif updateMode == "RESTART":
@@ -75,18 +77,19 @@ def runTile(server,tile):
     doy = datetime[4:7]
     
     outdir = outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID
+    httppath = httpbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID
     response = subprocess.run(["python dayDiff.py 2021001 "+year+doy],shell=True)
     currDate = response.stdout.decode().strip()
 
-    if not os.path.exists(outdir+"/VEG_ANOM.tif"):
-      LOG("ERROR!!!!!!!!!!!!!! $outdir/VEG_ANOM.tif not exist\n")
-      sqliteCommand = "UPDATE fulltable SET Errors = 'wrong filepath ?/VEG_ANOM.tif', statusFlag = 105 where DIST_ID=?;"
-      sqliteTuple = (outdir,DIST_ID,)
+    if not os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif"):
+      LOG("ERROR!!!!!!!!!!!!!! $outdir/VEG-ANOM.tif not exist\n")
+      sqliteCommand = "UPDATE fulltable SET Errors = 'wrong filepath ?_VEG-ANOM.tif', statusFlag = 105 where DIST_ID=?;"
+      sqliteTuple = (outdir+"/"+DIST_ID,DIST_ID,)
       updateSqlite(sqliteCommand,sqliteTuple)
-    elif not os.path.exists(outdir+"/GEN_ANOM.tif"):
-      LOG("ERROR!!!!!!!!!!!!!! $outdir/GEN_ANOM.tif not exist\n")
-      sqliteCommand = "UPDATE fulltable SET Errors = 'wrong filepath ?/GEN_ANOM.tif', statusFlag = 105 where DIST_ID=?;";
-      sqliteTuple = (outdir,DIST_ID,)
+    elif not os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
+      LOG("ERROR!!!!!!!!!!!!!! $outdir/GEN-ANOM.tif not exist\n")
+      sqliteCommand = "UPDATE fulltable SET Errors = 'wrong filepath ?_GEN-ANOM.tif', statusFlag = 105 where DIST_ID=?;";
+      sqliteTuple = (outdir+"/"+DIST_ID,DIST_ID,)
       updateSqlite(sqliteCommand,sqliteTuple)
     else:
       try:
@@ -95,7 +98,7 @@ def runTile(server,tile):
         response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03B_alertUpdateGEN",previousSource,DIST_ID,currDate,outdir,zone,"\'"],shell=True)
         errgen = response.stderr.decode().strip()
         if errveg == "" and errgen == "":
-          previousSource = outdir
+          previousSource = outdir+"/"+DIST_ID
           Errors = "NA"
         else:
           Errors = errveg+" "+errgen
@@ -108,7 +111,7 @@ def runTile(server,tile):
           sqliteTuple = (DIST_ID,)
           updateSqlite(sqliteCommand,sqliteTuple)
         else:
-          response = subprocess.run(["python writeMetadata.py",DIST_ID,sensor,xmlfile,outdir,DISTversion,Errors,"&>>errorLOG.txt"],shell=True)
+          response = subprocess.run(["python writeMetadata.py",DIST_ID,sensor,xmlfile,outdir,httppath,DISTversion,Errors,"&>>errorLOG.txt"],shell=True)
       except:
         sqliteCommand = "UPDATE fulltable SET statusFlag = 105, Errors = ? where DIST_ID=?;"
         updateSqlite(sqliteCommand,("failed to update alert",DIST_ID,))
@@ -134,12 +137,12 @@ def LOG(text):
   with open("errorLog.txt", 'a') as ERR:
     ERR.write(text+"\n")
 
-def processTileQueue(server,procID,queue):
+def processTileQueue(server,procID,queue,h):
   Nprocess = 0
   while not queue.empty():
     tile = queue.get().strip()
     try:
-      runTile(server,granule)
+      runTile(server,tile,h)
       Nprocess +=1
     except:
       with open("errorLOG.txt",'a') as out:
@@ -156,7 +159,7 @@ if __name__=='__main__':
     filelist = sys.argv[1]
     updateMode = sys.argv[2]
   except:
-    print("must enter filelist and updateMode ('RESTART' to ignore all existing time-series layers or 'UPDATE' to use the last available VEG_DIST_STATUS.tif/GEN_DIST_STATUS.tif): python 03_DIST_UPD.py filelist.txt updateMode")
+    print("must enter filelist and updateMode ('RESTART' to ignore all existing time-series layers or 'UPDATE' to use the last available VEG-DIST-STATUS.tif/GEN-DIST-STATUS.tif): python 03_DIST_UPD.py filelist.txt updateMode")
 
   now = datetime.datetime.now()
   print("starting 03_DIST_UPD.pl",filelist,updateMode,now)
@@ -197,7 +200,7 @@ if __name__=='__main__':
     server = str(server)
     for procID in range(1,Nprocesses):
       procID = str(procID)
-      proc = multiprocessing.Process(target=processTileQueue,args=(server,procID,tileQueue))
+      proc = multiprocessing.Process(target=processTileQueue,args=(server,procID,tileQueue,h))
       processes.append(proc)
       proc.start()
 

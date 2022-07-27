@@ -4,7 +4,12 @@ import datetime
 import time
 import sys
 import sqlite3
+import os
 from contextlib import closing
+import subprocess
+import re
+
+imagelist = ["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","LAND-MASK"]
 
 def xmlToDict(xmlfilename):
   with open(xmlfilename) as xml_file:
@@ -24,13 +29,14 @@ def findAdditionalAttribute(atr,sourceDict):
       return field['Values']['Value']
 
 
-def main(ID,sensor,sourceXML,outdir,version,Errors):
+def main(ID,sensor,sourceXML,outdir,httppath,version,Errors):
+  version = version[1:]
   baselineDays = 15; baselineYear=3
   sourceDict = xmlToDict(sourceXML)
   outDict = {}
   outDict['Granule'] = {}
   outDict['Granule']['GranuleUR'] = ID
-  outDict['Granule']['Collection'] = {'DataSetId' : 'DIST_ALERT_LONG_NAME'}
+  outDict['Granule']['Collection'] = {'DataSetId' : 'OPERA Land Surface Disturbance Alert from Harmonized Landsat Sentinel-2 provisional product (version 0)'}
   outDict['Granule']['DataGranule'] = {}
   outDict['Granule']['DataGranule']['DayNightFlag'] = sourceDict['Granule']['DataGranule']['DayNightFlag']
   outDict['Granule']['DataGranule']['ProductionDateTime'] = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
@@ -70,10 +76,45 @@ def main(ID,sensor,sourceXML,outdir,version,Errors):
     except:
       time.sleep(0.2)
       #print("\rNtries "+ tries ,end=",")
-      
-
+  
   writeJSON(outDict, outdir+"/"+ID+"_metadata.json")
+
+  notiDict = {}
+  notiDict['version'] = "1.4"
+  notiDict['provider'] = "UMD_GLAD_OPERA"
+  notiDict['collection'] = 'OPERA_DIST-ALERT-HLS_PROVISIONAL_V0'
+  notiDict['submissionTime'] = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+  notiDict['identifier'] = ID
+  notiDict['product'] = {}
+  notiDict['product']['name'] = ID
+  notiDict['product']['dataVersion'] = version
+  notiDict['product']['files'] = [""]*(len(imagelist)+1)
+  i=0
+  for image in imagelist:
+    #imagefile = re.sub("-","_",image)
+    notiDict['product']['files'][i] = {}
+    notiDict['product']['files'][i]['type'] = "data"
+    notiDict['product']['files'][i]['uri'] = httppath+"/"+ID+"_"+image+".tif"
+    notiDict['product']['files'][i]['name'] = ID+"_"+image+".tif"
+    #size = subprocess.run(["du "+outdir+"/"+imagefile+".tif"],capture_output=True,shell=True).stdout.decode().split()[0]
+    notiDict['product']['files'][i]['size'] = os.path.getsize(outdir+"/"+ID+"_"+image+".tif")
+    checksum = subprocess.run(["sha512sum "+outdir+"/"+ID+"_"+image+".tif"],capture_output=True,shell=True).stdout.decode().split()[0]
+    notiDict['product']['files'][i]['checksum'] = checksum
+    notiDict['product']['files'][i]['checksumType'] = "sha512"
+    i+=1
+  notiDict['product']['files'][i] = {}
+  notiDict['product']['files'][i]['type'] = "metadata"
+  notiDict['product']['files'][i]['uri'] = httppath+"/"+ID+"_metadata.json"
+  notiDict['product']['files'][i]['name'] = ID+"_metadata.json"
+  #size = subprocess.run(["du "+outdir+"/"+ID+"_metadata.json"],capture_output=True,shell=True).stdout.decode().split()[0]
+  notiDict['product']['files'][i]['size'] = os.path.getsize(outdir+"/"+ID+"_metadata.json")
+  checksum = subprocess.run(["sha512sum "+outdir+"/"+ID+"_metadata.json"],capture_output=True,shell=True).stdout.decode().split()[0]
+  notiDict['product']['files'][i]['checksum'] = checksum
+  notiDict['product']['files'][i]['checksumType'] = "sha512"
+
+  writeJSON(notiDict, outdir+"/"+ID+"_notification.json")
+
   
 if __name__ == "__main__":
-  main(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6])
+  main(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6],sys.argv[7])
  

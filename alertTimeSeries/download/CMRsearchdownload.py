@@ -36,7 +36,7 @@ bands['L30'] = ['B04','B05','B06','B07','Fmask']
 Nbands = {}
 Nbands['S30'] = 13
 Nbands['L30'] = 10
-DISTversion = "v0.1"
+DISTversion = "v0"
 
 # CMR search to get all granules with all extra info
 def get_cmr_pages_urls(collections, datetime_range):
@@ -108,7 +108,7 @@ def searchCMR(startdate,enddate):
   #endstring = enddate.strftime("%Y-%m-%dT%H:%M:%SZ")
   startYJT = startdate.strftime("%Y%jT000000")
   startYMD = startdate.strftime("%Y-%m-%d")
-  endYJT = enddate.strftime("%Y%jT%H%M%S")
+  endYJT = enddate.strftime("%Y%jT999999")
   endYMD = enddate.strftime("%Y-%m-%d")
   searchdates = startYMD+'T00:00:00Z/'+endYMD+'T23:59:59Z' #may have to loop through days depending on search time
   print("start search", searchdates,"at",datetime.datetime.now())
@@ -144,8 +144,8 @@ def searchCMR(startdate,enddate):
           newgranules = set(granules) - set(downloadedGrans) - set(alreadyFoundGrans)
           notdownloadedgranules = set(granules).intersection(set(alreadyFoundGrans))
           retrygranules = set(granules).intersection(set(failedGrans))
-          print(len(newgranules),"new granules,",len(notdownloadedgranules),
-              "already found granules,",len(retrygranules),
+          print(len(granules),"total",len(newgranules),"new granules,",len(notdownloadedgranules),
+              "already found but not downloaded,",len(retrygranules),
               "granules to retry for",searchdates)
           databaseChecked = True
           for HLS_ID in newgranules:
@@ -164,8 +164,10 @@ def searchCMR(startdate,enddate):
         time.sleep(0.1) 
       else:
         print(error.args)
+        break
     except:
       print(sys.exc_info())
+      break
   return download_dict
 
 #download all the links associated with a granule
@@ -193,7 +195,7 @@ def download_granule(links):
     if not os.path.isdir(path_out):
       os.makedirs(path_out)
 
-    wgetcommand = "wget --output-document="+img_out+" "+img_url 
+    wgetcommand = "wget --timeout=300 --output-document="+img_out+" "+img_url 
         #The default is to retry 20 times, with the exception of fatal errors 
         #like "connection refused" or "not found" (404), which are not retried.
     report = subprocess.run([wgetcommand],capture_output=True,shell=True)
@@ -209,7 +211,7 @@ def download_granule(links):
       with open("wgeterrors.txt","a") as log:
         log.write(img_url + ": " + lastLine+"\n")
       break
-  statusFlag = checkGranule(HLS_ID)
+  statusFlag = checkGranule(HLS_ID,writeNew=True)
   if statusFlag == 2:
     status = "success"
   return [HLS_ID,status]
@@ -243,8 +245,10 @@ def download_parallel(granuledictionary):
             time.sleep(0.1) 
           else:
             print(error.args)
+            break
         except:
           print(sys.exc_info())
+          break
   print(Nsuccess,"granules successfully downloaded,", Nerrors, "with errors",datetime.datetime.now())
 
 #check download is complete and not corrupted for a given granule
@@ -273,7 +277,7 @@ def getDownloadTime(sourcepath):
   return sout.read().strip()
 
 #check a granule for correctness and update it in the database with download success (2) or download failed (102)
-def checkGranule(granule):
+def checkGranule(granule,writeNew=True):
   (HLS,sensor,Ttile,sensingTime,majorV,minorV)= granule.split('.')
   year = sensingTime[0:4]
   tile = Ttile[1:6]
@@ -285,17 +289,21 @@ def checkGranule(granule):
   if check == "complete":
     downloadTime = getDownloadTime(sourcepath)
     statusFlag = 2
-    sqliteCommand = "INSERT or REPLACE INTO fulltable(HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID) VALUES(?,?,?,?,?,?)"
-    sqliteTuple = (HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID)
-    #sqliteCommand = "UPDATE fulltable SET statusFlag = ?, downloadTime = ?, DIST_ID = ?, MGRStile = ? WHERE HLS_ID = ?"
-    #sqliteTuple = (statusFlag,downloadTime,DIST_ID,MGRStile,HLS_ID)
+    if(writeNew):
+      sqliteCommand = "INSERT or REPLACE INTO fulltable(HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID) VALUES(?,?,?,?,?,?)"
+      sqliteTuple = (HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID)
+    else:
+      sqliteCommand = "UPDATE fulltable SET statusFlag = ?, downloadTime = ?, DIST_ID = ?, MGRStile = ? WHERE HLS_ID = ?"
+      sqliteTuple = (statusFlag,downloadTime,DIST_ID,MGRStile,HLS_ID)
   else:
     statusFlag = 102
     Errors = check
-    sqliteCommand = "INSERT or REPLACE INTO fulltable(HLS_ID,statusFlag,sensingTime,MGRStile,DIST_ID,Errors) VALUES(?,?,?,?,?,?)"
-    sqliteTuple = (HLS_ID,statusFlag,sensingTime,MGRStile,DIST_ID,Errors)
-    #sqliteCommand = "UPDATE fulltable SET statusFlag = ?, Errors = ? WHERE HLS_ID = ?"
-    #sqliteTuple = (statusFlag,Errors,HLS_ID)
+    if(writeNew):
+      sqliteCommand = "INSERT or REPLACE INTO fulltable(HLS_ID,statusFlag,sensingTime,MGRStile,DIST_ID,Errors) VALUES(?,?,?,?,?,?)"
+      sqliteTuple = (HLS_ID,statusFlag,sensingTime,MGRStile,DIST_ID,Errors)
+    else:
+      sqliteCommand = "UPDATE fulltable SET statusFlag = ?, Errors = ? WHERE HLS_ID = ?"
+      sqliteTuple = (statusFlag,Errors,HLS_ID)
   written = False
   while written == False:
     try:
@@ -391,22 +399,28 @@ if __name__=='__main__':
     startdate = datetime.datetime.strptime(sys.argv[1], "%Y-%m-%d")
     enddate = datetime.datetime.strptime(sys.argv[2], "%Y-%m-%d")
   
+  #url_dict = searchCMR(startdate,enddate)
+  ##checkGranuleList(list(url_dict.keys()))
+  #if url_dict != "CMR error":
+  #  download_parallel(url_dict)
+  #else:
+  #  print("CMR error, unable to search.", datetime.datetime.now())
+
   oneday = datetime.timedelta(days = 1)
   start = startdate
-  end = start + oneday
-  while end < enddate:
+  #end = start + oneday
+  while start < enddate:
     #moveOldFiles(cutoffdate.strftime("%Y%j"))
     #[granules,downloadlinks] = searchCMR(cutoffdate,today)
-    url_dict = searchCMR(start,end)
-    #checkGranuleList(list(url_dict.keys()))
-    if url_dict != "CMR error":
-      #print(list(url_dict.values())[0:1])
-      download_parallel(url_dict) #Now check is in the download
-    else:
-      print("CMR error, unable to search.", datetime.datetime.now())
+    url_dict = searchCMR(start,start)
+    checkGranuleList(list(url_dict.keys()))
+    #if url_dict != "CMR error":
+    #  download_parallel(url_dict)
+    #else:
+    #  print("CMR error, unable to search.", datetime.datetime.now())
     #uncheckedGranules = getGranulesToCheck()
     #checkGranuleList(uncheckedGranules)
     start = start + oneday
-    end = start + oneday
+    #end = start + oneday
 
 

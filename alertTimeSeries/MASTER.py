@@ -74,13 +74,14 @@ if __name__=='__main__':
     enddate = None
     startdate = None
   elif len(sys.argv) == 3:
-    startdate = sys.argv[1]
-    enddate = sys.argv[2]
-  #with open("stdout.txt","wb") as out, open("stderr.txt","wb") as err:
+    startdate = sys.argv[1]+"T000000"
+    enddate = sys.argv[2]+"T999999"
   #subprocess.run("python CMRsearchdownload.py 1>>processLOG.txt 2>>errorLOG.txt")
   granuleList(2,"02_granules.txt",startdate,enddate)
   subprocess.run(["python 02_granule_manager.py 02_granules.txt VEG_IND 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
   #subprocess.run(["module unload python/3.7/anaconda; module unload sqlite; perl 02_scene_manager.pl 02_granules.txt VEG_IND 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
+  #granuleList(103,"03_granules.txt",startdate,enddate)
+  #subprocess.run(["python renameFiles.py 03_granules.txt"], shell=True)
   #granuleList(4,"03_granules.txt",startdate,enddate)
   #subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
   #subprocess.run("deactivate; module unload python/3.7/anaconda; module unload sqlite; perl 03_DIST_UPD.pl 03_granules.txt UPDATE; 1>>processLOG.txt 2>>errorLOG.txt")
