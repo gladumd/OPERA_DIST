@@ -16,12 +16,12 @@ def selectBaselineFiles(source, tile, doy, curryear, window=15, Nyears=2):
     enddate = currday-relativedelta(years=yr)+relativedelta(days=halfwindow)
 
     if startdate.year == enddate.year:#prev=curryear-yr;
-      stream = os.popen("ls "+source+"/"+str(startdate.year)+"/"+zone+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/DIST-ALERT*/VEG_IND.tif");
+      stream = os.popen("ls "+source+"/"+str(startdate.year)+"/"+zone+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/DIST-ALERT*/*VEG-IND.tif");
       filelist = stream.read().splitlines()
     else:
-      stream = os.popen("ls "+source+"/"+str(startdate.year)+"/"+zone+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/DIST-ALERT*/VEG_IND.tif");
+      stream = os.popen("ls "+source+"/"+str(startdate.year)+"/"+zone+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/DIST-ALERT*/*VEG-IND.tif");
       filelist = stream.read().splitlines()
-      stream = os.popen("ls "+source+"/"+str(enddate.year)+"/"+zone+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/DIST-ALERT*/VEG_IND.tif");
+      stream = os.popen("ls "+source+"/"+str(enddate.year)+"/"+zone+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/DIST-ALERT*/*VEG-IND.tif");
       filelist = filelist + stream.read().splitlines()
     
     startdate = startdate.strftime('%Y%j')
