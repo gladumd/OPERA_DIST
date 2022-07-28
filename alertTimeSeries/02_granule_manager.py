@@ -31,11 +31,11 @@ def runGranule(server,granule):
   if os.path.exists(HLSsource+"/"+sensor+"/"+year+"/"+tilepathstring+"/"+granule+"/"+granule+".cmr.xml"):
     subprocess.run(["cp "+HLSsource+"/"+sensor+"/"+year+"/"+tilepathstring+"/"+granule+"/"+granule+".cmr.xml "+outdir+"/additional/"+granule+".cmr.xml 2>>errorLOG.txt"],shell=True)
   
-  if not os.path.exists(outdir+"/"+DIST_ID+"_VEG_IND.tif"):
+  if not os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif"):
     response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./02A_VF_QA_COG "+granule+" "+DIST_ID+"\' &>>errorLOG.txt"],shell=True)
       
   if mode == "VEG_IND":
-    if os.path.exists(outdir+"/"+DIST_ID+"_VEG_IND.tif"):
+    if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif"):
       sqliteCommand = "UPDATE fulltable SET statusFlag = 3 where HLS_ID=?;"
       updateSqlite(sqliteCommand,(HLS_ID,))
     else:
@@ -46,20 +46,20 @@ def runGranule(server,granule):
   
   elif mode == "ALL":
     #create VEG_ANOM
-    if os.path.exists(outdir+"/"+DIST_ID+"_VEG_IND.tif") and not os.path.exists(outdir+"/"+DIST_ID+"_VEG_ANOM.tif"):#and !-e "$outdir/VEG_ANOM.tif"){
+    if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") and not os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif"):#and !-e "$outdir/VEG_ANOM.tif"){
       subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02B_VEG_ANOM_COG.pl "+granule+" "+DIST_ID+"\' &>>errorLOG.txt"],shell=True)
 
     #create GEN_ANOM
-    if not os.path.exists(outdir+"/"+DIST_ID+"_GEN_ANOM.tif"):
-        subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM.pl "+granule+" "+DIST_ID+"\' &>>errorLOG.txt"],shell=True)
+    if not os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
+        subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN-ANOM.pl "+granule+" "+DIST_ID+"\' &>>errorLOG.txt"],shell=True)
     
     #test for success and update database
-    if os.path.exists(outdir+"/"+DIST_ID+"_VEG_IND.tif") and os.path.exists(outdir+"/"+DIST_ID+"_VEG_ANOM.tif") and os.path.exists(outdir+"/"+DIST_ID+"_GEN_ANOM.tif"):
+    if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") and os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif") and os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
       sqliteCommand = "UPDATE fulltable SET statusFlag = 4 where HLS_ID=?;"
       updateSqlite(sqliteCommand,(HLS_ID,))
     else:
       sys.stderr(DIST_ID+Errors)
-      sqliteCommand = "UPDATE fulltable SET Errors = 'VEG_IND/VEG_ANOM/GEN_ANOM failed', statusFlag = 104 where HLS_ID=?;"
+      sqliteCommand = "UPDATE fulltable SET Errors = 'VEG-IND/VEG-ANOM/GEN-ANOM failed', statusFlag = 104 where HLS_ID=?;"
       updateSqlite(sqliteCommand,(HLS_ID,))
 
 def updateSqlite(sqliteCommand,sqliteTuple):
@@ -131,7 +131,7 @@ if __name__=='__main__':
 
   print("starting \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",now)
 
-  serverlist = [(15,40),(16,40),(17,60)]
+  serverlist = [(14,60),(15,60),(16,60),(17,0),(19,40),(20,40)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp
