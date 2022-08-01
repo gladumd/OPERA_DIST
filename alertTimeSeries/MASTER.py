@@ -38,7 +38,7 @@ import time
 import sqlite3
 
 
-def granuleList(statusFlag,filename,startYJT=None, endYJT=None):
+def granuleList(statusFlag,filename,startYJT=None, endYJT=None,tilefile=None):
   databaseChecked = False
   while(databaseChecked == False):
     try:
@@ -50,11 +50,13 @@ def granuleList(statusFlag,filename,startYJT=None, endYJT=None):
             cursor.execute("SELECT HLS_ID from fulltable WHERE statusFlag = ?",(statusFlag,)) 
           selectedGrans = cursor.fetchall()
           selectedGrans = [s for t in selectedGrans for s in t]
-          with open(filename,"w") as filelist:
-            for g in selectedGrans:
-              filelist.write(g+"\n")
-          print(len(selectedGrans),"selected granules for",filename)
           databaseChecked = True
+      if tilefile != None:
+        selectedGrans = filterByTileList(selectedGrans,tilefile)
+      with open(filename,"w") as filelist:
+        for g in selectedGrans:
+          filelist.write(g+"\n")
+      print(len(selectedGrans),"selected granules for",filename)
     except sqlite3.OperationalError as error:
       if error.args[0] == 'database is locked':
         time.sleep(0.1) 
@@ -64,6 +66,17 @@ def granuleList(statusFlag,filename,startYJT=None, endYJT=None):
       print(sys.exc_info()) 
 
 
+def filterByTileList(granulelist,tilefile):
+  granulesout = []
+  with open(tilefile, 'r') as tilelist:
+    tiles = tilelist.read().splitlines()
+  for g in granulelist:
+    (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= g.split('.')
+    tile = Ttile
+    if tile in tiles:
+      granulesout.append(g)
+  return(granulesout)
+
 
 ################################### Main ######################################
 #                                                                             #
@@ -71,18 +84,28 @@ def granuleList(statusFlag,filename,startYJT=None, endYJT=None):
 ###############################################################################
 if __name__=='__main__':
   if len(sys.argv) == 1:
+    tilefile=None
     enddate = None
     startdate = None
   elif len(sys.argv) == 3:
+    tilefile=None
     startdate = sys.argv[1]+"T000000"
     enddate = sys.argv[2]+"T999999"
+  elif len(sys.argv) == 4:
+    tilefile = sys.argv[1]
+    startdate = sys.argv[2]+"T000000"
+    enddate = sys.argv[3]+"T999999"
   #subprocess.run("python CMRsearchdownload.py 1>>processLOG.txt 2>>errorLOG.txt")
-  granuleList(2,"02_granules.txt",startdate,enddate)
-  subprocess.run(["python 02_granule_manager.py 02_granules.txt VEG_IND 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
+  #granuleList(2,"02_granules.txt",startdate,enddate,tilefile)
+  #subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
+  granuleList(2,"02_granules.txt",startdate,enddate,tilefile)
+  #subprocess.run(["python 02_granule_manager.py 02_granules.txt VEG_IND 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
+  #granuleList("103","02_granules.txt",startdate,enddate,tilefile)
+  #subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
   #subprocess.run(["module unload python/3.7/anaconda; module unload sqlite; perl 02_scene_manager.pl 02_granules.txt VEG_IND 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
   #granuleList(103,"03_granules.txt",startdate,enddate)
   #subprocess.run(["python renameFiles.py 03_granules.txt"], shell=True)
   #granuleList(4,"03_granules.txt",startdate,enddate)
-  #subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
+  #subprocess.run(["python 03_DIST_UPD.py 03_granules.txt RESTART; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
   #subprocess.run("deactivate; module unload python/3.7/anaconda; module unload sqlite; perl 03_DIST_UPD.pl 03_granules.txt UPDATE; 1>>processLOG.txt 2>>errorLOG.txt")
 

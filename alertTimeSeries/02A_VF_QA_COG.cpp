@@ -4666,6 +4666,8 @@ int calVF(string sceneName,string sceneNameOUT)
       string LandsatID = CSLFetchNameValue(sourceMetadata,"LANDSAT_PRODUCT_ID");
       if(LandsatID.substr(0,4) == "LC08"){
         papszMetadata = CSLSetNameValue( papszMetadata, "SOURCE_SATELLITE", "Landsat-8");
+      }else if(LandsatID.substr(0,4) == "LC09"){
+        papszMetadata = CSLSetNameValue( papszMetadata, "SOURCE_SATELLITE", "Landsat-9");
       }else{
         cout<<"Landsat satellite unknown: " << LandsatID << endl;
         papszMetadata = CSLSetNameValue( papszMetadata, "SOURCE_SATELLITE", string(CSLFetchNameValue(sourceMetadata,"LANDSAT_PRODUCT_ID")).substr(0,4).c_str());

@@ -70,39 +70,39 @@ if(prevsource == "first"){
  
 }else{
   
-  filename = prevsource+"/"+DIST_ID+"_VEG-DIST-STATUS"+version+".tif";
+  filename = prevsource+"_VEG-DIST-STATUS"+version+".tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, status, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
   
-  filename = prevsource+"/"+DIST_ID+"_VEG-ANOM-MAX"+version+".tif";
+  filename = prevsource+"_VEG-ANOM-MAX"+version+".tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, max, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
   
-  filename = prevsource+"/"+DIST_ID+"_VEG-DIST-CONF"+version+".tif";
+  filename = prevsource+"_VEG-DIST-CONF"+version+".tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, conf, xsize, ysize, GDT_UInt16, 0, 0); GDALClose(INGDAL);
   
-  filename = prevsource+"/"+DIST_ID+"_VEG-DIST-DATE"+version+".tif";
+  filename = prevsource+"_VEG-DIST-DATE"+version+".tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, date, xsize, ysize, GDT_UInt16, 0, 0); GDALClose(INGDAL);
   
-  filename = prevsource+"/"+DIST_ID+"_VEG-DIST-COUNT"+version+".tif";
+  filename = prevsource+"_VEG-DIST-COUNT"+version+".tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, count, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
   
-  filename = prevsource+"/"+DIST_ID+"_VEG-DIST-PERC"+version+".tif";
+  filename = prevsource+"_VEG-DIST-PERC"+version+".tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, percent, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
   
-  filename = prevsource+"/"+DIST_ID+"_VEG-DIST-DUR"+version+".tif";
+  filename = prevsource+"_VEG-DIST-DUR"+version+".tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, dur, xsize, ysize, GDT_UInt16, 0, 0); GDALClose(INGDAL);
   
-  filename = prevsource+"/"+DIST_ID+"_LAST-DATE"+version+".tif";
+  filename = prevsource+"_VEG-LAST-DATE"+version+".tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, lastObs, xsize, ysize, GDT_UInt16, 0, 0); GDALClose(INGDAL);
   
-  filename = prevsource+"/"+DIST_ID+"_VEG-HIST"+version+".tif";
+  filename = prevsource+"_VEG-HIST"+version+".tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, histVF, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
 }
@@ -305,7 +305,7 @@ OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyPr
 OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
 
-filename = outpath + "/"+DIST_ID+"_LAST-DATETEMP.tif";
+filename = outpath + "/"+DIST_ID+"_VEG-LAST-DATETEMP.tif";
 currMetadata = CSLDuplicate(papszMetadata);
 currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
 currMetadata = CSLSetNameValue( currMetadata, "Valid_max", to_string(currDate).c_str());
@@ -333,11 +333,11 @@ GDALClose((GDALDatasetH)OUTGDAL);
 
 GDALClose(SGDAL);
 
-string outfiles[9] = {"VEG-DIST-STATUS","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-PERC","VEG-DIST-DUR","LAST-DATE","VEG-HIST"};
+string outfiles[9] = {"VEG-DIST-STATUS","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-PERC","VEG-DIST-DUR","VEG-LAST-DATE","VEG-HIST"};
 
 for(int i=0;i<9;i++){
-  system(("gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q "+outpath+"/"+outfiles[i]+"TEMP.tif "+outpath+"/"+outfiles[i]+version+".tif").c_str());
-  system(("rm "+outpath+"/"+outfiles[i]+"TEMP.tif").c_str());
+  system(("gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q "+outpath+"/"+DIST_ID+"_"+outfiles[i]+"TEMP.tif "+outpath+"/"+DIST_ID+"_"+outfiles[i]+version+".tif").c_str());
+  system(("rm "+outpath+"/"+DIST_ID+"_"+outfiles[i]+"TEMP.tif").c_str());
 }
 return 0;
 }

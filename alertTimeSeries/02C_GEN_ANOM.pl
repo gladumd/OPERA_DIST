@@ -1,8 +1,8 @@
 $scene = $ARGV[0];
 $outscene = $ARGV[1];
 
-$HLSsource = "/cephfs/glad4/HLS";
-$outbase = "/cephfs/glad4/HLSDIST/000_HLS_Alert_Test";
+$HLSsource = "/gpfs/glad3/HLS";
+$outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT";
 $calWindow = 31; #number of days of moving window
 $Nyears = 3; #Nyears of baseline
 
@@ -110,7 +110,7 @@ GDALClose(INGDAL);
 ";$b++;
   }
 print OUT"
-filename=\"$output/LAND_MASK.tif\";
+filename=\"$output/$outscene\_LAND-MASK.tif\";
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); 
 INBAND = INGDAL->GetRasterBand(1);
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, land, xsize, ysize, GDT_Byte, 0, 0); 
@@ -272,7 +272,7 @@ oSRS.exportToWkt( &OUTPRJ );
 papszOptions = CSLSetNameValue( papszOptions, \"COMPRESS\", \"DEFLATE\");
 papszOptions = CSLSetNameValue( papszOptions, \"TILED\", \"YES\");
 
-filename=\"$output/VEG_IND.tif\";
+filename=\"$output/$outscene\_VEG-IND.tif\";
 SGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); 
 sourceMetadata = SGDAL -> GetMetadata();
 papszMetadata = CSLDuplicate(sourceMetadata);
@@ -284,7 +284,7 @@ papszMetadata = CSLSetNameValue( papszMetadata, \"BaselineCalendarWindow\", \"$c
 const int Noverviews = 3;
 int overviewList[Noverviews] = {2,4,8};
 ";
-$filename = "$output/GEN_ANOM";
+$filename = "$output/$outscene\_GEN-ANOM";
 print OUT"
 OUTGDAL = OUTDRIVER->Create( \"${filename}TEMP.tif\", xsize, ysize, 1, GDT_Int16, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
@@ -299,6 +299,6 @@ system(\"rm ${filename}TEMP.tif\");
 return 0;
 }";
     close (OUT);
-    system("g++ gen_anom_$scene.cpp -o gen_anom_$scene -lgdal -Wno-unused-result -std=gnu++11 -I /cephfs/glad4/HLSDIST/Code/Amy/eigen-3.4.0 &>>errorLOG.txt");
+    system("g++ gen_anom_$scene.cpp -o gen_anom_$scene -lgdal -Wno-unused-result -std=gnu++11 -I /gpfs/glad3/HLSDIST/Code/Amy/eigen-3.4.0 &>>errorLOG.txt");
   }
 }

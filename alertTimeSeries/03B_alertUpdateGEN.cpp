@@ -35,7 +35,7 @@ int ysize, xsize;
 int y, x;
 string filename;
 
-filename = outpath+"/"+DIST_ID+"_GEN_ANOM.tif";
+filename = outpath+"/"+DIST_ID+"_GEN-ANOM.tif";
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
 ysize = INBAND->GetYSize();xsize = INBAND->GetXSize();
 double GeoTransform[6];
@@ -67,35 +67,35 @@ if(prevsource == "first"){
  
 }else{
   
-  filename = prevsource+"/"+DIST_ID+"_GEN-DIST-STATUS.tif";
+  filename = prevsource+"_GEN-DIST-STATUS.tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, status, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
   
-  filename = prevsource+"/"+DIST_ID+"_GEN-ANOM-MAX.tif";
+  filename = prevsource+"_GEN-ANOM-MAX.tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, max, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
   
-  filename = prevsource+"/"+DIST_ID+"_GEN-DIST-CONF.tif";
+  filename = prevsource+"_GEN-DIST-CONF.tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, conf, xsize, ysize, GDT_UInt16, 0, 0); GDALClose(INGDAL);
   
-  filename = prevsource+"/"+DIST_ID+"_GEN-DIST-DATE.tif";
+  filename = prevsource+"_GEN-DIST-DATE.tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, date, xsize, ysize, GDT_UInt16, 0, 0); GDALClose(INGDAL);
   
-  filename = prevsource+"/"+DIST_ID+"_GEN-DIST-COUNT.tif";
+  filename = prevsource+"_GEN-DIST-COUNT.tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, count, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
   
-  filename = prevsource+"/"+DIST_ID+"_GEN-DIST-PERC.tif";
+  filename = prevsource+"_GEN-DIST-PERC.tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, percent, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
   
-  filename = prevsource+"/"+DIST_ID+"_GEN-DIST-DUR.tif";
+  filename = prevsource+"_GEN-DIST-DUR.tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, dur, xsize, ysize, GDT_UInt16, 0, 0); GDALClose(INGDAL);
   
-  filename = prevsource+"/"+DIST_ID+"_GEN-LAST-DATE.tif";
+  filename = prevsource+"_GEN-LAST-DATE.tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, lastObs, xsize, ysize, GDT_UInt16, 0, 0); GDALClose(INGDAL);
   
@@ -313,8 +313,8 @@ GDALClose(SGDAL);
 string outfiles[8] = {"GEN-DIST-STATUS","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-PERC","GEN-DIST-DUR","GEN-LAST-DATE"};
 
 for(int i=0;i<8;i++){
-  system(("gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q "+outpath+"/"+outfiles[i]+"TEMP.tif "+outpath+"/"+outfiles[i]+".tif").c_str());
-  system(("rm "+outpath+"/"+outfiles[i]+"TEMP.tif").c_str());
+  system(("gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q "+outpath+"/"+DIST_ID+"_"+outfiles[i]+"TEMP.tif "+outpath+"/"+DIST_ID+"_"+outfiles[i]+".tif").c_str());
+  system(("rm "+outpath+"/"+DIST_ID+"_"+outfiles[i]+"TEMP.tif").c_str());
 }
 
 return 0;

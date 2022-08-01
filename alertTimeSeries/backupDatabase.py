@@ -25,6 +25,10 @@ def checkDatabase(dbname):
             cursor.execute("ROLLBACK")
             with open("errorLOG.txt",'a') as ERR:
               ERR.write("database integrity failed"+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")
+            with open("DATABASE_HAS_ERRORS",'w') as ERR:
+              ERR.write("database integrity failed"+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")
+            with open("KILL_ALL",'w') as ERR:
+              ERR.write("database integrity failed"+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")
     except sqlite3.OperationalError as error:
       if error.args[0] == 'database is locked':
         time.sleep(0.1) 

@@ -144,12 +144,15 @@ def searchCMR(startdate,enddate):
           newgranules = set(granules) - set(downloadedGrans) - set(alreadyFoundGrans)
           notdownloadedgranules = set(granules).intersection(set(alreadyFoundGrans))
           retrygranules = set(granules).intersection(set(failedGrans))
-          print(len(granules),"total",len(newgranules),"new granules,",len(notdownloadedgranules),
-              "already found but not downloaded,",len(retrygranules),
+          print(len(granules),"total",len(newgranules),"new granules,",len(downloadedGrans),
+              "downloaded,",len(retrygranules),
               "granules to retry for",searchdates)
+          processLOG([len(granules),"total",len(newgranules),"new granules,",len(downloadedGrans),
+              "downloaded,",len(retrygranules),
+              "granules to retry for",searchdates])
           databaseChecked = True
           for HLS_ID in newgranules:
-            (HLS,sensor,Ttile,sensingTime,majorV,minorV)= HLS_ID.split('.')
+            #(HLS,sensor,Ttile,sensingTime,majorV,minorV)= HLS_ID.split('.')
             #cursor.execute("INSERT or REPLACE INTO fulltable(HLS_ID,statusFlag,sensingTime) VALUES(?,?,?)",(HLS_ID,0,sensingTime))
             #cursor.execute("COMMIT")
             download_dict[HLS_ID] = url_dict[HLS_ID]
@@ -212,15 +215,23 @@ def download_granule(links):
         log.write(img_url + ": " + lastLine+"\n")
       break
   statusFlag = checkGranule(HLS_ID,writeNew=True)
-  if statusFlag == 2:
+  if statusFlag[0] == 2:
     status = "success"
+  else:
+    status = statusFlag[0]
   return [HLS_ID,status]
 
+def processLOG(argv):
+  with open("../processLOG.txt",'a') as LOG:
+    for arg in argv:
+      LOG.write(str(arg)+" ")
+    LOG.write('\n')
+
 #concurrently download all the links in the dictionary
-def download_parallel(granuledictionary):
-  Nsim = 200
+def download_parallel(granuledictionary,Nsim=200):
   starttime = datetime.datetime.now()
   granulelist = list(granuledictionary.values())
+  processLOG(["Start download", len(granulelist),"granules", starttime])
   print("Start download", len(granulelist),"granules", starttime)
   results = Pool(Nsim).imap_unordered(download_granule,granulelist)
   Nsuccess = 0
@@ -249,6 +260,7 @@ def download_parallel(granuledictionary):
         except:
           print(sys.exc_info())
           break
+  processLOG([Nsuccess,"granules successfully downloaded,", Nerrors, "with errors",datetime.datetime.now()])
   print(Nsuccess,"granules successfully downloaded,", Nerrors, "with errors",datetime.datetime.now())
 
 #check download is complete and not corrupted for a given granule
@@ -319,21 +331,24 @@ def checkGranule(granule,writeNew=True):
         print(error.args)
     except:
       print(sys.exc_info())
-  return statusFlag
+  return (statusFlag,granule)
 
 #parallel checking of all granules in list
 def checkGranuleList(granulelist):
   print(len(granulelist),"granules to check", datetime.datetime.now())
   Nsim = 12
+  granulesToDownload = []
   results = Pool(Nsim).imap_unordered(checkGranule,granulelist)
   success = 0
   errors = 0
   for result in results:
-    if result == 2:
+    if result[0] == 2:
       success +=1
     else: 
+      granulesToDownload.append(result[1])
       errors +=1
   print(success,"granules successfully downloaded,", errors,"granules with errors",datetime.datetime.now())
+  return granulesToDownload
 
 #get list of all granules that need to be checked
 def getGranulesToCheck():
@@ -383,10 +398,23 @@ def checkDownloadSpeed(filename,Nprocesses):
     Nprocesses,"processes, average printed rate of",avrate,"MB/s, and functional average of",totalSize/timediff.seconds,"MB/s")
 #2022-07-11 16:13:27 (5.20 MB/s) - ‘/cephfs/glad4/HLS/S30/2022/52/U/C/B/HLS.S30.T52UCB.2022190T022601.v2.0/HLS.S30.T52UCB.2022190T022601.v2.0.B8A.tif’ saved [2367388/2367388]
 
+def filterByTileList(granuleDict,tilefile):
+  granulesout = {}
+  with open(tilefile, 'r') as tilelist:
+    tiles = tilelist.read().splitlines()
+  for g in granuleDict.keys():
+    (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= g.split('.')
+    tile = Ttile#[1:]
+    if tile in tiles:
+      granulesout[g]=granuleDict[g]
+  return(granulesout)
+
 ################################### Main ######################################
 #                                                                             #
 #                                                                             #
 ###############################################################################
+
+#write two new scripts, one that accepts a tile list and dates, and another that is the automatic download. Import CMRsearchdownload and then write just the main portion.
 if __name__=='__main__':
   if len(sys.argv) == 1:
     enddate = datetime.datetime.utcnow()
@@ -398,29 +426,29 @@ if __name__=='__main__':
   elif len(sys.argv) == 3:
     startdate = datetime.datetime.strptime(sys.argv[1], "%Y-%m-%d")
     enddate = datetime.datetime.strptime(sys.argv[2], "%Y-%m-%d")
+  elif len(sys.argv) == 4:
+    startdate = datetime.datetime.strptime(sys.argv[1], "%Y-%m-%d")
+    enddate = datetime.datetime.strptime(sys.argv[2], "%Y-%m-%d")
+    if sys.argv[3] == "checkFirst":
+      checkFirst=True
+    else:
+      sys.exit("bad parameters")
   
-  #url_dict = searchCMR(startdate,enddate)
-  ##checkGranuleList(list(url_dict.keys()))
-  #if url_dict != "CMR error":
-  #  download_parallel(url_dict)
-  #else:
-  #  print("CMR error, unable to search.", datetime.datetime.now())
-
+  granuleDict = {}
+  dayinc = datetime.timedelta(days = 5)
   oneday = datetime.timedelta(days = 1)
   start = startdate
-  #end = start + oneday
+  end = start + dayinc
   while start < enddate:
-    #moveOldFiles(cutoffdate.strftime("%Y%j"))
-    #[granules,downloadlinks] = searchCMR(cutoffdate,today)
-    url_dict = searchCMR(start,start)
-    checkGranuleList(list(url_dict.keys()))
-    #if url_dict != "CMR error":
-    #  download_parallel(url_dict)
-    #else:
-    #  print("CMR error, unable to search.", datetime.datetime.now())
-    #uncheckedGranules = getGranulesToCheck()
-    #checkGranuleList(uncheckedGranules)
-    start = start + oneday
-    #end = start + oneday
-
+    url_dict = searchCMR(start,end-oneday)
+    if url_dict != "CMR error":
+      if checkFirst:
+        granulesToDownload = checkGranuleList(list(url_dict.keys()))
+        url_dict = {granule: url_dict[granule] for granule in granulesToDownload}
+      download_parallel(url_dict,150)
+    else:
+      print("CMR error, unable to search.", datetime.datetime.now())
+    start = start + dayinc
+    end = start + dayinc
+  
 

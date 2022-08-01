@@ -54,7 +54,7 @@ sub compileTileDOY(){
   #  $outscene = "DIST-ALERT_${datetime}_${sensor}_${Ttile}_${DISTversion}";
   #  if(!exists $hash{$outscene}){push(@oldfiles,$f);}
   #}
-  $NsensordatesNew = @selectedfiles;
+  #$NsensordatesNew = @selectedfiles;
   #$NsensordatesZhen = @oldfiles;
   #$Nsensordates = $NsensordatesNew + $NsensordatesZhen;
   #print"$scene: $NsensordatesNew hist, $NsensordatesZhen Zhen\n";
@@ -100,14 +100,9 @@ int y, x;
 int Nsensordates = $Nsensordates;
 int zone = $zoneInt;
 ";
-@filename = ();
-#($im1,$im2)=split(',',$currfiles);#$selectedfiles[0]
-$im1 = $scene;
-$year = substr($im1,15,4);
-$filename[0]=$im1;
-$filename[1]=$im2;
+
 print OUT"
-filename=\"$output/"+$outscene+"_VEG-IND.tif\";
+filename=\"$output/$outscene\_VEG-IND.tif\";
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
 ysize = INBAND->GetYSize();xsize = INBAND->GetXSize();
 double GeoTransform[6];
@@ -118,16 +113,8 @@ uint8_t currVF[ysize][xsize];
 uint8_t temp[ysize][xsize];
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, currVF, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
 ";
-if($im2 ne ""){
-print OUT"filename=\"$output/"+$outscene+"_VEG-IND.tif\";
-INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, temp, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
 
-for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {if(currVF[y][x]==255){currVF[y][x]=temp[y][x];}}}
-";
-}
-
-for($i=0;$i<$NsensordatesNew;$i++){
+for($i=0;$i<$Nsensordates;$i++){
 ($im1,$im2)=split(',',$selectedfiles[$i]);
 $year = substr($im1,11,4);
 print OUT"
@@ -136,7 +123,7 @@ INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = ING
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, histVF[$i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
 ";
 if($im2 ne ""){
-print OUT"filename=\"$VFsource/$year/$tilepathstring/$im2/$im1\_VEG-IND.tif\";
+print OUT"filename=\"$VFsource/$year/$tilepathstring/$im2/$im2\_VEG-IND.tif\";
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, temp, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
 
@@ -168,15 +155,20 @@ int vfarray[Nsensordates];
 uint8_t countOUT[ysize][xsize];memset(countOUT, 0, sizeof(countOUT[0][0]) * ysize * xsize);
 uint8_t minOUT[ysize][xsize];memset(minOUT, 0, sizeof(minOUT[0][0]) * ysize * xsize);
 uint8_t anomaly[ysize][xsize];memset(anomaly, 0, sizeof(anomaly[0][0]) * ysize * xsize);
+uint8_t anomalySD[ysize][xsize];memset(anomalySD, 0, sizeof(anomalySD[0][0]) * ysize * xsize);
 //uint8_t sminOUT[ysize][xsize];memset(sminOUT, 0, sizeof(sminOUT[0][0]) * ysize * xsize);
-int count,min,smin,med,amp,max,sum,minbound;
+
+int count,min,smin,med,amp,max,sum,minbound,minboundSD;
 double mean,sd,var;
+
 uint8_t sdOUT[ysize][xsize];memset(sdOUT, 0, sizeof(sdOUT[0][0]) * ysize * xsize);
 //uint8_t med[ysize][xsize];memset(med, 0, sizeof(med[0][0]) * ysize * xsize);
 //uint8_t amp[ysize][xsize];memset(amp, 0, sizeof(amp[0][0]) * ysize * xsize);
 
 int countAnomaly = 0;
 int countBigAnomaly = 0;
+int countAnomalySD = 0;
+int countBigAnomalySD = 0;
 int countAreaCompared = 0;
 
 for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
@@ -200,10 +192,10 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
           var += (histVF[i][y][x]-mean)*(histVF[i][y][x]-mean);
         }
       }
-      //var = var/(count-1);
-      //sd = sqrt(var);
-      //if((min-sd)<0){minbound=0;}
-      //else{minbound=min-sd;}
+      var = var/(count-1);
+      sd = sqrt(var);
+      if((min-sd)<0){minboundSD=0;}
+      else{minboundSD=min-sd;}
       minbound = min;
       //max=vfarray[count-1];
       //if((count % 2) == 0){med=(int)((double)(vfarray[count/2 - 1] +vfarray[count/2]) / 2);}
@@ -214,19 +206,28 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
         countAnomaly++;
         if(anomaly[y][x]>=50){countBigAnomaly++;}
       }
-      else{anomaly[y][x] = 0;}
+      if((minboundSD - currVF[y][x])>0){
+        anomalySD[y][x] = minboundSD - currVF[y][x];
+        countAnomalySD++;
+        if(anomalySD[y][x]>=50){countBigAnomalySD++;}
+      }
+      else{anomaly[y][x] = 0;anomalySD[y][x] = 0;}
       minOUT[y][x] = min;
       countOUT[y][x] = count;
       sdOUT[y][x]=sd;
       countAreaCompared++;
-    }else{minOUT[y][x]=200; countOUT[y][x] = 0; sdOUT[y][x]=200; anomaly[y][x]=200;}
-  }else{minOUT[y][x]=255;anomaly[y][x]=255;sdOUT[y][x]=255;}
+    }else{minOUT[y][x]=200; countOUT[y][x] = 0; sdOUT[y][x]=200; anomaly[y][x]=200;anomalySD[y][x]=200;}
+  }else{minOUT[y][x]=255;anomaly[y][x]=255;anomalySD[y][x]=255;sdOUT[y][x]=255;}
 }}
 
 double areaAnomaly = (double) countAnomaly * (30 * 30 / 1000000);
 double areaBigAnomaly = (double)countBigAnomaly * (30 * 30 / 1000000);
 double percentAnomaly = (double)countAnomaly/countAreaCompared * 100;
 double percentBigAnomaly = (double)countBigAnomaly/countAreaCompared * 100;
+double areaAnomalySD = (double) countAnomalySD * (30 * 30 / 1000000);
+double areaBigAnomalySD = (double)countBigAnomalySD * (30 * 30 / 1000000);
+double percentAnomalySD = (double)countAnomalySD/countAreaCompared * 100;
+double percentBigAnomalySD = (double)countBigAnomalySD/countAreaCompared * 100;
 
 //export results
 GDALDriver *OUTDRIVER;
@@ -237,6 +238,7 @@ char *OUTPRJ = NULL;
 char **papszOptions = NULL;
 char **sourceMetadata = NULL;
 char **papszMetadata = NULL;
+char **papszMetadataSD = NULL;
 
 OUTDRIVER = GetGDALDriverManager()->GetDriverByName(\"GTiff\"); if( OUTDRIVER == NULL ) {cout << \"no driver\" << endl; exit( 1 );};
 oSRS.SetWellKnownGeogCS( \"WGS84\" );
@@ -245,7 +247,7 @@ oSRS.exportToWkt( &OUTPRJ );
 papszOptions = CSLSetNameValue( papszOptions, \"COMPRESS\", \"DEFLATE\");
 papszOptions = CSLSetNameValue( papszOptions, \"TILED\", \"YES\");
 
-filename=\"$output/VEG-IND.tif\";
+filename=\"$output/$outscene\_VEG-IND.tif\";
 SGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); 
 sourceMetadata = SGDAL -> GetMetadata();
 papszMetadata = CSLDuplicate(sourceMetadata);
@@ -271,16 +273,24 @@ int overviewList[Noverviews] = {2,4,8};
 #system(\"rm ${filename}TEMP.tif\");
 #";}
 
-$filename = "$output/"+$outscene+"_VEG_ANOM";
 print OUT"
-papszMetadata = CSLSetNameValue( papszMetadata, \"Area_Anomalous\", to_string(areaAnomaly).c_str());
-papszMetadata = CSLSetNameValue( papszMetadata, \"Area_Anomalous_gte50\", to_string(areaBigAnomaly).c_str());
-papszMetadata = CSLSetNameValue( papszMetadata, \"Percent_Anomalous\", to_string(percentAnomaly).c_str());
-papszMetadata = CSLSetNameValue( papszMetadata, \"Percent_Anomalous_gte50\", to_string(percentBigAnomaly).c_str());
 papszMetadata = CSLSetNameValue( papszMetadata, \"Units\", \"percent\");
 papszMetadata = CSLSetNameValue( papszMetadata, \"Valid_min\", \"0\");
 papszMetadata = CSLSetNameValue( papszMetadata, \"Valid_max\", \"100\");
 
+papszMetadataSD = CSLDuplicate(papszMetadata);
+papszMetadata = CSLSetNameValue( papszMetadata, \"Area_Anomalous\", to_string(areaAnomaly).c_str());
+papszMetadata = CSLSetNameValue( papszMetadata, \"Area_Anomalous_gte50\", to_string(areaBigAnomaly).c_str());
+papszMetadata = CSLSetNameValue( papszMetadata, \"Percent_Anomalous\", to_string(percentAnomaly).c_str());
+papszMetadata = CSLSetNameValue( papszMetadata, \"Percent_Anomalous_gte50\", to_string(percentBigAnomaly).c_str());
+
+papszMetadataSD = CSLSetNameValue( papszMetadataSD, \"Area_Anomalous\", to_string(areaAnomalySD).c_str());
+papszMetadataSD = CSLSetNameValue( papszMetadataSD, \"Area_Anomalous_gte50\", to_string(areaBigAnomalySD).c_str());
+papszMetadataSD = CSLSetNameValue( papszMetadataSD, \"Percent_Anomalous\", to_string(percentAnomalySD).c_str());
+papszMetadataSD = CSLSetNameValue( papszMetadataSD, \"Percent_Anomalous_gte50\", to_string(percentBigAnomalySD).c_str());
+";
+$filename = "$output/$outscene\_VEG-ANOM";
+print OUT"
 OUTGDAL = OUTDRIVER->Create( \"${filename}TEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetNoDataValue(255);
@@ -291,7 +301,19 @@ OUTGDAL->SetMetadata(papszMetadata,\"\");
 GDALClose((GDALDatasetH)OUTGDAL);
 system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q ${filename}TEMP.tif ${filename}.tif\");
 system(\"rm ${filename}TEMP.tif\");
-
+";
+$filename = "$output/$outscene\_VEG-ANOM-SD";
+print OUT"
+OUTGDAL = OUTDRIVER->Create( \"${filename}TEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
+OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetNoDataValue(255);
+OUTBAND->SetDescription(\"Vegetation_loss\");
+OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, anomalySD, xsize, ysize, GDT_Byte, 0, 0 ); 
+OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(papszMetadataSD,\"\");
+GDALClose((GDALDatasetH)OUTGDAL);
+system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q ${filename}TEMP.tif ${filename}.tif\");
+system(\"rm ${filename}TEMP.tif\");
 return 0;
 }";
     close (OUT);
