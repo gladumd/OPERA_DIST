@@ -1,7 +1,6 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+ Byte-compiled / optimized / DLL files
+_/
+/$py.class
 
 # C extensions
 *.so
@@ -132,6 +131,12 @@ dmypy.json
 # VS code files
 .vscode/
 
-alertTimeSeries/database.db-journal
-alertTimeSeries/database.db
-alertTimeSeries/download/CMR_granules_2017350_2022180.txt
+eigen-3.4.0/
+alert/database.db-journal
+alert/database.db
+alert/database.*
+alert/download/CMR_granules_2017350_2022180.txt
+alert/*.txt
+alert/download/*.txt
+alert/03A_alertUpdateVEG
+alert/03B_alertUpdateGEN
