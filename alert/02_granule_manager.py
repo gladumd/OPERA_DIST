@@ -12,6 +12,7 @@ currdir = os.getcwd()
 DISTversion = "v0"
 HLSsource = "/gpfs/glad3/HLS"
 outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"
+dbpath = "/gpfs/glad3/HLSDIST/System/database/"
 
 def runGranule(server,granule):
   if os.path.exists("KILL_02_granule_manager") or os.path.exists("KILL_ALL"):
@@ -72,7 +73,7 @@ def updateSqlite(sqliteCommand,sqliteTuple):
   written = False
   while written == False:
     try:
-      with closing(sqlite3.connect("database.db")) as connection:
+      with closing(sqlite3.connect(dbpath+"database.db")) as connection:
         with closing(connection.cursor()) as cursor:
           cursor.execute(sqliteCommand,sqliteTuple)
           cursor.execute("COMMIT;")
