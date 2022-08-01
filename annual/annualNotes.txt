@@ -1,0 +1,61 @@
+########## Annual manager ########
+read in tile list
+thread all tiles
+output to CSV: tileID, success, Ninput, Errors
+  
+
+########## Annual tile ###########
+search all dates, sort, write, compile, run, check, append csv with: tileID, success, Ninput, Errors
+
+VEG-DIST-STATUS
+-read in last and include only confirmed and mark as ongoing, and then backwards fill through all the dates and also mark date index of last identified confirmed
+
+VEG-HIST 
+VEG-ANOM-MAX
+VEG-DIST-CONF //16
+VEG-DIST-DATE //16
+VEG-DIST-COUNT
+VEG-DIST-DUR //16
+-read in _____ for all dates with indexes found above and fill from that index
+
+VEG-MAX-IND//CHANGE TO VEG-IND-MAX
+-read in all VEG-IND and set to max, except for disturbance pixels fill with VEG-HIST - VEG-ANOM-MAX 
+
+VEG-LAST-DATE
+-value from last image
+
+GEN-DIST-STATUS
+-read in last and include only confirmed and mark as ongoing, and then backwards fill through all the dates and also mark date index of last identified confirmed
+
+GEN-ANOM-MAX
+GEN-DIST-CONF
+GEN-ANOM-DATE//CHANGE TO GEN-DIST-DATE
+-read in _____ for all dates with indexes found above and fill from that index
+
+GEN-LAST-DATE
+-value from last image
+
+
+add METADATA
+create CSV of all METADATA fields for the within year images (extract from JSON)
+
+loop all tiles and check all files present
+annual/tilepath/year/images
+
+
+
+###############
+Valid Range = or Valid min/max for continuous
+
+for discrete:
+    flag_values = ""    - Provide a comma-separated list of flag values that map to the flag_meanings.
+    flag_meanings = ""   - Provide a space-separated list of meanings corresponding to each of the flag_values
+
+Scale Factor = 1 or leave out ( for continuous)
+Offset = 0 or leave out
+SDS Layer Description 
+Units = day, percent ( exclude for unitless or list unitless)
+
+SDS Layer Description was only present for:
+VEG_IND = VF (this could use a better description)
+LAND_MASK = LAND_MASK
