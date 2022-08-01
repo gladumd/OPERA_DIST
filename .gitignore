@@ -109,6 +109,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+dist-py-env/
 
 # Spyder project settings
 .spyderproject
@@ -127,3 +128,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# VS code files
+.vscode/
+
+alertTimeSeries/database.db-journal
+alertTimeSeries/database.db
+alertTimeSeries/download/CMR_granules_2017350_2022180.txt
