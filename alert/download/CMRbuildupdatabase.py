@@ -28,7 +28,7 @@ import time
 import sys
 import sqlite3
 from contextlib import closing
-
+dbpath = "/gpfs/glad3/HLSDIST/System/database/"
 
 # Defining the script as a function and use the inputs provided by hls_download_main.py:
 def get_cmr_pages_urls(collections, datetime_range):
@@ -157,7 +157,7 @@ def addGranulesToDatabase(infile):
     written = False
     while written == False:
       try:
-        with closing(sqlite3.connect("../database.db")) as connection:
+        with closing(sqlite3.connect(dbpath+"database.db")) as connection:
           with closing(connection.cursor()) as cursor:
             for g in list:
               HLS_ID = g.strip()

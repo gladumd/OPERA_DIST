@@ -6,7 +6,10 @@ import time
 import sys
 import traceback
 
+dbpath = "/gpfs/glad3/HLSDIST/System/database/"
+
 def checkDatabase(dbname):
+  dbfile = dbpath+dbname
   databaseChecked = False
   while(databaseChecked == False):
     try:
@@ -18,7 +21,7 @@ def checkDatabase(dbname):
           databaseChecked=True
           if integrity[0].strip() == "ok":
             #cursor.execute(".backup \'"+dbname+".bak\'")
-            subprocess.run(["cp "+dbname+" "+dbname+".baktemp"],shell=True)
+            subprocess.run(["cp "+dbfile+" "+dbfile+".baktemp"],shell=True)
             cursor.execute("ROLLBACK")
             checkBackup(dbname)
           else:
@@ -40,6 +43,7 @@ def checkDatabase(dbname):
       break
   
 def checkBackup(dbname):
+  dbfile = dbpath+dbname
   databaseChecked = False
   while(databaseChecked == False):
     try:
@@ -49,8 +53,9 @@ def checkBackup(dbname):
           integrity = cursor.fetchone()
           databaseChecked=True
       if integrity[0].strip() == "ok":
-        subprocess.run(["cp "+dbname+".baktemp "+dbname+".bak"],shell=True)
-        subprocess.run(["cp "+dbname+".baktemp /gpfs/glad3/HLSDIST/database/"+dbname],shell=True)
+        subprocess.run(["cp "+dbfile+".baktemp "+dbfile+".bak"],shell=True)
+        subprocess.run(["cp "+dbfile+".baktemp /gpfs/glad3/HLSDIST/database/"+dbname],shell=True)
+        subprocess.run(["cp "+dbfile+".baktemp /gpfs/glad1/Amy/code/database/"+dbname],shell=True)
         with open("processLOG.txt",'a') as LOG:
           LOG.write("Database has integrity. Backed up "+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")
           #print("Database has integrity. Backed up"+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")

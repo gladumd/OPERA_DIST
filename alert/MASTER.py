@@ -37,12 +37,13 @@ import sys
 import time
 import sqlite3
 
+dbpath = "/gpfs/glad3/HLSDIST/System/database/"
 
 def granuleList(statusFlag,filename,startYJT=None, endYJT=None,tilefile=None):
   databaseChecked = False
   while(databaseChecked == False):
     try:
-      with closing(sqlite3.connect("database.db")) as connection:
+      with closing(sqlite3.connect(dbpath+"database.db")) as connection:
         with closing(connection.cursor()) as cursor:
           if startYJT != None:
             cursor.execute("SELECT HLS_ID from fulltable WHERE statusFlag = ? and sensingTime > ? and sensingTime < ?",(statusFlag,startYJT,endYJT)) 

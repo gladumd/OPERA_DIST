@@ -9,7 +9,7 @@ import os
 from contextlib import closing
 import subprocess
 
-
+dbpath = "/gpfs/glad3/HLSDIST/System/database/"
 imagelist = ["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","LAND-MASK"]
 
 def xmlToDict(xmlfilename):
@@ -67,7 +67,7 @@ def main(ID,sensor,sourceXML,outdir,httppath,version,Errors):
     while written == False:
       try:
         tries+=1
-        with closing(sqlite3.connect("database.db")) as connection:
+        with closing(sqlite3.connect(dbpath+"database.db")) as connection:
           with closing(connection.cursor()) as cursor:
             if Errors == "NA":
               cursor.execute("UPDATE fulltable SET processedTime = ?, availableTime = ?, statusFlag = ?, Errors = '' where HLS_ID = ?",(outDict['Granule']['DataGranule']  ['ProductionDateTime'],sourceDict['Granule']['InsertTime'],5, sourceDict['Granule']['GranuleUR']))

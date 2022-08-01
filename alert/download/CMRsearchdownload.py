@@ -37,6 +37,7 @@ Nbands = {}
 Nbands['S30'] = 13
 Nbands['L30'] = 10
 DISTversion = "v0"
+dbpath = "/gpfs/glad3/HLSDIST/System/database/"
 
 # CMR search to get all granules with all extra info
 def get_cmr_pages_urls(collections, datetime_range):
@@ -88,7 +89,7 @@ def moveOldFiles(cutoffdate):
   moved = False
   while(moved == False):
     try:
-      with closing(sqlite3.connect("../database.db")) as connection:
+      with closing(sqlite3.connect(dbpath+"database.db")) as connection:
         with closing(connection.cursor()) as cursor:
           cursor.execute("INSERT INTO fulltable SELECT * FROM currtable WHERE sensingTime < ?;",(cutoffdate+"T000000",))
           cursor.execute("DELETE FROM currtable WHERE sensingTime < ?;",(cutoffdate+"T000000",))
@@ -127,7 +128,7 @@ def searchCMR(startdate,enddate):
   databaseChecked = False
   while(databaseChecked == False):
     try:
-      with closing(sqlite3.connect("../database.db")) as connection:
+      with closing(sqlite3.connect(dbpath+"database.db")) as connection:
         with closing(connection.cursor()) as cursor:
           #Select all are already downloaded or failed.
           cursor.execute("SELECT HLS_ID from fulltable WHERE sensingTime > ? and sensingTime < ? and statusFlag > 1",(startYJT,endYJT)) 
@@ -246,7 +247,7 @@ def download_parallel(granuledictionary,Nsim=200):
       databaseChecked = False
       while(databaseChecked == False):
         try:
-          with closing(sqlite3.connect("../database.db")) as connection:
+          with closing(sqlite3.connect(dbpath+"database.db")) as connection:
             with closing(connection.cursor()) as cursor:
               cursor.execute("UPDATE fulltable SET statusFlag = 102, Errors = ? WHERE HLS_ID = ?",(status,HLS_ID)) 
               cursor.execute("COMMIT")
@@ -319,7 +320,7 @@ def checkGranule(granule,writeNew=True):
   written = False
   while written == False:
     try:
-      with closing(sqlite3.connect("../database.db")) as connection:
+      with closing(sqlite3.connect(dbpath+"database.db")) as connection:
         with closing(connection.cursor()) as cursor:
           cursor.execute(sqliteCommand,sqliteTuple)
           cursor.execute("COMMIT;")
@@ -355,7 +356,7 @@ def getGranulesToCheck():
   databaseChecked = False
   while(databaseChecked == False):
     try:
-      with closing(sqlite3.connect("../database.db")) as connection:
+      with closing(sqlite3.connect(dbpath+"database.db")) as connection:
         with closing(connection.cursor()) as cursor:
           cursor.execute("SELECT HLS_ID from fulltable WHERE statusFlag <=1") #select all that have been started or potentially queued for download but not yet checked.
           uncheckedGrans = cursor.fetchall()

@@ -37,6 +37,7 @@ Nbands = {}
 Nbands['S30'] = 13
 Nbands['L30'] = 10
 DISTversion = "v0"
+dbpath = "/gpfs/glad3/HLSDIST/System/database/"
 
 # CMR search to get all granules with all extra info
 def get_cmr_pages_urls(collections, datetime_range):
@@ -107,7 +108,7 @@ def searchCMR(startdate,enddate):
   databaseChecked = False
   while(databaseChecked == False):
     try:
-      with closing(sqlite3.connect("../database.db")) as connection:
+      with closing(sqlite3.connect(dbpath+"database.db")) as connection:
         with closing(connection.cursor()) as cursor:
           #Select all are already downloaded or failed.
           cursor.execute("SELECT HLS_ID from fulltable WHERE sensingTime > ? and sensingTime < ? and statusFlag != 102",(startYJT,endYJT)) 
@@ -180,7 +181,7 @@ def getGranulesToCheck(startYJT,endYJT):
   databaseChecked = False
   while(databaseChecked == False):
     try:
-      with closing(sqlite3.connect("../database.db")) as connection:
+      with closing(sqlite3.connect(dbpath+"database.db")) as connection:
         with closing(connection.cursor()) as cursor:
           cursor.execute("SELECT HLS_ID from fulltable WHERE sensingTime > ? and sensingTime < ? and statusFlag !=102",(startYJT,endYJT)) #select all that have been started or potentially queued for download but not yet checked.
           uncheckedGrans = cursor.fetchall()

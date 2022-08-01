@@ -15,6 +15,7 @@ DISTversion = "v0"
 HLSsource = "/gpfs/glad3/HLS"
 outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"
 httpbase = "https://glad.umd.edu/projects/opera/DIST-ALERT"
+dbpath = "/gpfs/glad3/HLSDIST/System/database/"
 
 def sortDates(listtosort):
   datetimeDict = {}
@@ -133,7 +134,7 @@ def updateSqlite(sqliteCommand,sqliteTuple):
   written = False
   while written == False:
     try:
-      with closing(sqlite3.connect("database.db")) as connection:
+      with closing(sqlite3.connect(dbpath+"database.db")) as connection:
         with closing(connection.cursor()) as cursor:
           cursor.execute(sqliteCommand,sqliteTuple)
           cursor.execute("COMMIT;")
