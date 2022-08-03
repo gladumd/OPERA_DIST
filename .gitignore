@@ -1,6 +1,7 @@
  Byte-compiled / optimized / DLL files
 _/
 /$py.class
+**/__pycache__/*
 
 # C extensions
 *.so
@@ -139,3 +140,10 @@ alert/*.txt
 alert/download/*.txt
 alert/03A_alertUpdateVEG
 alert/03B_alertUpdateGEN
+alert/02A_VF_QA_COG
+database/*
+alert/gen_anom_HLS.[S,L]30*v2.0*
+alert/veg_anom_HLS.[S,L]30*v2.0*
+smoke_test/new/*
+**/KILL*
+**/RUNNING*

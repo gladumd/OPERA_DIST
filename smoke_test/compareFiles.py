@@ -12,6 +12,8 @@ def compare(goldenID):
   (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= goldenID.split('.')
   DIST_ID = "DIST-ALERT_"+Sdatetime+"_"+sensor+"_"+Ttile+"_"+DISTversion
   goldenID = DIST_ID
+  subprocess.run(["ssh gladapp17 \'cd "+currdir+";g++ compareByte.cpp -o compareByte -lgdal -Wno-unused-result -std=gnu++11\'"],shell=True)
+  subprocess.run(["ssh gladapp17 \'cd "+currdir+";g++ compareInt16.cpp -o compareInt16 -lgdal -Wno-unused-result -std=gnu++11\'"],shell=True)
   for file in filelist:
     goldpath = "golden_"+goldenID+"/"+goldenID+"_"+file+".tif"
     systempath = "new/"+goldenID+"/"+goldenID+"_"+file+".tif"
@@ -52,6 +54,7 @@ def compare(goldenID):
         print("metadata not match gold:",goldlines[i], "system: ",oplines[i])
   if(match):
     print("metadata matches")
+  subprocess.run(["rm compileByte; rm compileInt16"],shell=True)
 
 
 def regenerateGolden(granule):
