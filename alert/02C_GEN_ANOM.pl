@@ -300,6 +300,6 @@ system(\"rm ${filename}TEMP.tif\");
 return 0;
 }";
     close (OUT);
-    system("g++ gen_anom_$scene.cpp -o gen_anom_$scene -lgdal -Wno-unused-result -std=gnu++11 -I /gpfs/glad3/HLSDIST/Code/Amy/eigen-3.4.0 &>>errorLOG.txt");
+    system("g++ gen_anom_$scene.cpp -o gen_anom_$scene -lgdal -Wno-unused-result -std=gnu++11 -I /gpfs/glad3/HLSDIST/System/eigen-3.4.0 &>>errorLOG.txt");
   }
 }

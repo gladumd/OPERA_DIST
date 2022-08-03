@@ -135,7 +135,6 @@ eigen-3.4.0/
 alert/database.db-journal
 alert/database.db
 alert/database.*
-alert/download/CMR_granules_2017350_2022180.txt
 alert/*.txt
 alert/download/*.txt
 alert/03A_alertUpdateVEG
