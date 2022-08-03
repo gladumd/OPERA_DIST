@@ -1,7 +1,8 @@
  Byte-compiled / optimized / DLL files
 _/
 /$py.class
-**/__pycache__/*
+alert/download/__pycache__/*
+alert/__pycache__/*
 
 # C extensions
 *.so

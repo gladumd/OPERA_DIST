@@ -139,7 +139,7 @@ if __name__=='__main__':
     print("02_granule_manager.py already running (or died with an error)\n")
     sys.exit()
   else:
-    with open("02_granule_manager_RUNNING",'r') as OUT:
+    with open("02_granule_manager_RUNNING",'w') as OUT:
       OUT.write("started: "+str(datetime.datetime.now()))
 
   now = datetime.datetime.now()

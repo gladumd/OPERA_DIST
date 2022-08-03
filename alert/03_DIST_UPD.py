@@ -59,8 +59,11 @@ def runTile(server,Ttile,tempscenes):
   if updateMode == "UPDATE":
     prev = ()
     response = subprocess.run(["ls "+outbase+"/*/"+tilepathstring+"/*/*VEG-DIST-STATUS.tif"],shell=True)
-    tempfiles = response.stdout.split('\n')
-    NumPrev = len(tempfiles)
+    if response.stdout == "":
+      NumPrev = 0
+    else:
+      tempfiles = response.stdout.split('\n')
+      NumPrev = len(tempfiles)
     if NumPrev >0:
       for file in tempfiles:
         genfile = file; re.sub("VEG","GEN",genfile)
@@ -198,7 +201,7 @@ if __name__=='__main__':
     print("03_DIST_UPD.py already running (or died with an error)\n")
     sys.exit()
   else:
-    with open("03_DIST_UPD_RUNNING",'r') as OUT:
+    with open("03_DIST_UPD_RUNNING",'w') as OUT:
       OUT.write("started: "+str(datetime.datetime.now()))
 
   now = datetime.datetime.now()
