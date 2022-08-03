@@ -151,7 +151,7 @@ if __name__=='__main__':
 
   print("starting \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",now)
 
-  serverlist = [(17,60),(14,10),(15,10),(16,20)]
+  serverlist = [(17,60),(15,15),(16,20)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp
