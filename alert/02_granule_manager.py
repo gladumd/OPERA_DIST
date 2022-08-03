@@ -132,7 +132,10 @@ if __name__=='__main__':
   except:
     sys.stderr.write("must enter filelist and mode ('VEG_IND' to only create VEG_IND images or 'ALL' to create VEG_IND, VEG_ANOM, GEN_ANOM): perl 02_scene_manager.pl filelist.txt mode")
 
-  if os.path.exists("02_granule_manager_RUNNING"):
+  if os.path.exists("KILL_02_granule_manager") or os.path.exists("KILL_ALL"):
+    print("KILL file exists. Delete and rerun.\n")
+    sys.exit()
+  elif os.path.exists("02_granule_manager_RUNNING"):
     print("02_granule_manager.py already running (or died with an error)\n")
     sys.exit()
   else:

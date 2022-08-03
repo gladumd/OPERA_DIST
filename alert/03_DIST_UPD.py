@@ -191,7 +191,10 @@ if __name__=='__main__':
   except:
     print("must enter filelist and updateMode ('RESTART' to ignore all existing time-series layers or 'UPDATE' to use the last available VEG-DIST-STATUS.tif/GEN-DIST-STATUS.tif): python 03_DIST_UPD.py filelist.txt updateMode")
 
-  if os.path.exists("03_DIST_UPD_RUNNING"):
+  if os.path.exists("KILL_03_DIST_UPD") or os.path.exists("KILL_ALL"):
+    print("KILL file exists. Delete and rerun.\n")
+    sys.exit()
+  elif os.path.exists("03_DIST_UPD_RUNNING"):
     print("03_DIST_UPD.py already running (or died with an error)\n")
     sys.exit()
   else:
@@ -245,6 +248,6 @@ if __name__=='__main__':
   tileQueue.close()
   tileQueue.join_thread()
   os.remove("03_DIST_UPD_RUNNING")
-  
+
   print("finished 03_DIST_UPD.py",filelist,updateMode,datetime.datetime.now())
 
