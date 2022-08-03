@@ -52,13 +52,13 @@ def runGranule(server,granule):
     try:
       #create VEG_ANOM
       if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif"):# and not os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif"):#and !-e "$outdir/VEG_ANOM.tif"){
-        response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02B_VEG_ANOM_COG.pl "+granule+" "+DIST_ID+" "+outdir+"\' &>>errorLOG.txt"],shell=True)
-        Errors = Errors + str(response.stderr)
+        response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02B_VEG_ANOM_COG.pl "+granule+" "+DIST_ID+" "+outdir+"\'"],shell=True)
+        Errors = Errors + str(response.stderr).split('\n')[-1]
 
       #create GEN_ANOM
       if not os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
-        response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM.pl "+granule+" "+DIST_ID+" "+outdir+"\' &>>errorLOG.txt"],shell=True)
-        Errors = Errors + str(response.stderr)
+        response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM.pl "+granule+" "+DIST_ID+" "+outdir+"\'"],shell=True)
+        Errors = Errors + str(response.stderr).split('\n')[-1]
       else:
         print(outdir+"/"+DIST_ID+"_GEN-ANOM.tif")
     except:
@@ -111,8 +111,12 @@ def processGranuleQueue(server,procID,queue):
     except:
       with open("errorLOG.txt",'a') as out:
         out.write("ERROR: runGranule("+server+","+granule+") process ID:"+procID+": "+str(sys.exc_info())+"\n")
-      sqliteCommand = "UPDATE fulltable SET statusFlag = 103 where HLS_ID=?;"
-      updateSqlite(sqliteCommand,(granule,))
+      sqliteCommand = "UPDATE fulltable SET statusFlag = ? where HLS_ID=?;"
+      if mode == "VEG_IND":
+        statusFlag = 103
+      else:
+        statusFlag = 104
+      updateSqlite(sqliteCommand,(statusFlag,granule,))
   #print(Nprocess,"processed by", server, procID,mode)
   return Nprocess
 
