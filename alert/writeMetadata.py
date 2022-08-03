@@ -19,7 +19,7 @@ def xmlToDict(xmlfilename):
     return dict
   except:
     Errors="empty source metadata"
-    with open("../errorLOG.txt", 'a') as ERR:
+    with open("errorLOG.txt", 'a') as ERR:
       ERR.write(xmlfilename+" is empty\n")
 
 def writeJSON(data_dict,outJSONname):
