@@ -4464,7 +4464,7 @@ short calRatio(short b1, short b2)
         return (short) round(10000.0 * (b1 - b2) / (b1 + b2));
 }
     
-int calVF(string sceneName,string sceneNameOUT)
+int calVF(string sceneName,string sceneNameOUT, string outdir)
 {
     //get tileID,data source(L30/S30) and year from scene name
     string tileID = sceneName.substr(9, 5);
@@ -4479,7 +4479,8 @@ int calVF(string sceneName,string sceneNameOUT)
     string indir = "/gpfs/glad3/HLS/";
     string outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT/";
     string indirTile = indir + sateFlag + "/" + strYear + "/" + utmID + "/" + div1 + "/" + div2 + "/" + div3 + "/"+sceneName + "/";
-    string outdir = outbase + strYear + "/" + utmID + "/" + div1 + "/" + div2 + "/" + div3 + "/"+sceneNameOUT + "/";
+    outdir = outdir +"/";
+    //string outdir = outbase + strYear + "/" + utmID + "/" + div1 + "/" + div2 + "/" + div3 + "/"+sceneNameOUT + "/";
     //output filename for VF and QA
     string fnameOutVFtemp = outdir + "VEG-INDtemp.tif";
     string fnameOutQAtemp = outdir + "LAND-MASKtemp.tif";
@@ -4734,14 +4735,15 @@ int calVF(string sceneName,string sceneNameOUT)
 }
 	
 int main(int argc, char **argv){
-	if (argc != 3){
+	if (argc != 4){
 		cout << "Please include sceneNameIn and sceneNameOut:" << argv[0] <<" sceneNameIn sceneNameOut\n";
 		return 0;
 	}
 	else{
         string sceneName = argv[1];
         string sceneNameOUT = argv[2];
-	    if (calVF(sceneName,sceneNameOUT)){
+        string outdir = argv[3];
+	    if (calVF(sceneName,sceneNameOUT,outdir)){
 		    //cout << "VF calculation for " << sceneNameOUT << " completed!" << "\n";
 		    return 0;
 	    }

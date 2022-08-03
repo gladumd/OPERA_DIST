@@ -15,8 +15,7 @@ imagelist = ["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","V
 def xmlToDict(xmlfilename):
   with open(xmlfilename) as xml_file:
     dict = xmltodict.parse(xml_file.read())
-    xml_file.close()
-    return dict
+  return dict
 
 def writeJSON(data_dict,outJSONname):
   json_data = json.dumps(data_dict,indent=2)
@@ -38,14 +37,15 @@ def main(ID,sensor,sourceXML,outdir,httppath,version,Errors):
     outDict = {}
     outDict['Granule'] = {}
     outDict['Granule']['GranuleUR'] = ID
-    outDict['Granule']['Collection'] = {'DataSetId' : 'OPERA Land Surface Disturbance Alert from Harmonized Landsat Sentinel-2 provisional product (version 0)  '}
+    outDict['Granule']['Collection'] = {'DataSetId' : 'OPERA Land Surface Disturbance Alert from Harmonized Landsat Sentinel-2 provisional product (version 0)'}
     outDict['Granule']['DataGranule'] = {}
     outDict['Granule']['DataGranule']['DayNightFlag'] = sourceDict['Granule']['DataGranule']['DayNightFlag']
     outDict['Granule']['DataGranule']['ProductionDateTime'] = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     outDict['Granule']['DataGranule']['LocalVersionID'] = version
-    outDict['Granule']['Temporal'] = sourceDict['Granule']['Temporal']
-    outDict['Granule']['Spatial'] = sourceDict['Granule']['Spatial']
+    outDict['Granule']['TemporalExtent'] = sourceDict['Granule']['Temporal']
+    outDict['Granule']['SpatialExtent'] = sourceDict['Granule']['Spatial']
     outDict['Granule']['Platforms'] = sourceDict['Granule']['Platforms']
+    outDict['Granule']['CloudCover'] = findAdditionalAttribute("CLOUD_COVERAGE",sourceDict)
     outDict['Granule']['AdditionalAttributes'] = {}
     outDict['Granule']['AdditionalAttributes']['DISTAttributes'] = {}
     outDict['Granule']['AdditionalAttributes']['DISTAttributes']['BaselineCalendarWindow'] = "+/- " + str(baselineDays) + " days"
@@ -60,7 +60,7 @@ def main(ID,sensor,sourceXML,outdir,httppath,version,Errors):
       outDict['Granule']['AdditionalAttributes']['HLSAttributes']['PROCESSING_BASELINE'] = findAdditionalAttribute('PROCESSING_BASELINE',sourceDict)
     else:
       outDict['Granule']['AdditionalAttributes']['HLSAttributes']['LANDSAT_PRODUCT_ID'] = findAdditionalAttribute('LANDSAT_PRODUCT_ID',sourceDict)
-    for atr in ['CLOUD_COVERAGE','SPATIAL_COVERAGE','MGRS_TILE_ID','HLS_PROCESSING_TIME','SENSING_TIME','HORIZONTAL_CS_CODE','HORIZONTAL_CS_NAME','ULX','ULY']  :
+    for atr in ['SPATIAL_COVERAGE','MGRS_TILE_ID','HLS_PROCESSING_TIME','SENSING_TIME','HORIZONTAL_CS_CODE','HORIZONTAL_CS_NAME','ULX','ULY']  :
       outDict['Granule']['AdditionalAttributes']['HLSAttributes'][atr] = findAdditionalAttribute(atr,sourceDict)
     written = False
     tries = 0

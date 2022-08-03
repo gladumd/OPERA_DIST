@@ -27,5 +27,5 @@ if __name__=='__main__':
     else:
       sd.processLOG(["CMR error, unable to search.", datetime.datetime.now()])
     start = start + oneday
-  sd.download_parallel(download_dict,50)
+  sd.download_parallel(download_dict,100)
 

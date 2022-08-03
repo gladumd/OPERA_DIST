@@ -4,6 +4,7 @@ import time
 import sys
 import sqlite3
 import os
+import signal
 import re
 import subprocess
 from contextlib import closing
@@ -16,6 +17,7 @@ HLSsource = "/gpfs/glad3/HLS"
 outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"
 httpbase = "https://glad.umd.edu/projects/opera/DIST-ALERT"
 dbpath = "/gpfs/glad3/HLSDIST/System/database/"
+
 
 def sortDates(listtosort):
   datetimeDict = {}
@@ -36,7 +38,7 @@ def sortDates(listtosort):
 
 def runTile(server,Ttile,tempscenes):
   if os.path.exists("KILL_03_DIST_UPD") or os.path.exists("KILL_ALL"):
-    sys.exit("03_DIST_UPD.py shut down with kill file")
+    raise ValueError("process killed with KILL file")
   tempscenes = tempscenes.split(',')
   #my $tile = substr($Ttile,1,5);
   tile = Ttile[1:]
@@ -74,6 +76,8 @@ def runTile(server,Ttile,tempscenes):
       previousSource = "first"
   elif updateMode == "RESTART":
     previousSource = "first"
+  elif updateMode == "SMOKE":
+    previousSource = "first"
 
   NscenesTile = len(sortedScenes)
   for DIST_ID in sortedScenes:
@@ -84,17 +88,19 @@ def runTile(server,Ttile,tempscenes):
     doy = Sdatetime[4:7]
 
     outdir = outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID
+    if updateMode == "SMOKE":
+      outdir = "/gpfs/glad3/HLSDIST/System/smoke_test/new/"+DIST_ID
     httppath = httpbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID
     response = subprocess.run(["python dayDiff.py 2021001 "+year+doy],capture_output=True,shell=True)
     currDate = response.stdout.decode().strip()
 
     if not os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif"):
-      LOG("ERROR!!!!!!!!!!!!!! $outdir/VEG-ANOM.tif not exist\n")
+      errorLOG("ERROR!!!!!!!!!!!!!! "+outdir+" VEG-ANOM.tif not exist\n")
       sqliteCommand = "UPDATE fulltable SET Errors = 'wrong filepath ?_VEG-ANOM.tif', statusFlag = 105 where DIST_ID=?;"
       sqliteTuple = (outdir+"/"+DIST_ID,DIST_ID,)
       updateSqlite(sqliteCommand,sqliteTuple)
     elif not os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
-      LOG("ERROR!!!!!!!!!!!!!! $outdir/GEN-ANOM.tif not exist\n")
+      errorLOG("ERROR!!!!!!!!!!!!!! "+outdir+" GEN-ANOM.tif not exist\n")
       sqliteCommand = "UPDATE fulltable SET Errors = 'wrong filepath ?_GEN-ANOM.tif', statusFlag = 105 where DIST_ID=?;"
       sqliteTuple = (outdir+"/"+DIST_ID,DIST_ID,)
       updateSqlite(sqliteCommand,sqliteTuple)
@@ -115,7 +121,7 @@ def runTile(server,Ttile,tempscenes):
         response = subprocess.run(["ls "+outdir+"/additional/*.xml"],capture_output=True,shell=True)
         xmlfile = response.stdout.decode().strip()
         if not os.path.exists(xmlfile):
-          LOG("ERROR:: "+DIST_ID+" no XML file.\n")
+          errorLOG("ERROR:: "+DIST_ID+" no XML file.\n")
           sqliteCommand = "UPDATE fulltable SET Errors = 'source xmlfile does not exist', statusFlag = 105 where DIST_ID=?"
           sqliteTuple = (DIST_ID,)
           updateSqlite(sqliteCommand,sqliteTuple)
@@ -128,10 +134,12 @@ def runTile(server,Ttile,tempscenes):
         print(Errors,DIST_ID)
         sqliteCommand = "UPDATE fulltable SET statusFlag = 105, Errors = ? where DIST_ID=?;"
         updateSqlite(sqliteCommand,("failed to update alert",DIST_ID,))
-  print(tile,"done")
+  #print(tile,"done")
 
 def updateSqlite(sqliteCommand,sqliteTuple):
   written = False
+  if updateMode == "SMOKE":
+    written = True
   while written == False:
     try:
       with closing(sqlite3.connect(dbpath+"database.db")) as connection:
@@ -147,21 +155,26 @@ def updateSqlite(sqliteCommand,sqliteTuple):
     except:
       print(sys.exc_info())
 
-def LOG(text):
-  with open("errorLog.txt", 'a') as ERR:
+def errorLOG(text):
+  with open("errorLOG.txt", 'a') as ERR:
     ERR.write(text+"\n")
 
 def processTileQueue(server,procID,queue,h):
   Nprocess = 0
+  running = True
   while not queue.empty():
     tile = queue.get().strip()
     try:
-      runTile(server,tile,h[tile])
-      Nprocess +=1
+      if running:
+        runTile(server,tile,h[tile])
+        Nprocess +=1
+    except ValueError as err:
+      running = False
+      with open('processLOG.txt','a') as log:
+        log.write("03_DIST_UPD.py shut down with KILL file")
     except:
       traceback.print_exc()
-      with open("errorLOG.txt",'a') as out:
-        out.write("ERROR: runTile("+server+","+tile+") process ID:"+procID+": "+str(sys.exc_info())+"\n")
+      errorLOG("ERROR: runTile("+server+","+tile+") process ID:"+procID+": "+str(sys.exc_info()))
   #print(Nprocess,"processed by", server, procID,updateMode)
   return Nprocess
 
@@ -206,7 +219,7 @@ if __name__=='__main__':
   for tile in tiles:
     tileQueue.put(tile)
   
-  serverlist = [(17,5)]
+  serverlist = [(17,40),(16,10),(15,10)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp
@@ -219,6 +232,9 @@ if __name__=='__main__':
 
   for p in processes:
     p.join()
+
+  tileQueue.close()
+  tileQueue.join_thread()
 
   print("finished 03_DIST_UPD.py",filelist,updateMode,datetime.datetime.now())
 
