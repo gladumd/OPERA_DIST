@@ -132,8 +132,15 @@ if __name__=='__main__':
   except:
     sys.stderr.write("must enter filelist and mode ('VEG_IND' to only create VEG_IND images or 'ALL' to create VEG_IND, VEG_ANOM, GEN_ANOM): perl 02_scene_manager.pl filelist.txt mode")
 
-  #if(-e "02_scene_manager_RUNNING"){die"02_scene_manager.pl already running (or died with an error)\n";}
-  #open(OUT,">02_scene_manager_RUNNING") or die"failed to create 02_scene_manager_RUNNING"; print OUT"started: $now";close(OUT);
+  if os.path.exists("KILL_02_granule_manager") or os.path.exists("KILL_ALL"):
+    print("KILL file exists. Delete and rerun.\n")
+    sys.exit()
+  elif os.path.exists("02_granule_manager_RUNNING"):
+    print("02_granule_manager.py already running (or died with an error)\n")
+    sys.exit()
+  else:
+    with open("02_granule_manager_RUNNING",'r') as OUT:
+      OUT.write("started: "+str(datetime.datetime.now()))
 
   now = datetime.datetime.now()
 
@@ -170,6 +177,7 @@ if __name__=='__main__':
     p.join()
   myqueue.close()
   myqueue.join_thread()
+  os.remove("02_granule_manager_RUNNING")
 
   print("finished \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",datetime.datetime.now())
 

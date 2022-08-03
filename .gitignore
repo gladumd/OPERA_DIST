@@ -147,3 +147,4 @@ alert/veg_anom_HLS.[S,L]30*v2.0*
 smoke_test/new/*
 **/KILL*
 **/RUNNING*
+
