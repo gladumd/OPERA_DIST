@@ -99,9 +99,11 @@ def moveOldFiles(cutoffdate):
       if error.args[0] == 'database is locked':
         time.sleep(0.1) 
       else:
-        print(error.args)
+        sys.stderr(error.args)
+        break
     except:
-      print(sys.exc_info())          
+      sys.stderr(sys.exc_info()) 
+      break         
   return 0
 
 #search CMR for last X days. Add new granules to database and return dictionary of urls to download.
@@ -117,7 +119,7 @@ def searchCMR(startdate,enddate):
     cmr_pg = get_cmr_pages_urls(collections, searchdates)
     url_dict = asyncio.run(get_granules_url_dict(cmr_pg))
   except:
-    print(sys.exc_info())
+    sys.stderr(sys.exc_info())
     with open("../errorLOG.txt", 'a') as log:
       log.write("CMR error, unable to search "+str(datetime.datetime.now())+"\n")
     return "CMR error"
@@ -145,9 +147,9 @@ def searchCMR(startdate,enddate):
           newgranules = set(granules) - set(downloadedGrans) - set(alreadyFoundGrans)
           notdownloadedgranules = set(granules).intersection(set(alreadyFoundGrans))
           retrygranules = set(granules).intersection(set(failedGrans))
-          print(len(granules),"total",len(newgranules),"new granules,",len(downloadedGrans),
-              "downloaded,",len(retrygranules),
-              "granules to retry for",searchdates)
+          #print(len(granules),"total",len(newgranules),"new granules,",len(downloadedGrans),
+          #    "downloaded,",len(retrygranules),
+          #    "granules to retry for",searchdates)
           processLOG([len(granules),"total",len(newgranules),"new granules,",len(downloadedGrans),
               "downloaded,",len(retrygranules),
               "granules to retry for",searchdates])
@@ -167,10 +169,10 @@ def searchCMR(startdate,enddate):
       if error.args[0] == 'database is locked':
         time.sleep(0.1) 
       else:
-        print(error.args)
+        sys.stderr(error.args)
         break
     except:
-      print(sys.exc_info())
+      sys.stderr(sys.exc_info())
       break
   return download_dict
 
@@ -233,7 +235,7 @@ def download_parallel(granuledictionary,Nsim=200):
   starttime = datetime.datetime.now()
   granulelist = list(granuledictionary.values())
   processLOG(["Start download", len(granulelist),"granules", starttime])
-  print("Start download", len(granulelist),"granules", starttime)
+  #print("Start download", len(granulelist),"granules", starttime)
   procPool = Pool(Nsim)
   results = procPool.imap_unordered(download_granule,granulelist)
   Nsuccess = 0
@@ -246,7 +248,7 @@ def download_parallel(granuledictionary,Nsim=200):
     if status == "success":
       Nsuccess +=1
     else:
-      print(result)
+      #print(result)
       Nerrors +=1
       databaseChecked = False
       while(databaseChecked == False):
@@ -260,15 +262,15 @@ def download_parallel(granuledictionary,Nsim=200):
           if error.args[0] == 'database is locked':
             time.sleep(0.1) 
           else:
-            print(error.args)
+            sys.stderr(error.args)
             break
         except:
-          print(sys.exc_info())
+          sys.stderr(sys.exc_info())
           break
   procPool.close()
   procPool.join()
   processLOG([Nsuccess,"granules successfully downloaded,", Nerrors, "with errors",datetime.datetime.now()])
-  print(Nsuccess,"granules successfully downloaded,", Nerrors, "with errors",datetime.datetime.now())
+  #print(Nsuccess,"granules successfully downloaded,", Nerrors, "with errors",datetime.datetime.now())
 
 #check download is complete and not corrupted for a given granule
 def checkDownloadComplete(sourcepath,granule,sensor):
@@ -341,14 +343,16 @@ def checkGranule(granule,writeNew=True):
       if error.args[0] == 'database is locked':
         time.sleep(0.1) 
       else:
-        print(error.args)
+        sys.stderr(error.args)
+        break
     except:
-      print(sys.exc_info())
+      sys.stderr(sys.exc_info())
+      break
   return (statusFlag,granule)
 
 #parallel checking of all granules in list
 def checkGranuleList(granulelist):
-  print(len(granulelist),"granules to check", datetime.datetime.now())
+  processLOG(len(granulelist),"granules to check", datetime.datetime.now())
   Nsim = 12
   granulesToDownload = []
   results = Pool(Nsim).imap_unordered(checkGranule,granulelist)
@@ -360,7 +364,7 @@ def checkGranuleList(granulelist):
     else: 
       granulesToDownload.append(result[1])
       errors +=1
-  print(success,"granules successfully downloaded,", errors,"granules with errors",datetime.datetime.now())
+  processLOG(success,"granules successfully downloaded,", errors,"granules with errors",datetime.datetime.now())
   return granulesToDownload
 
 #get list of all granules that need to be checked
@@ -378,9 +382,11 @@ def getGranulesToCheck():
       if error.args[0] == 'database is locked':
         time.sleep(0.1) 
       else:
-        print(error.args)
+        sys.stderr(error.args)
+        break
     except:
-      print(sys.exc_info())
+      sys.stderr(sys.exc_info())
+      break
   return uncheckedGrans
 
 def checkDownloadSpeed(filename,Nprocesses):
@@ -471,7 +477,7 @@ if __name__=='__main__':
         url_dict = {granule: url_dict[granule] for granule in granulesToDownload}
       download_parallel(url_dict,150)
     else:
-      print("CMR error, unable to search.", datetime.datetime.now())
+      sys.stderr("CMR error, unable to search.", datetime.datetime.now())
     start = start + dayinc
     end = start + dayinc
   
