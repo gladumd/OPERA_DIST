@@ -116,7 +116,7 @@ def runTile(server,Ttile,tempscenes):
           Errors = "NA"
         else:
           Errors = errveg+" "+errgen
-          print(Errors)
+          errorLOG(DIST_ID+Errors)
 
         response = subprocess.run(["ls "+outdir+"/additional/*.xml"],capture_output=True,shell=True)
         xmlfile = response.stdout.decode().strip()
@@ -131,7 +131,7 @@ def runTile(server,Ttile,tempscenes):
 
       except:
         traceback.print_exc()
-        print(Errors,DIST_ID)
+        errorLOG(DIST_ID+Errors)
         sqliteCommand = "UPDATE fulltable SET statusFlag = 105, Errors = ? where DIST_ID=?;"
         updateSqlite(sqliteCommand,("failed to update alert",DIST_ID,))
   #print(tile,"done")
@@ -152,8 +152,10 @@ def updateSqlite(sqliteCommand,sqliteTuple):
         time.sleep(0.1) 
       else:
         print(error.args)
+        break
     except:
       print(sys.exc_info())
+      break
 
 def errorLOG(text):
   with open("errorLOG.txt", 'a') as ERR:
