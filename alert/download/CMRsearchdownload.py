@@ -177,8 +177,7 @@ def searchCMR(startdate,enddate):
 #download all the links associated with a granule
 def download_granule(links):
   if os.path.exists("KILL_download") or os.path.exists("../KILL_ALL"):
-    processLOG(["CMRsearchdownload.py shut down with kill file"])
-    sys.exit(1)
+    return "killed"
   img_url = links[0]
   basepath = source +"/" #"/cephfs/glad4/HLS/"
   
@@ -240,6 +239,9 @@ def download_parallel(granuledictionary,Nsim=200):
   Nsuccess = 0
   Nerrors = 0
   for result in results:
+    if result == "killed":
+      processLOG(["CMRsearchdownload.py shut down with kill file"])
+      sys.exit(1)
     (HLS_ID,status) = result
     if status == "success":
       Nsuccess +=1
@@ -273,7 +275,7 @@ def checkDownloadComplete(sourcepath,granule,sensor):
   goodFile = True
   sout = os.popen("ls "+sourcepath+"/"+granule + ".B*.tif 2>/dev/null | wc -l");
   count = sout.read().strip()
-  if not os.path.exist(sourcepath+"/"+granule+".cmr.xml"):
+  if not os.path.exists(sourcepath+"/"+granule+".cmr.xml"):
     return "missing xml"
   if int(count) != Nbands[sensor]:
     return "missing bands only "+count+"/"+str(Nbands[sensor])+" bands "+sensor
