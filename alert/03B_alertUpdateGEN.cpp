@@ -46,23 +46,23 @@ INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, currAnom, xsize, ysize, GDT_Int16,
 
 uint8_t status[ysize][xsize];
 short max[ysize][xsize];
-unsigned short conf[ysize][xsize];
-unsigned short date[ysize][xsize];
+short conf[ysize][xsize];
+short date[ysize][xsize];
 uint8_t count[ysize][xsize];
 uint8_t percent[ysize][xsize];
-unsigned short dur[ysize][xsize];
-unsigned short lastObs[ysize][xsize];
+short dur[ysize][xsize];
+short lastObs[ysize][xsize];
 
 
 if(prevsource == "first"){
   memset(status, 255, sizeof(status[0][0]) * ysize * xsize);
-  memset(max, 0, sizeof(max[0][0]) * ysize * xsize);
-  memset(conf, 0, sizeof(conf[0][0]) * ysize * xsize);
-  memset(date, 0, sizeof(date[0][0]) * ysize * xsize);
-  memset(count, 0, sizeof(count[0][0]) * ysize * xsize);
-  memset(percent, 0, sizeof(percent[0][0]) * ysize * xsize);
-  memset(dur, 0, sizeof(dur[0][0]) * ysize * xsize);
-  memset(lastObs, 0, sizeof(lastObs[0][0]) * ysize * xsize);
+  memset(max, -1, sizeof(max[0][0]) * ysize * xsize);
+  memset(conf, -1, sizeof(conf[0][0]) * ysize * xsize);
+  memset(date, -1, sizeof(date[0][0]) * ysize * xsize);
+  memset(count, 255, sizeof(count[0][0]) * ysize * xsize);
+  memset(percent, 255, sizeof(percent[0][0]) * ysize * xsize);
+  memset(dur, -1, sizeof(dur[0][0]) * ysize * xsize);
+  memset(lastObs, -1, sizeof(lastObs[0][0]) * ysize * xsize);
   //memset(histVF, 0, sizeof(histVF[0][0]) * ysize * xsize);
  
 }else{
@@ -77,11 +77,11 @@ if(prevsource == "first"){
   
   filename = prevsource+"_GEN-DIST-CONF.tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-  INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, conf, xsize, ysize, GDT_UInt16, 0, 0); GDALClose(INGDAL);
+  INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, conf, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
   
   filename = prevsource+"_GEN-DIST-DATE.tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-  INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, date, xsize, ysize, GDT_UInt16, 0, 0); GDALClose(INGDAL);
+  INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, date, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
   
   filename = prevsource+"_GEN-DIST-COUNT.tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
@@ -93,11 +93,11 @@ if(prevsource == "first"){
   
   filename = prevsource+"_GEN-DIST-DUR.tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-  INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, dur, xsize, ysize, GDT_UInt16, 0, 0); GDALClose(INGDAL);
+  INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, dur, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
   
   filename = prevsource+"_GEN-LAST-DATE.tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-  INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, lastObs, xsize, ysize, GDT_UInt16, 0, 0); GDALClose(INGDAL);
+  INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, lastObs, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
   
 }
 
@@ -109,7 +109,7 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
     lastObs[y][x] = currDate;
     if((currDate - date[y][x])>365){
       status[y][x]=0;
-      percent[y][x]=0; 
+      percent[y][x]=200; 
       count[y][x]=0;
       max[y][x]=0;
       conf[y][x]=0;
@@ -117,7 +117,8 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
       dur[y][x]=0;
     }
     prevcount = count[y][x];
-    prevnocount = (int)(((double)(100-percent[y][x])/percent[y][x])*prevcount);
+    if(percent[y][x]<=100){prevnocount = (int)(((double)(100-percent[y][x])/percent[y][x])*prevcount);}
+    else{prevnocount=0;}
     if(currAnom[y][x]>=50){
       if(date[y][x]==0){
         date[y][x] = currDate;
@@ -138,9 +139,18 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
       
       dur[y][x] = currDate - date[y][x] + 1;
 
-    }else{
-      if(percent[y][x]>0){
+    }else{//no current anomaly but valid obs
+      if(percent[y][x]>0 and percent[y][x]<=100){
         percent[y][x] = static_cast<int>((double)(count[y][x]*100)/(prevcount + prevnocount + 1));
+      }
+      if(status[y][x]==255){//if was not data
+        status[y][x]=0;
+        percent[y][x]=200; 
+        count[y][x]=0;
+        max[y][x]=0;
+        conf[y][x]=0;
+        date[y][x]=0;
+        dur[y][x]=0;
       }
     }
     
@@ -224,6 +234,8 @@ currMetadata = CSLDuplicate(papszMetadata);
 //currMetadata = CSLSetNameValue( currMetadata, "Units", "percent");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Int16, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription("Maximum_spectral_anomaly");
+OUTBAND->SetNoDataValue(-1);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, max, xsize, ysize, GDT_Int16, 0, 0 );  
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
 OUTGDAL->SetMetadata(currMetadata,"");
@@ -234,10 +246,11 @@ currMetadata = CSLDuplicate(papszMetadata);
 currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
 currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "65000");
 currMetadata = CSLSetNameValue( currMetadata, "Units", "unitless");
-OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_UInt16, papszOptions );
+OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Int16, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetDescription("Confidence_of_generic_disturbance");
-OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, conf, xsize, ysize, GDT_UInt16, 0, 0 );  
+OUTBAND->SetNoDataValue(-1);
+OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, conf, xsize, ysize, GDT_Int16, 0, 0 );  
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
 OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
@@ -247,10 +260,11 @@ currMetadata = CSLDuplicate(papszMetadata);
 currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
 currMetadata = CSLSetNameValue( currMetadata, "Valid_max", to_string(currDate).c_str());
 currMetadata = CSLSetNameValue( currMetadata, "Units", "days");
-OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_UInt16, papszOptions );
+OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Int16, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetDescription("Day_of_generic_disturbance");
-OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, date, xsize, ysize, GDT_UInt16, 0, 0 );  
+OUTBAND->SetNoDataValue(-1);
+OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, date, xsize, ysize, GDT_Int16, 0, 0 );  
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
 OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
@@ -263,6 +277,7 @@ currMetadata = CSLSetNameValue( currMetadata, "Units", "observations");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Byte, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetDescription("Count_of_observations_with_spectral_anomaly");
+OUTBAND->SetNoDataValue(255);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, count, xsize, ysize, GDT_Byte, 0, 0 );  
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
 OUTGDAL->SetMetadata(currMetadata,"");
@@ -287,10 +302,11 @@ currMetadata = CSLDuplicate(papszMetadata);
 currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
 currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "365");
 currMetadata = CSLSetNameValue( currMetadata, "Units", "days");
-OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_UInt16, papszOptions );
+OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Int16, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetDescription("Number_of_days_of_ongoing_spectral_anomalies_since_initial_detection");
-OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, dur, xsize, ysize, GDT_UInt16, 0, 0 );  
+OUTBAND->SetNoDataValue(-1);
+OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, dur, xsize, ysize, GDT_Int16, 0, 0 );  
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
 OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
@@ -300,10 +316,11 @@ currMetadata = CSLDuplicate(papszMetadata);
 currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
 currMetadata = CSLSetNameValue( currMetadata, "Valid_max", to_string(currDate).c_str());
 currMetadata = CSLSetNameValue( currMetadata, "Units", "days");
-OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_UInt16, papszOptions );
+OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Int16, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetDescription("Day_of_last_land_observation_for_generic_disturbance_detection");
-OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, lastObs, xsize, ysize, GDT_UInt16, 0, 0 );  
+OUTBAND->SetNoDataValue(-1);
+OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, lastObs, xsize, ysize, GDT_Int16, 0, 0 );  
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
 OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);

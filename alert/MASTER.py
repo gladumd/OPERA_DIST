@@ -32,81 +32,89 @@ CMRsearchdownload.py
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 import subprocess 
-from contextlib import closing
 import sys
-import time
+import datetime
+import getGranuleList as getGran
 import sqlite3
+from contextlib import closing
+import time
 
 dbpath = "/gpfs/glad3/HLSDIST/System/database/"
 
-def granuleList(statusFlag,filename,startYJT=None, endYJT=None,tilefile=None):
+def resetGranules(statusFlagIn,statusFlagOut,startYJT, endYJT):
+  if statusFlagOut > statusFlagIn:
+    return "statusFlags out of order"
   databaseChecked = False
   while(databaseChecked == False):
     try:
       with closing(sqlite3.connect(dbpath+"database.db")) as connection:
         with closing(connection.cursor()) as cursor:
-          if startYJT != None:
-            cursor.execute("SELECT HLS_ID from fulltable WHERE statusFlag = ? and sensingTime > ? and sensingTime < ?",(statusFlag,startYJT,endYJT)) 
-          else:
-            cursor.execute("SELECT HLS_ID from fulltable WHERE statusFlag = ?",(statusFlag,)) 
-          selectedGrans = cursor.fetchall()
-          selectedGrans = [s for t in selectedGrans for s in t]
+          cursor.execute("UPDATE fulltable SET statusFlag = ? WHERE statusFlag = ? and sensingTime > ? and sensingTime < ?",(statusFlagOut,statusFlagIn,startYJT,endYJT)) 
           databaseChecked = True
-      if tilefile != None:
-        selectedGrans = filterByTileList(selectedGrans,tilefile)
-      with open(filename,"w") as filelist:
-        for g in selectedGrans:
-          filelist.write(g+"\n")
-      print(len(selectedGrans),"selected granules for",filename)
     except sqlite3.OperationalError as error:
       if error.args[0] == 'database is locked':
         time.sleep(0.1) 
       else:
         print(error.args)
+        break
     except:
       print(sys.exc_info()) 
-
-
-def filterByTileList(granulelist,tilefile):
-  granulesout = []
-  with open(tilefile, 'r') as tilelist:
-    tiles = tilelist.read().splitlines()
-  for g in granulelist:
-    (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= g.split('.')
-    tile = Ttile
-    if tile in tiles:
-      granulesout.append(g)
-  return(granulesout)
-
+      break
 
 ################################### Main ######################################
 #                                                                             #
 #                                                                             #
 ###############################################################################
 if __name__=='__main__':
-  if len(sys.argv) == 1:
+  if len(sys.argv) == 2:
     tilefile=None
-    enddate = None
-    startdate = None
-  elif len(sys.argv) == 3:
-    tilefile=None
-    startdate = sys.argv[1]+"T000000"
-    enddate = sys.argv[2]+"T999999"
-  elif len(sys.argv) == 4:
-    tilefile = sys.argv[1]
-    startdate = sys.argv[2]+"T000000"
-    enddate = sys.argv[3]+"T999999"
-  #subprocess.run("python CMRsearchdownload.py 1>>processLOG.txt 2>>errorLOG.txt")
-  #granuleList(2,"02_granules.txt",startdate,enddate,tilefile)
-  #subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
-  granuleList(2,"02_granules.txt",startdate,enddate,tilefile)
-  #subprocess.run(["python 02_granule_manager.py 02_granules.txt VEG_IND 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
-  #granuleList("103","02_granules.txt",startdate,enddate,tilefile)
-  #subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
-  #subprocess.run(["module unload python/3.7/anaconda; module unload sqlite; perl 02_scene_manager.pl 02_granules.txt VEG_IND 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
-  #granuleList(103,"03_granules.txt",startdate,enddate)
-  #subprocess.run(["python renameFiles.py 03_granules.txt"], shell=True)
-  #granuleList(4,"03_granules.txt",startdate,enddate)
-  #subprocess.run(["python 03_DIST_UPD.py 03_granules.txt RESTART; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
-  #subprocess.run("deactivate; module unload python/3.7/anaconda; module unload sqlite; perl 03_DIST_UPD.pl 03_granules.txt UPDATE; 1>>processLOG.txt 2>>errorLOG.txt")
+    if sys.argv[1] == "cron":
+      startdate = (datetime.datetime.utcnow() + datetime.timedelta(days=-4)).strftime("%Y%jT000000")
+      enddate = datetime.datetime.utcnow().strftime("%Y%jT999999")
+      print(startdate,enddate)
+      getGran.granuleList(2,"02_granules.txt",startdate,enddate,tilefile)
+      subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
+      selCount = getGran.granuleList(3,"02_granules.txt",startdate,enddate,tilefile)
+      if selCount > 0:
+        subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
+      selCount = getGran.granuleList(104,"02_granules.txt",startdate,enddate,tilefile)
+      if selCount > 0:
+        subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
+        selCount = getGran.granuleList(104,"02_granules.txt",startdate,enddate,tilefile)
+        #update 104 to 102
+        if selCount > 0:
+          resetGranules(104,102,startdate, enddate)
+      getGran.granuleList(4,"03_granules.txt",startdate,enddate)
+      subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
+      selCount = getGran.granuleList(105,"03_granules.txt",startdate,enddate)
+      if selCount > 0:
+        subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
+        selCount = getGran.granuleList(105,"03_granules.txt",startdate,enddate)
+        if selCount > 0:
+          #update 105 to 102
+          resetGranules(105,102,startdate, enddate)
+  else:
+    if len(sys.argv) == 3:
+      tilefile=None
+      startdate = sys.argv[1]+"T000000"
+      enddate = sys.argv[2]+"T999999"
+    elif len(sys.argv) == 4:
+      tilefile = sys.argv[1]
+      startdate = sys.argv[2]+"T000000"
+      enddate = sys.argv[3]+"T999999"
+    else:
+      print("bad parameters. Enter \'cron\' or two dates (YYYYJJJ) or a tilelist and two dates")
+      sys.exit(1)
+    #subprocess.run("python CMRsearchdownload.py 1>>processLOG.txt 2>>errorLOG.txt")
+    getGran.granuleList(2,"02_granules.txt",startdate,enddate,tilefile)
+    subprocess.run(["python 02_granule_manager.py 02_granules.txt VEG_IND 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
+    getGran.granuleList("103","02_granules.txt",startdate,enddate,tilefile)
+    subprocess.run(["python 02_granule_manager.py 02_granules.txt VEG_IND 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
+    getGran.granuleList(3,"02_granules.txt",startdate,enddate,tilefile)
+    subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
+    getGran.granuleList(4,"03_granules.txt",startdate,enddate)
+    subprocess.run(["python 03_DIST_UPD.py 03_granules.txt RESTART; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
+    getGran.granuleList(105,"03_granules.txt",startdate,enddate)
+    subprocess.run(["python 03_DIST_UPD.py 03_granules.txt RESTART; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
+
 

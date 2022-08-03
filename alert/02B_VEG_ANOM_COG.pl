@@ -1,6 +1,7 @@
 use threads; use threads::shared;
 $scene = $ARGV[0];
 $outscene = $ARGV[1];
+$output = $ARGV[2];
 $DISTversion = "v0";
 
 $outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT";
@@ -24,7 +25,7 @@ sub runScene(){
   $tile = substr($Ttile,1,5);
   $zone = substr($tile,0,2);
   $tilepathstring = "$zone/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($tile,4,1);
-  $output = "$outbase/$year/$tilepathstring/$outscene";
+  #$output = "$outbase/$year/$tilepathstring/$outscene";
   $zoneInt = $zone+0;
   $VFfile = "$outscene\_VEG-IND.tif";
 

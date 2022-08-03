@@ -17,7 +17,6 @@ import requests
 import math
 import aiohttp
 import asyncio
-from calendar import isleap
 import datetime
 import time
 import sys
@@ -25,6 +24,7 @@ import sqlite3
 import os
 import re
 import subprocess
+import xmltodict
 from contextlib import closing
 from multiprocessing import Pool
 
@@ -177,7 +177,8 @@ def searchCMR(startdate,enddate):
 #download all the links associated with a granule
 def download_granule(links):
   if os.path.exists("KILL_download") or os.path.exists("../KILL_ALL"):
-    sys.exit("CMRsearchdownload.py shut down with kill file")
+    processLOG(["CMRsearchdownload.py shut down with kill file"])
+    sys.exit(1)
   img_url = links[0]
   basepath = source +"/" #"/cephfs/glad4/HLS/"
   
@@ -234,7 +235,8 @@ def download_parallel(granuledictionary,Nsim=200):
   granulelist = list(granuledictionary.values())
   processLOG(["Start download", len(granulelist),"granules", starttime])
   print("Start download", len(granulelist),"granules", starttime)
-  results = Pool(Nsim).imap_unordered(download_granule,granulelist)
+  procPool = Pool(Nsim)
+  results = procPool.imap_unordered(download_granule,granulelist)
   Nsuccess = 0
   Nerrors = 0
   for result in results:
@@ -261,6 +263,8 @@ def download_parallel(granuledictionary,Nsim=200):
         except:
           print(sys.exc_info())
           break
+  procPool.close()
+  procPool.join()
   processLOG([Nsuccess,"granules successfully downloaded,", Nerrors, "with errors",datetime.datetime.now()])
   print(Nsuccess,"granules successfully downloaded,", Nerrors, "with errors",datetime.datetime.now())
 
@@ -301,13 +305,14 @@ def checkGranule(granule,writeNew=True):
   check = checkDownloadComplete(sourcepath,granule,sensor)
   if check == "complete":
     downloadTime = getDownloadTime(sourcepath)
+    availTime = getAvailableTime(sourcepath+"/"+granule+".cmr.xml")
     statusFlag = 2
     if(writeNew):
-      sqliteCommand = "INSERT or REPLACE INTO fulltable(HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID) VALUES(?,?,?,?,?,?)"
-      sqliteTuple = (HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID)
+      sqliteCommand = "INSERT or REPLACE INTO fulltable(HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID,availableTime) VALUES(?,?,?,?,?,?,?)"
+      sqliteTuple = (HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID,availTime)
     else:
-      sqliteCommand = "UPDATE fulltable SET statusFlag = ?, downloadTime = ?, DIST_ID = ?, MGRStile = ? WHERE HLS_ID = ?"
-      sqliteTuple = (statusFlag,downloadTime,DIST_ID,MGRStile,HLS_ID)
+      sqliteCommand = "UPDATE fulltable SET statusFlag = ?, downloadTime = ?, DIST_ID = ?, MGRStile = ?, availableTime = ? WHERE HLS_ID = ?"
+      sqliteTuple = (statusFlag,downloadTime,DIST_ID,MGRStile,availTime,HLS_ID)
   else:
     statusFlag = 102
     Errors = check
@@ -410,6 +415,14 @@ def filterByTileList(granuleDict,tilefile):
       granulesout[g]=granuleDict[g]
   return(granulesout)
 
+def getAvailableTime(xmlfilename):
+  try:
+    with open(xmlfilename) as xml_file:
+      dict = xmltodict.parse(xml_file.read())
+    return dict['Granule']['InsertTime']
+  except:
+    return 'NA'
+
 ################################### Main ######################################
 #                                                                             #
 #                                                                             #
@@ -420,13 +433,16 @@ if __name__=='__main__':
   if len(sys.argv) == 1:
     enddate = datetime.datetime.utcnow()
     startdate = (enddate + datetime.timedelta(days=-2)) #15 days may want to shrink
+    checkFirst=False
   if len(sys.argv) == 2:
     Ndays = int(sys.argv[1])
     enddate = datetime.datetime.utcnow()
     startdate = (enddate + datetime.timedelta(days = (-1*Ndays))) #15 days may want to shrink
+    checkFirst=False
   elif len(sys.argv) == 3:
     startdate = datetime.datetime.strptime(sys.argv[1], "%Y-%m-%d")
     enddate = datetime.datetime.strptime(sys.argv[2], "%Y-%m-%d")
+    checkFirst=False
   elif len(sys.argv) == 4:
     startdate = datetime.datetime.strptime(sys.argv[1], "%Y-%m-%d")
     enddate = datetime.datetime.strptime(sys.argv[2], "%Y-%m-%d")

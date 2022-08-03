@@ -2,7 +2,7 @@ import os
 import datetime
 from dateutil.relativedelta import relativedelta
 import sys
-source = "/cephfs/glad4/HLS"
+source = "/gpfs/glad3/HLS"
 
 bands = {}
 bands['S30'] = ['B04','B8A','B11','B12','Fmask']
@@ -42,11 +42,8 @@ def selectBaselineFiles(tile, doy, curryear, window=15, Nyears=2):
           sensor = filename[4:7]
           goodFile=True
           for band in bands[sensor]:
-            #stream = os.popen("du "+source+"/"+sensor+"/"+fyear+"/"+zone+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/"+filename+"/"+filename + "."+band+".tif");
-            #du = stream.read()
-            sout = os.popen("gdalinfo "+source+"/"+sensor+"/"+fyear+"/"+zone+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/"+filename+"/"+filename + "."+band+".tif");
+            sout = os.popen("gdalinfo "+source+"/"+sensor+"/"+fyear+"/"+zone+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/"+filename+"/"+filename + "."+band+".tif 2>/dev/null");
             info = sout.read()
-            #if(du < 500 or du == ""):
             if info == "": 
               goodFile=False
               break
@@ -59,10 +56,6 @@ def selectBaselineFiles(tile, doy, curryear, window=15, Nyears=2):
           
   for value in selectedfiles.values():
     print(value)
-
-
-#files = selectBaselineFiles("20LRM",8,2022)
-#print(files)
 
 if __name__ == "__main__":
   selectBaselineFiles(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5])

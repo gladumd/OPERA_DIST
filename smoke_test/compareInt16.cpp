@@ -1,0 +1,54 @@
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <fstream>
+#include <sys/stat.h>
+#include <math.h>
+#include <algorithm>
+#include <string.h>
+#include <stdint.h>
+#include <exception>
+#include <gdal_priv.h>
+#include <cpl_conv.h>
+#include <ogr_spatialref.h>
+using namespace std;
+
+int main(int argc, char* argv[])
+{
+//arguments
+if (argc != 4){cout << "wrong argument" <<endl; exit (1);}
+string golden = argv[1];
+string newfile = argv[2];
+string filename = argv[3];
+
+//cout<<\"$scene started\"<<endl;
+//GDAL
+GDALAllRegister();
+GDALDataset  *INGDAL;
+GDALDataset  *SGDAL;
+GDALRasterBand  *INBAND;
+
+int ysize,xsize;
+INGDAL = (GDALDataset *) GDALOpen( golden.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
+ysize = INBAND->GetYSize();xsize = INBAND->GetXSize();
+double GeoTransform[6];
+INGDAL->GetGeoTransform(GeoTransform);
+short image1[ysize][xsize];
+short image2[ysize][xsize];
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, image1, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
+
+INGDAL = (GDALDataset *) GDALOpen( newfile.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, image2, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
+
+for(int y=0; y<ysize; y++) {for(int x=0; x<xsize; x++) {
+  if((image1[y][x]-image2[y][x])!=0){
+    string error = "ERROR"+filename+" does not match";
+    cout << error<<endl;
+    exit(1);
+  }
+}}
+
+cout<<filename<<" matches"<<endl;
+
+return 0;
+}

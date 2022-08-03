@@ -1,0 +1,105 @@
+{
+  "Granule": {
+    "GranuleUR": "DIST-ALERT_2022181T135721_S30_T21LYG_v0",
+    "Collection": {
+      "DataSetId": "OPERA Land Surface Disturbance Alert from Harmonized Landsat Sentinel-2 provisional product (version 0)"
+    },
+    "DataGranule": {
+      "DayNightFlag": "DAY",
+      "ProductionDateTime": "2022-08-02T17:58:28.636902Z",
+      "LocalVersionID": "0"
+    },
+    "TemporalExtent": {
+      "RangeDateTime": {
+        "BeginningDateTime": "2022-06-30T14:06:05.950000Z",
+        "EndingDateTime": "2022-06-30T14:06:05.950000Z"
+      }
+    },
+    "SpatialExtent": {
+      "HorizontalSpatialDomain": {
+        "Geometry": {
+          "GPolygon": {
+            "Boundary": {
+              "Point": [
+                {
+                  "PointLongitude": "-55.16506954",
+                  "PointLatitude": "-11.75360135"
+                },
+                {
+                  "PointLongitude": "-54.34961222",
+                  "PointLatitude": "-11.74719287"
+                },
+                {
+                  "PointLongitude": "-54.56939891",
+                  "PointLatitude": "-12.74127716"
+                },
+                {
+                  "PointLongitude": "-55.15819755",
+                  "PointLatitude": "-12.74603296"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "Platforms": {
+      "Platform": {
+        "ShortName": "Sentinel-2A",
+        "Instruments": {
+          "Instrument": {
+            "ShortName": "Sentinel-2 MSI"
+          }
+        }
+      }
+    },
+    "CloudCover": "1",
+    "AdditionalAttributes": {
+      "DISTAttributes": {
+        "BaselineCalendarWindow": "+/- 15 days",
+        "BaselineYearWindow": "3",
+        "BaselineImageIds": [
+          "HLS.S30.T21LYG.2021168T135119.v2.0",
+          "HLS.L30.T21LYG.2019166T134415.v2.0",
+          "HLS.S30.T21LYG.2021166T140051.v2.0",
+          "HLS.L30.T21LYG.2020178T133759.v2.0",
+          "HLS.S30.T21LYG.2021191T140059.v2.0",
+          "HLS.S30.T21LYG.2021193T135121.v2.0",
+          "HLS.S30.T21LYG.2021196T140101.v2.0",
+          "HLS.L30.T21LYG.2020185T134413.v2.0",
+          "HLS.L30.T21LYG.2019191T133810.v2.0",
+          "HLS.L30.T21LYG.2021196T133809.v2.0",
+          "HLS.L30.T21LYG.2019175T133807.v2.0",
+          "HLS.S30.T21LYG.2021178T135119.v2.0",
+          "HLS.S30.T21LYG.2021173T135111.v2.0",
+          "HLS.L30.T21LYG.2021171T134417.v2.0",
+          "HLS.S30.T21LYG.2021171T140059.v2.0",
+          "HLS.S30.T21LYG.2021176T140051.v2.0",
+          "HLS.L30.T21LYG.2020169T134405.v2.0",
+          "HLS.S30.T21LYG.2021186T140101.v2.0",
+          "HLS.L30.T21LYG.2021180T133808.v2.0",
+          "HLS.S30.T21LYG.2021183T135111.v2.0",
+          "HLS.L30.T21LYG.2021187T134420.v2.0",
+          "HLS.S30.T21LYG.2021181T140059.v2.0",
+          "HLS.L30.T21LYG.2019182T134420.v2.0",
+          "HLS.S30.T21LYG.2021188T135119.v2.0",
+          "HLS.L30.T21LYG.2020194T133806.v2.0"
+        ],
+        "ValidationLevel": "0"
+      },
+      "HLSAttributes": {
+        "GranuleUR": "HLS.S30.T21LYG.2022181T135721.v2.0",
+        "PRODUCT_URI": "S2A_MSIL1C_20220630T135721_N0400_R067_T21LYG_20220630T195124.SAFE",
+        "PROCESSING_BASELINE": "04.00",
+        "SPATIAL_COVERAGE": "69",
+        "MGRS_TILE_ID": "21LYG",
+        "HLS_PROCESSING_TIME": "2022-07-02T07:42:04Z",
+        "SENSING_TIME": "2022-06-30T14:06:05.959Z",
+        "HORIZONTAL_CS_CODE": "EPSG:32721",
+        "HORIZONTAL_CS_NAME": "WGS84 / UTM zone 21S",
+        "ULX": "699960.0",
+        "ULY": "-1299960.0"
+      }
+    }
+  }
+}
