@@ -118,7 +118,7 @@ def searchCMR(startdate,enddate):
     url_dict = asyncio.run(get_granules_url_dict(cmr_pg))
   except:
     print(sys.exc_info())
-    with open("errorLOG.txt", 'a') as log:
+    with open("../errorLOG.txt", 'a') as log:
       log.write("CMR error, unable to search "+str(datetime.datetime.now())+"\n")
     return "CMR error"
   granules = url_dict.keys()
@@ -273,6 +273,8 @@ def checkDownloadComplete(sourcepath,granule,sensor):
   goodFile = True
   sout = os.popen("ls "+sourcepath+"/"+granule + ".B*.tif 2>/dev/null | wc -l");
   count = sout.read().strip()
+  if not os.path.exist(sourcepath+"/"+granule+".cmr.xml"):
+    return "missing xml"
   if int(count) != Nbands[sensor]:
     return "missing bands only "+count+"/"+str(Nbands[sensor])+" bands "+sensor
   for band in bands[sensor]:
@@ -306,7 +308,10 @@ def checkGranule(granule,writeNew=True):
   if check == "complete":
     downloadTime = getDownloadTime(sourcepath)
     availTime = getAvailableTime(sourcepath+"/"+granule+".cmr.xml")
-    statusFlag = 2
+    if availTime == 'NA':
+      statusFlag = 102
+    else:
+      statusFlag = 2
     if(writeNew):
       sqliteCommand = "INSERT or REPLACE INTO fulltable(HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID,availableTime) VALUES(?,?,?,?,?,?,?)"
       sqliteTuple = (HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID,availTime)

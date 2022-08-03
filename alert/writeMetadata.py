@@ -13,9 +13,14 @@ dbpath = "/gpfs/glad3/HLSDIST/System/database/"
 imagelist = ["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","LAND-MASK"]
 
 def xmlToDict(xmlfilename):
-  with open(xmlfilename) as xml_file:
-    dict = xmltodict.parse(xml_file.read())
-  return dict
+  try:
+    with open(xmlfilename) as xml_file:
+      dict = xmltodict.parse(xml_file.read())
+    return dict
+  except:
+    Errors="empty source metadata"
+    with open("../errorLOG.txt", 'a') as ERR:
+      ERR.write(xmlfilename+" is empty\n")
 
 def writeJSON(data_dict,outJSONname):
   json_data = json.dumps(data_dict,indent=2)
@@ -116,6 +121,8 @@ def main(ID,sensor,sourceXML,outdir,httppath,version,Errors):
 
     writeJSON(notiDict, outdir+"/"+ID+".notification.json")
   except:
+    with open("../errorLOG.txt", 'a') as ERR:
+      ERR.write(ID+" error in writing Metadata")
     traceback.print_exc()
 
   
