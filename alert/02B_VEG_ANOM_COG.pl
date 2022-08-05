@@ -35,7 +35,7 @@ sub runScene(){
     &compileTileDOY($scene,$tile,$doy,$year);
     if(!-d "$output/additional"){system"mkdir -p $output/additional";}
     if(-e "veg_anom_$scene"){
-      system"cd temp;./veg_anom_$scene; rm veg_anom_$scene; rm veg_anom_$scene.cpp";
+      system"cd temp;./veg_anom_$scene 2>>errorLOG.txt; rm veg_anom_$scene; rm veg_anom_$scene.cpp";
     }
   }
 }

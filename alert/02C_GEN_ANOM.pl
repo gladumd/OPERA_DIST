@@ -24,7 +24,7 @@ sub runScene(){
   #else{
     &compileTileDOY();
     if(-e "gen_anom_$scene"){
-      system"cd temp;./gen_anom_$scene; rm gen_anom_$scene; ";#rm gen_anom_$scene.cpp";
+      system"cd temp;./gen_anom_$scene 2>>errorLOG.txt; rm gen_anom_$scene; ";#rm gen_anom_$scene.cpp";
     }
   #}
 }

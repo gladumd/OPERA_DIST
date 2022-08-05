@@ -46,20 +46,20 @@ def runGranule(server,granule):
     else:
       Errors = Errors + str(response.stderr.decode())
       Errors.strip("\n")
-      sys.stderr.write(DIST_ID+Errors+"\n")
+      errorLOG([DIST_ID+Errors+"\n"])
       sqliteCommand = "UPDATE fulltable SET statusFlag = 103, Errors = ? where HLS_ID=?;"
       updateSqlite(DIST_ID,sqliteCommand,(Errors,HLS_ID,))
   
   elif mode == "ALL" or mode == "SMOKE":
     #create VEG_ANOM
     if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif"):# and not os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif"):#and !-e "$outdir/VEG_ANOM.tif"){
-      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02B_VEG_ANOM_COG.pl "+granule+" "+DIST_ID+" "+outdir+"\'"],capture_output=True,shell=True)
-      Errors = Errors + str(response.stderr.decode())#.split('\n')[-1]
+      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02B_VEG_ANOM_COG.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
+      #Errors = Errors + str(response.stderr.decode())#.split('\n')[-1]
 
     #create GEN_ANOM
     if not os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
-      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM.pl "+granule+" "+DIST_ID+" "+outdir+"\'"],capture_output=True,shell=True)
-      Errors = Errors + str(response.stderr.decode())#.split('\n')[-1]
+      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
+      #Errors = Errors + str(response.stderr.decode())#.split('\n')[-1]
       if os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
         os.remove("temp/gen_anom_"+granule+".cpp")
 
@@ -69,6 +69,7 @@ def runGranule(server,granule):
       sqliteCommand = "UPDATE fulltable SET statusFlag = 4 where HLS_ID=?;"
       updateSqlite(DIST_ID,sqliteCommand,(HLS_ID,))
     else:
+      errorLOG([DIST_ID+"not all VEG-IND, VEG-ANOM, GEN-ANOM exist, failed to create."+Errors])
       sqliteCommand = "UPDATE fulltable SET Errors = 'VEG-IND/VEG-ANOM/GEN-ANOM failed', statusFlag = 104 where HLS_ID=?;"
       updateSqlite(DIST_ID,sqliteCommand,(HLS_ID,))
 
@@ -87,11 +88,17 @@ def updateSqlite(ID,sqliteCommand,sqliteTuple):
       if error.args[0] == 'database is locked':
         time.sleep(0.1) 
       else:
-        sys.stderr.write(ID+str(error.args)+" ln93\n")
+        errorLOG([ID+str(error.args)+" ln93\n"])
         break
     except:
-      sys.stderr.write(ID+str(sys.exc_info())+" ln96\n")
+      errorLOG([ID+str(sys.exc_info())+" ln96\n"])
       break
+
+def errorLOG(argv):
+  with open("errorLOG.txt",'a') as LOG:
+    for arg in argv:
+      LOG.write(str(arg)+" ")
+    LOG.write('\n')
 
 def processLOG(argv):
   with open("processLOG.txt",'a') as LOG:
