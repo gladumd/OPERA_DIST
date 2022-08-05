@@ -33,47 +33,46 @@ def runGranule(server,granule):
       os.makedirs(outdir+"/additional")
 
   if os.path.exists(HLSsource+"/"+sensor+"/"+year+"/"+tilepathstring+"/"+granule+"/"+granule+".cmr.xml"):
-    subprocess.run(["cp "+HLSsource+"/"+sensor+"/"+year+"/"+tilepathstring+"/"+granule+"/"+granule+".cmr.xml "+outdir+"/additional/"+granule+".cmr.xml 2>>errorLOG.txt"],shell=True)
+    subprocess.run(["cp "+HLSsource+"/"+sensor+"/"+year+"/"+tilepathstring+"/"+granule+"/"+granule+".cmr.xml "+outdir+"/additional/"+granule+".cmr.xml 2>>errorLOG.txt"],capture_output=True,shell=True)
   
   if not os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif"):
-    response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./02A_VF_QA_COG "+granule+" "+DIST_ID+" "+outdir+"\' &>>errorLOG.txt"],shell=True)
-      
+    response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./02A_VF_QA_COG "+granule+" "+DIST_ID+" "+outdir+"\' &>>errorLOG.txt"],capture_output=True,shell=True)
+    Errors = Errors + str(response.stderr.decode()).split('\n')[-1]
+
   if mode == "VEG_IND":
     if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif"):
       sqliteCommand = "UPDATE fulltable SET statusFlag = 3 where HLS_ID=?;"
-      updateSqlite(sqliteCommand,(HLS_ID,))
+      updateSqlite(DIST_ID,sqliteCommand,(HLS_ID,))
     else:
-      Errors = Errors + str(response.stderr)#.decode()
-      sys.stderr(DIST_ID+Errors)
+      Errors = Errors + str(response.stderr.decode())
+      Errors.strip("\n")
+      sys.stderr.write(DIST_ID+Errors+"\n")
       sqliteCommand = "UPDATE fulltable SET statusFlag = 103, Errors = ? where HLS_ID=?;"
-      updateSqlite(sqliteCommand,(Errors,HLS_ID,))
+      updateSqlite(DIST_ID,sqliteCommand,(Errors,HLS_ID,))
   
   elif mode == "ALL" or mode == "SMOKE":
-    try:
-      #create VEG_ANOM
-      if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif"):# and not os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif"):#and !-e "$outdir/VEG_ANOM.tif"){
-        response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02B_VEG_ANOM_COG.pl "+granule+" "+DIST_ID+" "+outdir+"\'"],shell=True)
-        Errors = Errors + str(response.stderr).split('\n')[-1]
+    #create VEG_ANOM
+    if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif"):# and not os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif"):#and !-e "$outdir/VEG_ANOM.tif"){
+      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02B_VEG_ANOM_COG.pl "+granule+" "+DIST_ID+" "+outdir+"\'"],capture_output=True,shell=True)
+      Errors = Errors + str(response.stderr.decode())#.split('\n')[-1]
 
-      #create GEN_ANOM
-      if not os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
-        response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM.pl "+granule+" "+DIST_ID+" "+outdir+"\'"],shell=True)
-        Errors = Errors + str(response.stderr).split('\n')[-1]
-      else:
-        print(outdir+"/"+DIST_ID+"_GEN-ANOM.tif")
-    except:
-      Errors = Errors + str(response.stderr)
+    #create GEN_ANOM
+    if not os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
+      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM.pl "+granule+" "+DIST_ID+" "+outdir+"\'"],capture_output=True,shell=True)
+      Errors = Errors + str(response.stderr.decode())#.split('\n')[-1]
+      if os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
+        os.remove("temp/gen_anom_"+granule+".cpp")
+
     
     #test for success and update database
     if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") and os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif") and os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
       sqliteCommand = "UPDATE fulltable SET statusFlag = 4 where HLS_ID=?;"
-      updateSqlite(sqliteCommand,(HLS_ID,))
+      updateSqlite(DIST_ID,sqliteCommand,(HLS_ID,))
     else:
-      sys.stderr(DIST_ID+Errors)
       sqliteCommand = "UPDATE fulltable SET Errors = 'VEG-IND/VEG-ANOM/GEN-ANOM failed', statusFlag = 104 where HLS_ID=?;"
-      updateSqlite(sqliteCommand,(HLS_ID,))
+      updateSqlite(DIST_ID,sqliteCommand,(HLS_ID,))
 
-def updateSqlite(sqliteCommand,sqliteTuple):
+def updateSqlite(ID,sqliteCommand,sqliteTuple):
   written = False
   if mode == "SMOKE":
     written = True
@@ -88,11 +87,17 @@ def updateSqlite(sqliteCommand,sqliteTuple):
       if error.args[0] == 'database is locked':
         time.sleep(0.1) 
       else:
-        sys.stderr.write(error.args)
+        sys.stderr.write(ID+str(error.args)+" ln93\n")
         break
     except:
-      sys.stderr.write(sys.exc_info())
+      sys.stderr.write(ID+str(sys.exc_info())+" ln96\n")
       break
+
+def processLOG(argv):
+  with open("processLOG.txt",'a') as LOG:
+    for arg in argv:
+      LOG.write(str(arg)+" ")
+    LOG.write('\n')
 
 def processGranuleQueue(server,procID,queue):
   Nprocess = 0
@@ -108,7 +113,7 @@ def processGranuleQueue(server,procID,queue):
       with open('processLOG.txt','a') as log:
         log.write("02_granule_manger.py shut down with KILL file")
       #processLOG(error.args[0])
-    except:
+    except Exception:
       with open("errorLOG.txt",'a') as out:
         out.write("ERROR: runGranule("+server+","+granule+") process ID:"+procID+": "+str(sys.exc_info())+"\n")
       sqliteCommand = "UPDATE fulltable SET statusFlag = ? where HLS_ID=?;"
@@ -116,7 +121,7 @@ def processGranuleQueue(server,procID,queue):
         statusFlag = 103
       else:
         statusFlag = 104
-      updateSqlite(sqliteCommand,(statusFlag,granule,))
+      updateSqlite(granule,sqliteCommand,(statusFlag,granule,))
   #print(Nprocess,"processed by", server, procID,mode)
   return Nprocess
 
@@ -136,10 +141,10 @@ if __name__=='__main__':
     print("KILL file exists. Delete and rerun.\n")
     sys.exit()
   elif os.path.exists("02_granule_manager_RUNNING"):
-    print("02_granule_manager.py already running (or died with an error)\n")
+    print("02_granule_manager.py already running (or died with an error) 02_granule_manager_RUNNING exists\n")
     sys.exit()
   else:
-    with open("02_granule_manager_RUNNING",'w') as OUT:
+    with open("02_granule_manager_RUNNING",'a') as OUT:
       OUT.write("started: "+str(datetime.datetime.now()))
 
   now = datetime.datetime.now()
@@ -157,12 +162,9 @@ if __name__=='__main__':
   
   Nscenes = len(granulelist)
 
-  #remainder = $Nscenes % 50;
-  #twoPercent = ($Nscenes-$remainder)/50;
+  processLOG(["starting \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",now])
 
-  print("starting \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",now)
-
-  serverlist = [(17,60),(15,15),(16,20)]
+  serverlist = [(17,70),(14,40),(15,40),(16,40),(19,40)]#[(18,40),(14,40),(19,20)]#[(17,60),(15,15),(16,20)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp
@@ -179,7 +181,4 @@ if __name__=='__main__':
   myqueue.join_thread()
   os.remove("02_granule_manager_RUNNING")
 
-  print("finished \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",datetime.datetime.now())
-
-  #close(LOG);#close(NEX);
-  #system"rm 02_scene_manager_RUNNING";
+  processLOG(["finished \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",datetime.datetime.now()])

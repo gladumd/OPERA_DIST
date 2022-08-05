@@ -71,7 +71,7 @@ if __name__=='__main__':
     if sys.argv[1] == "cron":
       startdate = (datetime.datetime.utcnow() + datetime.timedelta(days=-4)).strftime("%Y%jT000000")
       enddate = datetime.datetime.utcnow().strftime("%Y%jT999999")
-      print(startdate,enddate)
+      print("MASTER.py started for ",startdate,enddate)
       getGran.granuleList(2,"02_granules.txt",startdate,enddate,tilefile)
       subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
       selCount = getGran.granuleList(3,"02_granules.txt",startdate,enddate,tilefile)

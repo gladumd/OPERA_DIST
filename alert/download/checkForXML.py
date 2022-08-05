@@ -137,7 +137,7 @@ def download_granule(HLS_ID):
   tile = Ttile[1:6]
   tilepathstring = tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]
   xmlloc = source+"/"+sensor+"/"+year+"/"+tilepathstring+"/"+HLS_ID+"/"+HLS_ID+".cmr.xml"
-  if not os.path.exists(xmlloc):
+  if not os.path.exists(xmlloc) or os.path.getsize(xmlloc)==0:
     httplink = "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLS"+sensor+".020/"+HLS_ID+"/"+HLS_ID+".cmr.xml"
   
     wgetcommand = "wget --timeout=300 --output-document="+xmlloc+" "+httplink 
@@ -153,6 +153,12 @@ def download_granule(HLS_ID):
       status = lastLine
   else:
     status="exists"
+  DISTversion = "v0"
+  DIST_ID = "DIST-ALERT_"+Sdatetime+"_"+sensor+"_"+Ttile+"_"+DISTversion
+  xmladditional = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT/"+year+"/"+tilepathstring+"/"+DIST_ID+"/additional/"+HLS_ID+".cmr.xml"
+  if (not os.path.exists(xmladditional) or os.path.getsize(xmladditional)==0) and os.path.exists(xmlloc) and os.path.exists("/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT/"+year+"/"+tilepathstring+"/"+DIST_ID+"/additional"):
+    subprocess.run(["cp "+xmlloc+" " + xmladditional],shell=True)
+    status = "copied"
   return [HLS_ID,status]
 
 #concurrently download all the links in the dictionary
@@ -165,16 +171,19 @@ def download_parallel(granulelist):
   Nsuccess = 0
   Nerrors = 0
   Nexists = 0
+  Ncopied = 0
   for result in results:
     (HLS_ID,status) = result
     if status == "success":
       Nsuccess +=1
     elif status == "exists":
       Nexists +=1
+    elif status == "copied":
+      Ncopied +=1
     else:
       with open("metadataFail.txt",'a') as fails:
         fails.write(HLS_ID+" "+str(status))
-  print(Nsuccess,"granules successfully downloaded,", Nerrors, "with errors", Nexists, "already exists",datetime.datetime.now())
+  print(Nsuccess,"granules successfully downloaded,", Nerrors, "with errors", Nexists, "already exists",Ncopied, " copied",datetime.datetime.now())
 
 #get list of all granules that need to be checked
 def getGranulesToCheck(startYJT,endYJT):

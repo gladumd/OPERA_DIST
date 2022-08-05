@@ -46,6 +46,7 @@ def runTile(server,Ttile,tempscenes):
   tilepathstring = tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]
   Ntemp = len(tempscenes)
   scenes = []
+
   for granule in tempscenes:
     (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= granule.split('.')
     HLS_ID = granule
@@ -55,26 +56,32 @@ def runTile(server,Ttile,tempscenes):
       scenes.append(DIST_ID)
 
   sortedScenes = sortDates(scenes)
-
+  (tname,firstdatetime,tsensor,tTtile,tDISTversion) = sortedScenes[0].split('_')
   if updateMode == "UPDATE":
-    prev = ()
-    response = subprocess.run(["ls "+outbase+"/*/"+tilepathstring+"/*/*VEG-DIST-STATUS.tif"],shell=True)
-    if response.stdout == "":
+    prev = []
+    response = subprocess.run(["ls "+outbase+"/*/"+tilepathstring+"/*/*VEG-DIST-STATUS.tif"],capture_output=True,shell=True)
+    if response.stdout.decode().strip() == "":
       NumPrev = 0
     else:
-      tempfiles = response.stdout.split('\n')
+      tempfiles = str(response.stdout.decode().strip()).split('\n')
       NumPrev = len(tempfiles)
     if NumPrev >0:
       for file in tempfiles:
         genfile = file; re.sub("VEG","GEN",genfile)
         if os.path.exists(genfile):
           folders = file.split('/')
-          prev.append(folders[-2])
-      sortedprev = sortDates(prev)
-      previous = sortedprev[-1]
-      (t0,t1,t2,prevdatetime,t4,t5)= previous.split('\.')
-      prevyear = prevdatetime[0:4]
-      previousSource = outbase+"/"+prevyear+"/"+tilepathstring+"/"+previous+"/"+previous
+          gran = folders[-2]
+          (tname,prevdatetime,tsensor,tTtile,tDISTversion) = gran.split('_')
+          if prevdatetime < firstdatetime:
+            prev.append(gran)
+      if len(prev) == 0:
+        previousSource = "first"
+      else:
+        sortedprev = sortDates(prev)
+        previous = sortedprev[-1]
+        (tname,prevdatetime,tsensor,tTtile,tDISTversion)= previous.split('_')
+        prevyear = prevdatetime[0:4]
+        previousSource = outbase+"/"+prevyear+"/"+tilepathstring+"/"+previous+"/"+previous
     else:
       previousSource = "first"
   elif updateMode == "RESTART":
@@ -101,12 +108,12 @@ def runTile(server,Ttile,tempscenes):
       errorLOG("ERROR!!!!!!!!!!!!!! "+outdir+" VEG-ANOM.tif not exist\n")
       sqliteCommand = "UPDATE fulltable SET Errors = 'wrong filepath ?_VEG-ANOM.tif', statusFlag = 105 where DIST_ID=?;"
       sqliteTuple = (outdir+"/"+DIST_ID,DIST_ID,)
-      updateSqlite(sqliteCommand,sqliteTuple)
+      updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
     elif not os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
       errorLOG("ERROR!!!!!!!!!!!!!! "+outdir+" GEN-ANOM.tif not exist\n")
       sqliteCommand = "UPDATE fulltable SET Errors = 'wrong filepath ?_GEN-ANOM.tif', statusFlag = 105 where DIST_ID=?;"
       sqliteTuple = (outdir+"/"+DIST_ID,DIST_ID,)
-      updateSqlite(sqliteCommand,sqliteTuple)
+      updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
     else:
       try:
         Errors=""
@@ -119,27 +126,39 @@ def runTile(server,Ttile,tempscenes):
           Errors = "NA"
         else:
           Errors = errveg+" "+errgen
-          errorLOG(DIST_ID+Errors)
-
-        response = subprocess.run(["ls "+outdir+"/additional/*.xml"],capture_output=True,shell=True)
-        xmlfile = response.stdout.decode().strip()
-        if not os.path.exists(xmlfile):
-          errorLOG("ERROR:: "+DIST_ID+" no XML file.\n")
-          sqliteCommand = "UPDATE fulltable SET Errors = 'source xmlfile does not exist', statusFlag = 105 where DIST_ID=?"
-          sqliteTuple = (DIST_ID,)
-          updateSqlite(sqliteCommand,sqliteTuple)
+          errorLOG(DIST_ID+Errors +"ERRORs")
+        if not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-DIST-STATUS.tif") or not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-DIST-STATUS.tif"):
+          errorLOG(DIST_ID+"_GEN-DIST-STATUS.tif not made")
+          statusFlag=104
         else:
-          #print("python writeMetadata.py",DIST_ID,sensor,xmlfile,outdir,httppath,DISTversion,Errors)
-          response = subprocess.run(["python writeMetadata.py "+DIST_ID+" "+sensor+" "+xmlfile+" "+outdir+" "+httppath+" "+DISTversion+" "+Errors+" "+" 2>>errorLOG.txt"],capture_output=True,shell=True)
+          statusFlag = 5
+        if statusFlag == 5:
+          response = subprocess.run(["ls "+outdir+"/additional/*.xml"],capture_output=True,shell=True)
+          xmlfile = response.stdout.decode().strip()
+          if not os.path.exists(xmlfile):
+            errorLOG("ERROR:: "+DIST_ID+" no XML file.")
+            sqliteCommand = "UPDATE fulltable SET Errors = 'source xmlfile does not exist', statusFlag = 102 where DIST_ID=?"
+            sqliteTuple = (DIST_ID,)
+            updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
+          else:
+            #print("python writeMetadata.py",DIST_ID,sensor,xmlfile,outdir,httppath,DISTversion,Errors)
+            response = subprocess.run(["python writeMetadata.py "+DIST_ID+" "+sensor+" "+xmlfile+" "+outdir+" "+httppath+" "+DISTversion+" "+Errors],capture_output=True,shell=True)
+            errmeta = response.stderr.decode().strip()
+            
+            #if errmeta == "":
+            #  response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+DIST_ID+".notification.json"],shell=True)
+            #else:
+            errorLOG(DIST_ID+errmeta)
+
 
       except:
         traceback.print_exc()
         errorLOG(DIST_ID+Errors)
         sqliteCommand = "UPDATE fulltable SET statusFlag = 105, Errors = ? where DIST_ID=?;"
-        updateSqlite(sqliteCommand,("failed to update alert",DIST_ID,))
+        updateSqlite(DIST_ID,sqliteCommand,("failed to update alert",DIST_ID,))
   #print(tile,"done")
 
-def updateSqlite(sqliteCommand,sqliteTuple):
+def updateSqlite(ID,sqliteCommand,sqliteTuple):
   written = False
   if updateMode == "SMOKE":
     written = True
@@ -154,10 +173,10 @@ def updateSqlite(sqliteCommand,sqliteTuple):
       if error.args[0] == 'database is locked':
         time.sleep(0.1) 
       else:
-        print(error.args)
+        sys.stderr.write(ID+str(error.args))
         break
     except:
-      print(sys.exc_info())
+      sys.stderr.write(ID+str(sys.exc_info()))
       break
 
 def errorLOG(text):
@@ -195,10 +214,10 @@ if __name__=='__main__':
     print("must enter filelist and updateMode ('RESTART' to ignore all existing time-series layers or 'UPDATE' to use the last available VEG-DIST-STATUS.tif/GEN-DIST-STATUS.tif): python 03_DIST_UPD.py filelist.txt updateMode")
 
   if os.path.exists("KILL_03_DIST_UPD") or os.path.exists("KILL_ALL"):
-    print("KILL file exists. Delete and rerun.\n")
+    print("KILL file exists. Delete and rerun. 03_DIST_UPD.py"+str(datetime.datetime.now())+"\n")
     sys.exit()
   elif os.path.exists("03_DIST_UPD_RUNNING"):
-    print("03_DIST_UPD.py already running (or died with an error)\n")
+    print("03_DIST_UPD.py already running (or died with an error). Delete 03_DIST_UPD_RUNNING and rerun."+str(datetime.datetime.now())+"\n")
     sys.exit()
   else:
     with open("03_DIST_UPD_RUNNING",'w') as OUT:
@@ -234,7 +253,7 @@ if __name__=='__main__':
   for tile in tiles:
     tileQueue.put(tile)
   
-  serverlist = [(17,50),(16,10)]
+  serverlist = [(17,40),(16,20),(15,20),(14,20)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp
