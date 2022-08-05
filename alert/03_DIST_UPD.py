@@ -145,10 +145,10 @@ def runTile(server,Ttile,tempscenes):
             response = subprocess.run(["python writeMetadata.py "+DIST_ID+" "+sensor+" "+xmlfile+" "+outdir+" "+httppath+" "+DISTversion+" "+Errors],capture_output=True,shell=True)
             errmeta = response.stderr.decode().strip()
             
-            #if errmeta == "":
-            #  response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+DIST_ID+".notification.json"],shell=True)
-            #else:
-            #errorLOG(DIST_ID+errmeta)
+            if errmeta == "":
+              response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+DIST_ID+".notification.json"],shell=True)
+            else:
+              errorLOG(DIST_ID+errmeta)
 
 
       except:
