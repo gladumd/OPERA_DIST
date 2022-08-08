@@ -23,8 +23,8 @@ sub runScene(){
   #if(-e "$output/GEN_ANOM.tif"){print LOG"$output/GEN_ANOM.tif exists\n";}
   #else{
     &compileTileDOY();
-    if(-e "gen_anom_$scene"){
-      system"cd temp;./gen_anom_$scene 2>>errorLOG.txt; rm gen_anom_$scene; ";#rm gen_anom_$scene.cpp";
+    if(-e "temp/gen_anom_$scene"){
+      system"cd temp; ./gen_anom_$scene; rm gen_anom_$scene; rm gen_anom_$scene.cpp";
     }
   #}
 }
@@ -301,6 +301,6 @@ system(\"rm ${filename}TEMP.tif\");
 return 0;
 }";
     close (OUT);
-    system("cd temp; g++ gen_anom_$scene.cpp -o gen_anom_$scene -lgdal -Wno-unused-result -std=gnu++11 -I /gpfs/glad3/HLSDIST/System/eigen-3.4.0 &>>../errorLOG.txt");
+    system("cd temp;g++ gen_anom_$scene.cpp -o gen_anom_$scene -lgdal -Wno-unused-result -std=gnu++11 -I /gpfs/glad3/HLSDIST/System/eigen-3.4.0");
   }
 }

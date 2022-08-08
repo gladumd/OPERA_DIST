@@ -34,8 +34,8 @@ sub runScene(){
   else{
     &compileTileDOY($scene,$tile,$doy,$year);
     if(!-d "$output/additional"){system"mkdir -p $output/additional";}
-    if(-e "veg_anom_$scene"){
-      system"cd temp;./veg_anom_$scene 2>>errorLOG.txt; rm veg_anom_$scene; rm veg_anom_$scene.cpp";
+    if(-e "temp/veg_anom_$scene"){
+      system"cd temp;./veg_anom_$scene; rm veg_anom_$scene; rm veg_anom_$scene.cpp";
     }
   }
 }
@@ -321,6 +321,6 @@ system(\"rm ${filename}TEMP.tif\");
 return 0;
 }";
     close (OUT);
-    system("cd temp; g++ veg_anom_$scene.cpp -o veg_anom_$scene -lgdal -Wno-unused-result -std=gnu++11 1>/dev/null &>>../errorLOG.txt");
+    system("cd temp;g++ veg_anom_$scene.cpp -o veg_anom_$scene -lgdal -Wno-unused-result -std=gnu++11 1>/dev/null");
   }
 }
