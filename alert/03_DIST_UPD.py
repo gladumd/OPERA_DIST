@@ -183,6 +183,12 @@ def errorLOG(text):
   with open("errorLOG.txt", 'a') as ERR:
     ERR.write(text+"\n")
 
+def processLOG(argv):
+  with open("processLOG.txt",'a') as LOG:
+    for arg in argv:
+      LOG.write(str(arg)+" ")
+    LOG.write('\n')
+
 def processTileQueue(server,procID,queue,h):
   Nprocess = 0
   running = True
@@ -194,8 +200,7 @@ def processTileQueue(server,procID,queue,h):
         Nprocess +=1
     except ValueError as err:
       running = False
-      with open('processLOG.txt','a') as log:
-        log.write("03_DIST_UPD.py shut down with KILL file")
+      processLOG(["03_DIST_UPD.py shut down with KILL file"])
     except:
       traceback.print_exc()
       errorLOG("ERROR: runTile("+server+","+tile+") process ID:"+procID+": "+str(sys.exc_info()))
@@ -224,7 +229,6 @@ if __name__=='__main__':
       OUT.write("started: "+str(datetime.datetime.now()))
 
   now = datetime.datetime.now()
-  print("starting 03_DIST_UPD.py",filelist,updateMode,now)
 
   response = subprocess.run(["ssh gladapp17 \'cd "+currdir+"; g++ 03A_alertUpdateVEG.cpp -o 03A_alertUpdateVEG -lgdal -std=gnu++11 -Wno-unused-result\'"],shell=True)
   response = subprocess.run(["ssh gladapp17 \'cd "+currdir+"; g++ 03B_alertUpdateGEN.cpp -o 03B_alertUpdateGEN -lgdal -std=gnu++11 -Wno-unused-result\'"],shell=True)
@@ -248,7 +252,7 @@ if __name__=='__main__':
 
   tiles = h.keys()
   Ntiles = len(tiles)
-  print(Ntiles,"tiles\n")
+  processLOG(["starting 03_DIST_UPD.py",filelist,updateMode,Ntiles,"tiles",now])
   tileQueue = multiprocessing.Queue()
   for tile in tiles:
     tileQueue.put(tile)
@@ -271,5 +275,5 @@ if __name__=='__main__':
   tileQueue.join_thread()
   os.remove("03_DIST_UPD_RUNNING")
 
-  print("finished 03_DIST_UPD.py",filelist,updateMode,datetime.datetime.now())
+  processLOG(["finished 03_DIST_UPD.py",filelist,updateMode,datetime.datetime.now()])
 
