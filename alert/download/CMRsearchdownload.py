@@ -115,7 +115,7 @@ def searchCMR(startdate,enddate):
   endYJT = enddate.strftime("%Y%jT999999")
   endYMD = enddate.strftime("%Y-%m-%d")
   searchdates = startYMD+'T00:00:00Z/'+endYMD+'T23:59:59Z' #may have to loop through days depending on search time
-  print("start search", searchdates,"at",datetime.datetime.now())
+  #print("start search", searchdates,"at",datetime.datetime.now())
   try:
     cmr_pg = get_cmr_pages_urls(collections, searchdates)
     url_dict = asyncio.run(get_granules_url_dict(cmr_pg))

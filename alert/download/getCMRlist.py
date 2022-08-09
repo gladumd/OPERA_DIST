@@ -175,7 +175,7 @@ def compareLPDAAC():
       processed +=1
   print (processed)
 
-  def compareLPDAACreport():
+def compareLPDAACreport():
   startYJT = startdate.strftime("%Y%jT000000")
   endYJT = enddate.strftime("%Y%jT999999")
   with open("LPDAACreport.csv", 'r') as cmr:
