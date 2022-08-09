@@ -428,10 +428,10 @@ def getAvailableTime(xmlfilename,DIST_ID):
       dict = xmltodict.parse(xml_file.read())
     return dict['Granule']['InsertTime']
   except:
-    with open("errorLOG.txt", 'a') as ERR:
+    with open("../errorLOG.txt", 'a') as ERR:
       ERR.write(xmlfilename+" is empty\n")
     sqliteCommand = "UPDATE fulltable SET Errors = ?, statusFlag = ? where DIST_ID = ?"
-    sqliteTuple = ("xml file is empty",105,DIST_ID)
+    sqliteTuple = ("xml file is empty",102,DIST_ID)
     updateSqlite(sqliteCommand,sqliteTuple)
 
 ################################### Main ######################################
