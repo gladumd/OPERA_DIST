@@ -13,6 +13,7 @@ Last Updated:
 """
 
 ################################ IMPORT PACKAGES ##############################
+from turtle import down
 import requests
 import math
 import aiohttp
@@ -284,13 +285,13 @@ def checkDownloadComplete(sourcepath,granule,sensor):
 def getDownloadTime(sourcepath):
   #seems to not handle the cross in the day line...."HLS.L30.T33XXK.2022213T123433.v2.0|DIST-ALERT_2022213T123433_L30_T33XXK_v0|2|33XXK|2022213T123433|2022-08-05T00:17:30.327665Z|2022-08-05T00:18:52Z|||||"
   #HLS.L30.T46XDH.2022213T060148.v2.0|DIST-ALERT_2022213T060148_L30_T46XDH_v0|2|46XDH|2022213T060148|2022-08-05T00:23:59.953294Z|2022-08-05T00:25:39Z|||||
-  sout = os.popen("date -u -r `ls -t "+sourcepath+"/* | head -1` +%Y-%m-%dT%TZ")
+  sout = os.popen("date -u -r "+sourcepath+" +%Y-%m-%dT%TZ")
   return sout.read().strip()
   #timestamp = os.path.getmtime(path)
   #datestamp = datetime.datetime.fromtimestamp(timestamp)
 
 #check a granule for correctness and update it in the database with download success (2) or download failed (102)
-def checkGranule(granule,writeNew=True):
+def checkGranule(granule,writeNew=True,fromDownload=False):
   (HLS,sensor,Ttile,sensingTime,majorV,minorV)= granule.split('.')
   year = sensingTime[0:4]
   tile = Ttile[1:6]

@@ -38,8 +38,6 @@ foreach $thread (@ClassThreads)  {$thread->join();} @ClassThreads=();
 sub runTile(){($server,$threads)=split('_',$sline);
   while ($Ttile = shift(@tiles)){#if($Ttile eq "T21LYG"){
     #find file list of VEG_DIST_STATUS between start and end date.
-    
-    
     $tile = substr($Ttile,1,5);
     $zone = substr($tile,0,2);
     $tilepathstring = $zone."/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($tile,4,1);
@@ -374,7 +372,7 @@ OUTGDAL->SetMetadata(papszMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 ";
 foreach $filename ("VEG-DIST-STATUS","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-HIST","VEG-IND-MAX"){
 print OUT"
-system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $outdir/${filename}TEMP.tif $outdir/${filename}.tif\");
+system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $outdir/${filename}TEMP.tif $outdir/DIST-ANN_${tile}_${yearname}_${filename}.tif\");
 system(\"rm $outdir/${filename}TEMP.tif\");
 ";
 }
@@ -593,7 +591,7 @@ OUTGDAL->SetMetadata(papszMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 ";
 foreach $filename ("GEN-DIST-STATUS","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR"){
 print OUT"
-system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $outdir/${filename}TEMP.tif $outdir/${filename}.tif\");
+system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $outdir/${filename}TEMP.tif $outdir/DIST-ANN_${tile}_${yearname}_${filename}.tif\");
 system(\"rm $outdir/${filename}TEMP.tif\");
 ";
 }

@@ -72,7 +72,7 @@ if __name__=='__main__':
     if sys.argv[1] == "cron":
       startdate = (datetime.datetime.utcnow() + datetime.timedelta(days=-5)).strftime("%Y%jT000000")
       enddate = datetime.datetime.utcnow().strftime("%Y%jT999999")
-      print("MASTER.py started for ",startdate,enddate, " at",datetime.datetime.now())
+      sys.stdout.write("MASTER.py started for ",startdate,enddate, " at",datetime.datetime.now())
       getGran.granuleList(2,"02_granules.txt",startdate,enddate,tilefile)
       subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
       selCount = getGran.granuleList(3,"02_granules.txt",startdate,enddate,tilefile)
@@ -80,23 +80,23 @@ if __name__=='__main__':
         subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
       selCount = getGran.granuleList(104,"02_granules.txt",startdate,enddate,tilefile)
       if selCount > 0:
-        print("retrying",selCount,"granules for 02_granules_manager.py",datetime.datetime.now())
+        sys.stdout.write("retrying",selCount,"granules for 02_granules_manager.py",datetime.datetime.now())
         subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
         selCount = getGran.granuleList(104,"02_granules.txt",startdate,enddate,tilefile)
         #update 104 to 102
-        if selCount > 0:
-          print("setting",selCount,"granules to re download",datetime.datetime.now())
-          resetGranules(104,102,startdate, enddate)
+        #if selCount > 0:
+        #  print("setting",selCount,"granules to re download",datetime.datetime.now())
+        #  resetGranules(104,102,startdate, enddate)
       getGran.granuleList(4,"03_granules.txt",startdate,enddate)
       subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
       selCount = getGran.granuleList(105,"03_granules.txt",startdate,enddate)
       if selCount > 0:
-        print("retrying",selCount,"granules for 03_DIST_UPD.py",datetime.datetime.now())
+        sys.stdout.write("retrying",selCount,"granules for 03_DIST_UPD.py",datetime.datetime.now())
         subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
         selCount = getGran.granuleList(105,"03_granules.txt",startdate,enddate)
         if selCount > 0:
           #update 105 to 102
-          print("setting",selCount,"granules to re download",datetime.datetime.now())
+          sys.stdout.write("setting",selCount,"granules to re download",datetime.datetime.now())
           resetGranules(105,102,startdate, enddate)
   else:
     if len(sys.argv) == 3:

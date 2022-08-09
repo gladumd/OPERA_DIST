@@ -146,6 +146,58 @@ def compare():
   for gran in cmr_dict.keys():
     if not gran in db_dict.keys():
       print("NOT_IN_DB,"+gran+","+cmr_dict[gran])
+
+def compareLPDAAC():
+  startYJT = startdate.strftime("%Y%jT000000")
+  endYJT = enddate.strftime("%Y%jT999999")
+  with open("LPDAACcompleted.csv", 'r') as cmr:
+    lines = cmr.read().splitlines()
+  lp_dict = {}
+  for line in lines:
+    (gran,updtime)=line.split(',')
+    lp_dict[gran]=updtime
+  with open("/gpfs/glad3/HLSDIST/System/database/2022212T000000_2022220T999999_productStatus.csv", 'r') as db:
+    lines = db.read().splitlines()
+  db_dict = {}
+  (HLS_ID,DIST_ID,status,availableTime,downloadTime,processedTime,Error,retrievalTime,productTime)=lines[1].split(',')
+  processed = 0
+  count =0
+  for line in lines:
+    (HLS_ID,DIST_ID,status,availableTime,downloadTime,processedTime,Error,retrievalTime,productTime)=line.split(',')
+    db_dict[DIST_ID] = line
+    if DIST_ID in lp_dict.keys():
+      count +=1
+      #print(line)
+  for gran in lp_dict.keys():
+    if not gran in db_dict.keys():
+      print("NOT_IN_DB,"+gran+","+lp_dict[gran])
+    else:
+      processed +=1
+  print (processed)
+
+  def compareLPDAACreport():
+  startYJT = startdate.strftime("%Y%jT000000")
+  endYJT = enddate.strftime("%Y%jT999999")
+  with open("LPDAACreport.csv", 'r') as cmr:
+    lines = cmr.read().splitlines()
+  lp_dict = {}
+  for line in lines:
+    (gran,updtime)=line.split(',')
+    lp_dict[gran]=updtime
+  with open("/gpfs/glad3/HLSDIST/System/database/2022212T000000_2022220T999999_productStatus.csv", 'r') as db:
+    lines = db.read().splitlines()
+  db_dict = {}
+  (HLS_ID,DIST_ID,status,availableTime,downloadTime,processedTime,Error,retrievalTime,productTime)=lines[1].split(',')
+  count = 0
+  for line in lines:
+    (HLS_ID,DIST_ID,status,availableTime,downloadTime,processedTime,Error,retrievalTime,productTime)=line.split(',')
+    db_dict[DIST_ID] = line
+    if DIST_ID in lp_dict.keys():
+      count +=1
+      print(line)
+  for gran in lp_dict.keys():
+    if not gran in db_dict.keys():
+      print("NOT_IN_DB,"+gran+","+lp_dict[gran])
   
 ################################### Main ######################################
 #                                                                             #
@@ -169,3 +221,5 @@ if __name__=='__main__':
     checkFirst=False
   #getCMRlist(startdate,enddate)
   compare()
+  compareLPDAAC()
+  compareLPDAACreport()
