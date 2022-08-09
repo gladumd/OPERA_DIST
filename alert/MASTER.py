@@ -43,13 +43,14 @@ dbpath = "/gpfs/glad3/HLSDIST/System/database/"
 
 def resetGranules(statusFlagIn,statusFlagOut,startYJT, endYJT):
   if statusFlagOut > statusFlagIn:
-    return "statusFlags out of order"
+    print("statusFlags out of order")
   databaseChecked = False
   while(databaseChecked == False):
     try:
       with closing(sqlite3.connect(dbpath+"database.db")) as connection:
         with closing(connection.cursor()) as cursor:
-          cursor.execute("UPDATE fulltable SET statusFlag = ? WHERE statusFlag = ? and sensingTime > ? and sensingTime < ?",(statusFlagOut,statusFlagIn,startYJT,endYJT)) 
+          cursor.execute("UPDATE fulltable SET statusFlag = ? WHERE statusFlag = ? and sensingTime > ? and sensingTime < ?",(statusFlagOut,statusFlagIn,str(startYJT),str(endYJT))) 
+          cursor.execute("COMMIT;")
           databaseChecked = True
     except sqlite3.OperationalError as error:
       if error.args[0] == 'database is locked':
@@ -61,6 +62,12 @@ def resetGranules(statusFlagIn,statusFlagOut,startYJT, endYJT):
       print(sys.exc_info()) 
       break
 
+def processLOG(argv):
+  with open("processLOG.txt",'a') as LOG:
+    for arg in argv:
+      LOG.write(str(arg)+" ")
+    LOG.write('\n')
+
 ################################### Main ######################################
 #                                                                             #
 #                                                                             #
@@ -69,9 +76,9 @@ if __name__=='__main__':
   if len(sys.argv) == 2:
     tilefile=None
     if sys.argv[1] == "cron":
-      startdate = (datetime.datetime.utcnow() + datetime.timedelta(days=-4)).strftime("%Y%jT000000")
+      startdate = (datetime.datetime.utcnow() + datetime.timedelta(days=-5)).strftime("%Y%jT000000")
       enddate = datetime.datetime.utcnow().strftime("%Y%jT999999")
-      print(startdate,enddate)
+      processLOG(["MASTER.py started for ",startdate,enddate, " at",datetime.datetime.now()])
       getGran.granuleList(2,"02_granules.txt",startdate,enddate,tilefile)
       subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
       selCount = getGran.granuleList(3,"02_granules.txt",startdate,enddate,tilefile)
@@ -79,19 +86,23 @@ if __name__=='__main__':
         subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
       selCount = getGran.granuleList(104,"02_granules.txt",startdate,enddate,tilefile)
       if selCount > 0:
+        processLOG(["retrying",selCount,"granules for 02_granules_manager.py",datetime.datetime.now()])
         subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
         selCount = getGran.granuleList(104,"02_granules.txt",startdate,enddate,tilefile)
         #update 104 to 102
-        if selCount > 0:
-          resetGranules(104,102,startdate, enddate)
+        #if selCount > 0:
+        #  print("setting",selCount,"granules to re download",datetime.datetime.now())
+        #  resetGranules(104,102,startdate, enddate)
       getGran.granuleList(4,"03_granules.txt",startdate,enddate)
       subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
       selCount = getGran.granuleList(105,"03_granules.txt",startdate,enddate)
       if selCount > 0:
+        processLOG(["retrying",selCount,"granules for 03_DIST_UPD.py",datetime.datetime.now()])
         subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
         selCount = getGran.granuleList(105,"03_granules.txt",startdate,enddate)
         if selCount > 0:
           #update 105 to 102
+          sys.stdout.write("setting",selCount,"granules to re download",datetime.datetime.now())
           resetGranules(105,102,startdate, enddate)
   else:
     if len(sys.argv) == 3:

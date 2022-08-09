@@ -24,7 +24,8 @@ def granuleList(statusFlag,filename,startYJT=None, endYJT=None,tilefile=None):
       with open(filename,"w") as filelist:
         for g in selectedGrans:
           filelist.write(g+"\n")
-      print(len(selectedGrans),"selected granules for",filename)
+      #if printCount:
+      #print(len(selectedGrans),"selected granules for",filename)
     except sqlite3.OperationalError as error:
       if error.args[0] == 'database is locked':
         time.sleep(0.1) 

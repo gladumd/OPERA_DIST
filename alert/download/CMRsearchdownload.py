@@ -13,6 +13,7 @@ Last Updated:
 """
 
 ################################ IMPORT PACKAGES ##############################
+from turtle import down
 import requests
 import math
 import aiohttp
@@ -114,7 +115,7 @@ def searchCMR(startdate,enddate):
   endYJT = enddate.strftime("%Y%jT999999")
   endYMD = enddate.strftime("%Y-%m-%d")
   searchdates = startYMD+'T00:00:00Z/'+endYMD+'T23:59:59Z' #may have to loop through days depending on search time
-  print("start search", searchdates,"at",datetime.datetime.now())
+  #print("start search", searchdates,"at",datetime.datetime.now())
   try:
     cmr_pg = get_cmr_pages_urls(collections, searchdates)
     url_dict = asyncio.run(get_granules_url_dict(cmr_pg))
@@ -250,23 +251,9 @@ def download_parallel(granuledictionary,Nsim=200):
     else:
       #print(result)
       Nerrors +=1
-      databaseChecked = False
-      while(databaseChecked == False):
-        try:
-          with closing(sqlite3.connect(dbpath+"database.db")) as connection:
-            with closing(connection.cursor()) as cursor:
-              cursor.execute("UPDATE fulltable SET statusFlag = 102, Errors = ? WHERE HLS_ID = ?",(status,HLS_ID)) 
-              cursor.execute("COMMIT")
-              databaseChecked = True
-        except sqlite3.OperationalError as error:
-          if error.args[0] == 'database is locked':
-            time.sleep(0.1) 
-          else:
-            sys.stderr(error.args)
-            break
-        except:
-          sys.stderr(sys.exc_info())
-          break
+      sqliteCommand = "UPDATE fulltable SET statusFlag = 102, Errors = ? WHERE HLS_ID = ?"
+      sqliteTuple = (status,HLS_ID)
+      updateSqlite(sqliteCommand,sqliteTuple)
   procPool.close()
   procPool.join()
   processLOG([Nsuccess,"granules successfully downloaded,", Nerrors, "with errors",datetime.datetime.now()])
@@ -296,11 +283,15 @@ def checkDownloadComplete(sourcepath,granule,sensor):
 
 #get the download time of the last added file
 def getDownloadTime(sourcepath):
-  sout = os.popen("date -u -r `ls -t "+sourcepath+"/* | head -1` +%Y-%m-%dT%TZ")
+  #seems to not handle the cross in the day line...."HLS.L30.T33XXK.2022213T123433.v2.0|DIST-ALERT_2022213T123433_L30_T33XXK_v0|2|33XXK|2022213T123433|2022-08-05T00:17:30.327665Z|2022-08-05T00:18:52Z|||||"
+  #HLS.L30.T46XDH.2022213T060148.v2.0|DIST-ALERT_2022213T060148_L30_T46XDH_v0|2|46XDH|2022213T060148|2022-08-05T00:23:59.953294Z|2022-08-05T00:25:39Z|||||
+  sout = os.popen("date -u -r "+sourcepath+" +%Y-%m-%dT%TZ")
   return sout.read().strip()
+  #timestamp = os.path.getmtime(path)
+  #datestamp = datetime.datetime.fromtimestamp(timestamp)
 
 #check a granule for correctness and update it in the database with download success (2) or download failed (102)
-def checkGranule(granule,writeNew=True):
+def checkGranule(granule,writeNew=True,fromDownload=False):
   (HLS,sensor,Ttile,sensingTime,majorV,minorV)= granule.split('.')
   year = sensingTime[0:4]
   tile = Ttile[1:6]
@@ -311,7 +302,7 @@ def checkGranule(granule,writeNew=True):
   check = checkDownloadComplete(sourcepath,granule,sensor)
   if check == "complete":
     downloadTime = getDownloadTime(sourcepath)
-    availTime = getAvailableTime(sourcepath+"/"+granule+".cmr.xml")
+    availTime = getAvailableTime(sourcepath+"/"+granule+".cmr.xml",DIST_ID)
     if availTime == 'NA':
       statusFlag = 102
     else:
@@ -331,23 +322,7 @@ def checkGranule(granule,writeNew=True):
     else:
       sqliteCommand = "UPDATE fulltable SET statusFlag = ?, Errors = ? WHERE HLS_ID = ?"
       sqliteTuple = (statusFlag,Errors,HLS_ID)
-  written = False
-  while written == False:
-    try:
-      with closing(sqlite3.connect(dbpath+"database.db")) as connection:
-        with closing(connection.cursor()) as cursor:
-          cursor.execute(sqliteCommand,sqliteTuple)
-          cursor.execute("COMMIT;")
-          written = True
-    except sqlite3.OperationalError as error:
-      if error.args[0] == 'database is locked':
-        time.sleep(0.1) 
-      else:
-        sys.stderr(error.args)
-        break
-    except:
-      sys.stderr(sys.exc_info())
-      break
+  updateSqlite(sqliteCommand,sqliteTuple)
   return (statusFlag,granule)
 
 #parallel checking of all granules in list
@@ -428,13 +403,36 @@ def filterByTileList(granuleDict,tilefile):
       granulesout[g]=granuleDict[g]
   return(granulesout)
 
-def getAvailableTime(xmlfilename):
+def updateSqlite(sqliteCommand,sqliteTuple):
+  written = False
+  while written == False:
+    try:
+      with closing(sqlite3.connect(dbpath+"database.db")) as connection:
+        with closing(connection.cursor()) as cursor:
+          cursor.execute(sqliteCommand,sqliteTuple)
+          cursor.execute("COMMIT;")
+          written = True
+    except sqlite3.OperationalError as error:
+      if error.args[0] == 'database is locked':
+        time.sleep(0.1) 
+      else:
+        print(error.args)
+        break
+    except:
+      print(sys.exc_info())
+      break
+
+def getAvailableTime(xmlfilename,DIST_ID):
   try:
     with open(xmlfilename) as xml_file:
       dict = xmltodict.parse(xml_file.read())
     return dict['Granule']['InsertTime']
   except:
-    return 'NA'
+    with open("../errorLOG.txt", 'a') as ERR:
+      ERR.write(xmlfilename+" is empty\n")
+    sqliteCommand = "UPDATE fulltable SET Errors = ?, statusFlag = ? where DIST_ID = ?"
+    sqliteTuple = ("xml file is empty",102,DIST_ID)
+    updateSqlite(sqliteCommand,sqliteTuple)
 
 ################################### Main ######################################
 #                                                                             #

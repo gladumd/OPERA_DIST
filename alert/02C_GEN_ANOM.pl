@@ -6,6 +6,7 @@ $HLSsource = "/gpfs/glad3/HLS";
 $outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT";
 $calWindow = 31; #number of days of moving window
 $Nyears = 3; #Nyears of baseline
+if(!-d "temp"){mkdir"temp";}
 
 &runScene();
 
@@ -22,8 +23,8 @@ sub runScene(){
   #if(-e "$output/GEN_ANOM.tif"){print LOG"$output/GEN_ANOM.tif exists\n";}
   #else{
     &compileTileDOY();
-    if(-e "gen_anom_$scene"){
-      system"./gen_anom_$scene; rm gen_anom_$scene; rm gen_anom_$scene.cpp";
+    if(-e "temp/gen_anom_$scene"){
+      system"cd temp; ./gen_anom_$scene; rm gen_anom_$scene; rm gen_anom_$scene.cpp";
     }
   #}
 }
@@ -38,7 +39,7 @@ sub compileTileDOY(){
     open(LOG,">$output/additional/HLSsourceFiles.txt");
     print LOG"@selectedfiles";close(LOG);
   
-open (OUT, ">gen_anom_$scene.cpp");
+open (OUT, ">temp/gen_anom_$scene.cpp");
 print OUT"#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -300,6 +301,6 @@ system(\"rm ${filename}TEMP.tif\");
 return 0;
 }";
     close (OUT);
-    system("g++ gen_anom_$scene.cpp -o gen_anom_$scene -lgdal -Wno-unused-result -std=gnu++11 -I /gpfs/glad3/HLSDIST/System/eigen-3.4.0 &>>errorLOG.txt");
+    system("cd temp;g++ gen_anom_$scene.cpp -o gen_anom_$scene -lgdal -Wno-unused-result -std=gnu++11 -I /gpfs/glad3/HLSDIST/System/eigen-3.4.0");
   }
 }

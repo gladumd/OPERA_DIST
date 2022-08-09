@@ -23,19 +23,19 @@ dateEnd = sys.argv[2]
 path = sys.argv[3]
 conn = None
 try:
-   conn = sqlite3.connect(path+'database.db')
+   conn = sqlite3.connect(path+'databaseE2Eend.db')
 except Error as e:
     print(e)
 
 cursor = conn.cursor()
 
 #this needs to take in all statusFlags
-strCommand = "SELECT HLS_ID, DIST_ID, statusFlag, availableTime, downloadTime,processedTime,Errors FROM fulltable WHERE AND sensingTime >= ? AND sensingTime < ?"
+strCommand = "SELECT HLS_ID, DIST_ID, statusFlag, availableTime, downloadTime,processedTime,Errors FROM fulltable WHERE sensingTime >= ? AND sensingTime < ?"
 cursor.execute(strCommand,(dateStart,dateEnd,))
 rows = cursor.fetchall()
 
 outname_report = path + dateStart + "_"+dateEnd+"_productStatus.csv"
-col_names_report = ["HLS_ID","DIST_ID","status","availableTime","downloadTime","processedTime","retrievalTime","productTime","Error"]
+col_names_report = ["HLS_ID","DIST_ID","status","availableTime","downloadTime","processedTime","Error","retrievalTime","productTime"]
 
 #for retrievel time report
 with open(outname_report,'w') as out_csv_file:
@@ -53,21 +53,23 @@ with open(outname_report,'w') as out_csv_file:
         wrow.append(row[4])
         wrow.append(row[5])
         wrow.append(row[6])
-        if not row[3] and statFlag>=1:
-            availTime = datetime.strptime(row[3],"%Y-%m-%dT%H:%M:%SZ")
+        if row[3] and statFlag>=1:
+            availTime = datetime.strptime(row[3][0:19],"%Y-%m-%dT%H:%M:%S")
         else:
-            availTime = 0
-        if not row[4] and statFlag>=2:
-            dlTime = datetime.strptime(row[4],"%Y-%m-%dT%H:%M:%SZ")
+            availTime = 'NA'
+        if row[4] and statFlag>=2:
+            dlTime = datetime.strptime(row[4][0:19],"%Y-%m-%dT%H:%M:%S")
+        if not availTime == 'NA':
+            retriTime = (dlTime - availTime).total_seconds()/3600
         else:
-            dlTime = 0
-        if not row[5] and statFlag>=5:
-            procdTime = datetime.strptime(row[5],"%Y-%m-%dT%H:%M:%SZ")  
+            retriTime = 'NA'
+        if row[5] and statFlag==5:
+            procdTime = datetime.strptime(row[5][0:19],"%Y-%m-%dT%H:%M:%S")  
+            proTime = (procdTime - dlTime).total_seconds()/3600
         else:
-            procdTime = 0      
+            proTime = 'NA'   
+
         #returns the hours
-        retriTime = (dlTime - availTime).seconds/3600
-        proTime = (procdTime - dlTime).seconds/3600
         wrow.append(retriTime)
         wrow.append(proTime)
         csv_out.writerow(wrow)

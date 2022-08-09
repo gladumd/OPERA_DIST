@@ -14,12 +14,12 @@ $Nyears = 3; #Nyears of baseline
 #if($version eq "v_S"){$VFsource = "/cephfs/glad4/HLSDIST/006_HLS_Test_S";}
 #if($version eq "v_"){$VFsource = "/cephfs/glad4/HLSDIST/005_HLS_Test";}
 $VFsource = "$outbase";
+if(!-d "temp"){mkdir"temp";}
 
 &runScene();
 
 sub runScene(){
   ($HLS,$sensor,$Ttile,$datetime,$majorV,$minorV)= split('\.',$scene);
-  
   $year = substr($datetime,0,4);
   $doy = substr($datetime,4,3);
   $tile = substr($Ttile,1,5);
@@ -33,7 +33,9 @@ sub runScene(){
   else{
     &compileTileDOY($scene,$tile,$doy,$year);
     if(!-d "$output/additional"){system"mkdir -p $output/additional";}
-    system"./veg_anom_$scene; rm veg_anom_$scene; rm veg_anom_$scene.cpp";
+    if(-e "temp/veg_anom_$scene"){
+      system"cd temp;./veg_anom_$scene; rm veg_anom_$scene; rm veg_anom_$scene.cpp";
+    }else{die"failed to compile temp/veg_anom_$scene\n"}
   }
 }
 
@@ -60,13 +62,13 @@ sub compileTileDOY(){
   #$Nsensordates = $NsensordatesNew + $NsensordatesZhen;
   #print"$scene: $NsensordatesNew hist, $NsensordatesZhen Zhen\n";
   $Nsensordates = @selectedfiles;
-  if($Nsensordates >0){
+  if($Nsensordates >-1){
     if(!-d "$output"){print"$output does not exist\n";}
     open(LOG,">$output/additional/VFsourceFiles.txt");
     print LOG"@selectedfiles\n";
     print LOG"@oldfiles\n";close(LOG);
     
-open (OUT, ">veg_anom_$scene.cpp");
+open (OUT, ">temp/veg_anom_$scene.cpp");
 print OUT"#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -132,6 +134,7 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {if(histVF[$i][y][x]==255){histVF
 ";
 }
 }
+
 
 #for($i=0;$i<$NsensordatesZhen;$i++){
 #($im1,$im2)=split(',',$selectedfilesZ[$i]);
@@ -318,6 +321,6 @@ system(\"rm ${filename}TEMP.tif\");
 return 0;
 }";
     close (OUT);
-    system("g++ veg_anom_$scene.cpp -o veg_anom_$scene -lgdal -Wno-unused-result -std=gnu++11 1>/dev/null &>>errorLOG.txt");
-  }
+    system("cd temp;g++ veg_anom_$scene.cpp -o veg_anom_$scene -lgdal -Wno-unused-result -std=gnu++11 1>/dev/null");
+  }else{die"$outscene no available baseline VEG-IND files\n"}
 }
