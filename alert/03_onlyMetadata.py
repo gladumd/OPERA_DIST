@@ -52,57 +52,11 @@ def runTile(server,Ttile,tempscenes):
     HLS_ID = granule
     DIST_ID = "DIST-ALERT_"+Sdatetime+"_"+sensor+"_"+Ttile+"_"+DISTversion
     year = Sdatetime[0:4]
-    if os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-ANOM.tif") and os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-ANOM.tif"):
-      scenes.append(DIST_ID)
-
-  sortedScenes = sortDates(scenes)
-  (tname,firstdatetime,tsensor,tTtile,tDISTversion) = sortedScenes[0].split('_')
-  if updateMode == "UPDATE":
-    prev = []
-    response = subprocess.run(["ls "+outbase+"/*/"+tilepathstring+"/*/*VEG-DIST-STATUS.tif"],capture_output=True,shell=True)
-    if response.stdout.decode().strip() == "":
-      NumPrev = 0
-    else:
-      tempfiles = str(response.stdout.decode().strip()).split('\n')
-      NumPrev = len(tempfiles)
-    if NumPrev >0:
-      for file in tempfiles:
-        genfile = file; re.sub("VEG","GEN",genfile)
-        if os.path.exists(genfile):
-          folders = file.split('/')
-          gran = folders[-2]
-          (tname,prevdatetime,tsensor,tTtile,tDISTversion) = gran.split('_')
-          if prevdatetime < firstdatetime:
-            prev.append(gran)
-      if len(prev) == 0:
-        previousSource = "first"
-      else:
-        sortedprev = sortDates(prev)
-        previous = sortedprev[-1]
-        (tname,prevdatetime,tsensor,tTtile,tDISTversion)= previous.split('_')
-        prevyear = prevdatetime[0:4]
-        previousSource = outbase+"/"+prevyear+"/"+tilepathstring+"/"+previous+"/"+previous
-    else:
-      previousSource = "first"
-  elif updateMode == "RESTART":
-    previousSource = "first"
-  elif updateMode == "SMOKE":
-    previousSource = "first"
-
-  NscenesTile = len(sortedScenes)
-  for DIST_ID in sortedScenes:
-    #$currsize = @sortedScenes;
-    #print"\r$outscene $currsize / $NscenesTile left";
-    (name,Sdatetime,sensor,Ttile,FDISTversion) = DIST_ID.split('_')
-    year = Sdatetime[0:4]
     doy = Sdatetime[4:7]
 
     outdir = outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID
-    if updateMode == "SMOKE":
-      outdir = "/gpfs/glad3/HLSDIST/System/smoke_test/new/"+DIST_ID
     httppath = httpbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID
-    response = subprocess.run(["python dayDiff.py 2021001 "+year+doy],capture_output=True,shell=True)
-    currDate = response.stdout.decode().strip()
+
 
     if not os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif"):
       errorLOG("ERROR!!!!!!!!!!!!!! "+outdir+" VEG-ANOM.tif not exist\n")
@@ -117,37 +71,30 @@ def runTile(server,Ttile,tempscenes):
     else:
       try:
         Errors=""
-        response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03A_alertUpdateVEG "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
-        errveg = response.stderr.decode().strip()
-        response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03B_alertUpdateGEN "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
-        errgen = response.stderr.decode().strip()
-        if errveg == "" and errgen == "":
-          previousSource = outdir+"/"+DIST_ID
-          Errors = "NA"
-        else:
-          Errors = errveg+" "+errgen
-          errorLOG(DIST_ID+Errors +"ERRORs")
         if not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-DIST-STATUS.tif") or not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-DIST-STATUS.tif"):
-          errorLOG(DIST_ID+"_GEN-DIST-STATUS.tif not made")
           statusFlag=104
+          Errors = "missing time-series files"
         else:
           statusFlag = 5
+          Errors = "NA"
         if statusFlag == 5:
           response = subprocess.run(["ls "+outdir+"/additional/*.xml"],capture_output=True,shell=True)
           xmlfile = response.stdout.decode().strip()
+          subprocess.run(["cp "+HLSsource+"/"+sensor+"/"+year+"/"+tilepathstring+"/"+HLS_ID+"/"+HLS_ID+".cmr.xml "+outdir+"/additional/"+HLS_ID+".cmr.xml 2>>errorLOG.txt"],capture_output=True,shell=True)
+
           if not os.path.exists(xmlfile):
-            errorLOG("ERROR:: "+DIST_ID+" no XML file.")
-            sqliteCommand = "UPDATE fulltable SET Errors = 'source xmlfile does not exist', statusFlag = 102 where DIST_ID=?"
-            sqliteTuple = (DIST_ID,)
-            updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
+            subprocess.run(["cp "+HLSsource+"/"+sensor+"/"+year+"/"+tilepathstring+"/"+HLS_ID+"/"+HLS_ID+".cmr.xml "+xmlfile+" 2>>errorLOG.txt"],capture_output=True,shell=True)
+            if not os.path.exists(xmlfile):
+              errorLOG("ERROR:: "+DIST_ID+" no XML file.")
+              sqliteCommand = "UPDATE fulltable SET Errors = 'source xmlfile does not exist', statusFlag = 102 where DIST_ID=?"
+              sqliteTuple = (DIST_ID,)
+              updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
           else:
             #print("python writeMetadata.py",DIST_ID,sensor,xmlfile,outdir,httppath,DISTversion,Errors)
             response = subprocess.run(["python writeMetadata.py "+DIST_ID+" "+sensor+" "+xmlfile+" "+outdir+" "+httppath+" "+DISTversion+" "+Errors],capture_output=True,shell=True)
             errmeta = response.stderr.decode().strip()
             
-            if errmeta == "":
-              response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+DIST_ID+".notification.json"],capture_output=True,shell=True)
-            else:
+            if errmeta != "":
               errorLOG(DIST_ID+errmeta)
 
 
@@ -160,8 +107,6 @@ def runTile(server,Ttile,tempscenes):
 
 def updateSqlite(ID,sqliteCommand,sqliteTuple):
   written = False
-  if updateMode == "SMOKE":
-    written = True
   while written == False:
     try:
       with closing(sqlite3.connect(dbpath+"database.db")) as connection:
@@ -229,10 +174,6 @@ if __name__=='__main__':
       OUT.write("started: "+str(datetime.datetime.now()))
 
   now = datetime.datetime.now()
-
-  response = subprocess.run(["ssh gladapp17 \'cd "+currdir+"; g++ 03A_alertUpdateVEG.cpp -o 03A_alertUpdateVEG -lgdal -std=gnu++11 -Wno-unused-result\'"],shell=True)
-  response = subprocess.run(["ssh gladapp17 \'cd "+currdir+"; g++ 03B_alertUpdateGEN.cpp -o 03B_alertUpdateGEN -lgdal -std=gnu++11 -Wno-unused-result\'"],shell=True)
-
   granulelist = []
   with open(filelist, 'r') as file:
     lines = file.read().splitlines()

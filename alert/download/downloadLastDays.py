@@ -11,7 +11,7 @@ import datetime
 if __name__=='__main__':
   if len(sys.argv) == 1:
     enddate = datetime.datetime.utcnow()
-    startdate = (enddate + datetime.timedelta(days=-5)) #15 days may want to shrink
+    startdate = (enddate + datetime.timedelta(days=-6)) #15 days may want to shrink
   else:
     print("No parameters should be entered.")
 
