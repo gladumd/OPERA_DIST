@@ -10,6 +10,8 @@ if($tilelist eq ""){die"mutst enter tilelist, startdate (YYYYJJJ), enddate, year
 $HLSsource = "/gpfs/glad3/HLS";
 $outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ANN";
 $sourcebase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT";
+$DISTversion="v0";
+$httpbase = "https://glad.umd.edu/projects/opera/DIST-ANN";
 
 $startyear = substr($startdate,0,4);
 $endyear = substr($enddate,0,4);
@@ -34,7 +36,7 @@ for $line (@serverlist){
 ($server,$threads)=split(',',$line);
 for($threadID=1;$threadID<=$threads;$threadID++){$sline=$server."_".$threadID; push @ClassThreads, threads->create(\&runTile, $sline);} }
 foreach $thread (@ClassThreads)  {$thread->join();} @ClassThreads=();
-
+ 
 sub runTile(){($server,$threads)=split('_',$sline);
   while ($Ttile = shift(@tiles)){#if($Ttile eq "T21LYG"){
     #find file list of VEG_DIST_STATUS between start and end date.
@@ -54,7 +56,7 @@ sub runTile(){($server,$threads)=split('_',$sline);
         if($date>=$startdate and $date < $enddate){
           if(-e "$sourcebase/$year/$tilepathstring/$s/$s\_GEN-DIST-STATUS.tif"){
             push(@granules, $s);
-          }else{print("$sourcebase/$year/$tilepathstring/$s/$s\_GEN-DIST-STATUS.tif\n");}
+          }else{print("missing $sourcebase/$year/$tilepathstring/$s/$s\_GEN-DIST-STATUS.tif\n");}
         }
       }
     }
@@ -77,11 +79,17 @@ sub runTile(){($server,$threads)=split('_',$sline);
       $useddates{$currDate}=1;
     }
     $Ndates = $Ngranules;
-    
+    $lastDate = $currDate;
+    $outdir = "$outbase/$tilepathstring/$yearname";
+    $httppath = "$httpbase/$tilepathstring/$yearname";
     #print("@images\n");
-    &vegANN(@images);
-    #&genANN(@images);
 
+    $spatial_coverage = &vegANN(@images);
+    &genANN(@images);
+    
+    $Errors = "NA";
+    print"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py DIST-ANN_${tile}_${yearname}_${DISTversion} $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors";
+    system"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py DIST-ANN_${tile}_${yearname}_${DISTversion} $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors";
   }#}
 }
 
@@ -113,11 +121,12 @@ $zone = substr($tile,0,2);
 $yearlast = substr($datetime,0,4);
 $tilepathstring = $zone."/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($tile,4,1);
 $outdir = "$outbase/$tilepathstring/$yearname"; if(!-d $outdir){system"mkdir -p $outdir";}
-system"cp $sourcebase/$yearlast/$tilepathstring/$last/$last\_VEG-LAST-DATE.tif $outdir/VEG-LAST-DATE.tif";
+system"cp $sourcebase/$yearlast/$tilepathstring/$last/$last\_VEG-LAST-DATE.tif $outdir/DIST-ANN_${tile}_${yearname}_${DISTversion}_VEG-LAST-DATE.tif";
 $Ngranules = @images;
 print("$Ngranules $tile $last\n");
+
 #print"$tile,$Ndates::";
-open (OUT, ">ANN_veg_$tile.cpp");
+open (OUT, ">temp/ANN_veg_$tile.cpp");
 print OUT"#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -206,16 +215,28 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
   if(vegstatus[0][y][x] == CONFLO){outvegstatus[y][x] = CONFLO;index[y][x]=0;datesNeeded[0]=1;}
   else if(vegstatus[0][y][x] == CONFHI){outvegstatus[y][x] = CONFHI;index[y][x]=0;datesNeeded[0]=1;}
   else if(vegstatus[0][y][x] == NODATA){outvegstatus[y][x] = NODATA;}
+  else{index[y][x]=0;}
 }}
 
 for(i=1; i<Ngranules; i++){
   for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++){
-    if(outvegstatus[y][x] == 0){
+    if(outvegstatus[y][x] == 0 or outvegstatus[y][x] == NODATA){
       if(vegstatus[i][y][x] == CONFLO){outvegstatus[y][x] = CONFLODONE; index[y][x]=i;datesNeeded[i]=1;}
       else if(vegstatus[i][y][x] == CONFHI){outvegstatus[y][x] = CONFHIDONE;index[y][x]=i;datesNeeded[i]=1;}
     }
   }} 
 }
+
+for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
+  if(outvegstatus[y][x] == 0){
+    outveghist[y][x] = 200;
+    outveganommax[y][x] = 0;
+    outvegcount[y][x] = 0;
+    outvegconf[y][x] = 0;
+    outvegdate[y][x] = 0;
+    outvegdur[y][x] = 0;
+  }
+}}
 
 i=0;
 ";
@@ -252,7 +273,7 @@ if(datesNeeded[i]){
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vegdur, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
 
   for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
-    if(outvegstatus[y][x]>0 and outvegstatus[y][x]!=NODATA and index[y][x]==i){";
+    if(outvegstatus[y][x] > 0 and outvegstatus[y][x]!=NODATA and index[y][x]==i){";
     foreach $met(@uint8,@short){print OUT"
       out${met}[y][x] = ${met}[y][x];";
     }
@@ -279,13 +300,23 @@ i++;";
 print OUT"
 for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
   if(outvegstatus[y][x]>0 and outvegstatus[y][x]!=NODATA){
-    outvegmax[y][x] = veghist[y][x] - veganommax[y][x];
+    outvegmax[y][x] = outveghist[y][x] - outveganommax[y][x];
   } else {
     for(i=0;i<Ngranules;i++){
       if(vegind[i][y][x] > outvegmax[y][x] and vegind[i][y][x] != 255){outvegmax[y][x]=vegind[i][y][x];}
     }
   }
 }}
+
+int Nvalid = 0;
+int Nnodata = 0;
+double percentData;
+for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
+  if(outvegstatus[y][x]!=NODATA){Nvalid++;}
+  else{Nnodata++;}
+}}
+
+percentData = (double)Nvalid/(Nnodata + Nvalid)* 100;
 
 //export results
 GDALDriver *OUTDRIVER;
@@ -296,6 +327,7 @@ OGRSpatialReference oSRS;
 char *OUTPRJ = NULL;
 char **papszOptions = NULL;
 char **papszMetadata = NULL;
+char **currMetadata = NULL;
 
 OUTDRIVER = GetGDALDriverManager()->GetDriverByName(\"GTiff\"); if( OUTDRIVER == NULL ) {cout << \"no driver\" << endl; exit( 1 );};
 oSRS.SetWellKnownGeogCS( \"WGS84\" );
@@ -307,72 +339,110 @@ papszOptions = CSLSetNameValue( papszOptions, \"TILED\", \"YES\");
 const int Noverviews = 3;
 int overviewList[Noverviews] = {2,4,8};
 
-//export results
-OUTGDAL = OUTDRIVER->Create( \"$outdir/index.tif\", xsize, ysize, 1, GDT_Int16, papszOptions );
-OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
-OUTBAND->SetNoDataValue(255);
-OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, index, xsize, ysize, GDT_Int16, 0, 0 ); 
-GDALClose((GDALDatasetH)OUTGDAL);
+char s[6] = {0};
+snprintf(s, 6, \"%lf\", percentData);
+papszMetadata = CSLSetNameValue( papszMetadata, \"Percent_data\", s);
+cout<<(double)percentData<<endl;
 
+//export results
 OUTGDAL = OUTDRIVER->Create( \"$outdir/VEG-DIST-STATUSTEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, \"flag_values\", \"0,2,4,5,6,255\");
+currMetadata = CSLSetNameValue( currMetadata, \"flag_meanings\", \"no_disturbance,confirmed_<50%_ongoing,confirmed_>=50%_ongoing,confirmed_<50%_completed,confirmed_>=50%_completed,no_data\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription(\"Vegetation_disturbance_status\");
 OUTBAND->SetNoDataValue(255);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, outvegstatus, xsize, ysize, GDT_Byte, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
-OUTGDAL->SetMetadata(papszMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
+OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 
 OUTGDAL = OUTDRIVER->Create( \"$outdir/VEG-ANOM-MAXTEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_min\", \"0\");
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_max\", \"100\");
+currMetadata = CSLSetNameValue( currMetadata, \"Units\", \"percent\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription(\"Maximum_vegetation_loss_anomaly\");
 OUTBAND->SetNoDataValue(255);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, outveganommax, xsize, ysize, GDT_Byte, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
-OUTGDAL->SetMetadata(papszMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
+OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 
 OUTGDAL = OUTDRIVER->Create( \"$outdir/VEG-HISTTEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_min\", \"0\");
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_max\", \"100\");
+currMetadata = CSLSetNameValue( currMetadata, \"Units\", \"percent\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription(\"Vegetation_precent_of_baseline_at_the_time_of_max_anomaly\");
 OUTBAND->SetNoDataValue(255);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, outveghist, xsize, ysize, GDT_Byte, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
-OUTGDAL->SetMetadata(papszMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
+OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 
 OUTGDAL = OUTDRIVER->Create( \"$outdir/VEG-IND-MAXTEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_min\", \"0\");
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_max\", \"100\");
+currMetadata = CSLSetNameValue( currMetadata, \"Units\", \"percent\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription(\"Maximum_vegetation_percent\");
 OUTBAND->SetNoDataValue(255);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, outvegmax, xsize, ysize, GDT_Byte, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
-OUTGDAL->SetMetadata(papszMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
+OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 
 OUTGDAL = OUTDRIVER->Create( \"$outdir/VEG-DIST-COUNTTEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_min\", \"0\");
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_max\", \"254\");
+currMetadata = CSLSetNameValue( currMetadata, \"Units\", \"observations\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription(\"Count_of_observations_with_vegetation_loss\");
 OUTBAND->SetNoDataValue(255);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, outvegcount, xsize, ysize, GDT_Byte, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
-OUTGDAL->SetMetadata(papszMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
+OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 
 OUTGDAL = OUTDRIVER->Create( \"$outdir/VEG-DIST-CONFTEMP.tif\", xsize, ysize, 1, GDT_Int16, papszOptions );
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_min\", \"0\");
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_max\", \"32000\");
+currMetadata = CSLSetNameValue( currMetadata, \"Units\", \"unitless\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription(\"Confidence_of_vegetation_disturbance\");
 OUTBAND->SetNoDataValue(-1);
-OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, vegconf, xsize, ysize, GDT_Int16, 0, 0 ); 
+OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, outvegconf, xsize, ysize, GDT_Int16, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
-OUTGDAL->SetMetadata(papszMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
+OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 
 OUTGDAL = OUTDRIVER->Create( \"$outdir/VEG-DIST-DATETEMP.tif\", xsize, ysize, 1, GDT_Int16, papszOptions );
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_min\", \"0\");
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_max\", \"$lastDate\");
+currMetadata = CSLSetNameValue( currMetadata, \"Units\", \"days\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription(\"Day_of_vegetation_disturbance\");
 OUTBAND->SetNoDataValue(-1);
-OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, vegdate, xsize, ysize, GDT_Int16, 0, 0 ); 
+OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, outvegdate, xsize, ysize, GDT_Int16, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
-OUTGDAL->SetMetadata(papszMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
+OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 
 OUTGDAL = OUTDRIVER->Create( \"$outdir/VEG-DIST-DURTEMP.tif\", xsize, ysize, 1, GDT_Int16, papszOptions );
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_min\", \"0\");
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_max\", \"366\");
+currMetadata = CSLSetNameValue( currMetadata, \"Units\", \"days\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription(\"Number_of_days_of_ongoing_loss_anomalies_since_initial_detection\");
 OUTBAND->SetNoDataValue(-1);
-OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, vegdur, xsize, ysize, GDT_Int16, 0, 0 ); 
+OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, outvegdur, xsize, ysize, GDT_Int16, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
-OUTGDAL->SetMetadata(papszMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
+OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 ";
 foreach $filename ("VEG-DIST-STATUS","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-HIST","VEG-IND-MAX"){
 print OUT"
-system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $outdir/${filename}TEMP.tif $outdir/DIST-ANN_${tile}_${yearname}_${filename}.tif\");
+system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $outdir/${filename}TEMP.tif $outdir/DIST-ANN_${tile}_${yearname}_${DISTversion}_${filename}.tif\");
 system(\"rm $outdir/${filename}TEMP.tif\");
 ";
 }
@@ -380,8 +450,10 @@ print OUT"
 return 0;
 }";
 close (OUT);
-if($Ngranules>0){system("g++ ANN_veg_$tile.cpp -o ANN_veg_$tile -lgdal -Wno-unused-result -std=gnu++11");}
-system"./ANN_veg_$tile $zone; rm ANN_veg_$tile";
+if($Ngranules>0){system("cd temp;g++ ANN_veg_$tile.cpp -o ANN_veg_$tile -lgdal -Wno-unused-result -std=gnu++11");}
+$spatial_coverage = readpipe"cd temp; ./ANN_veg_$tile $zone; rm ANN_veg_$tile; rm ANN_veg_$tile.cpp";
+chomp($spatial_coverage);
+return($spatial_coverage);
 }
 
 
@@ -394,10 +466,12 @@ $zone = substr($tile,0,2);
 $yearlast = substr($datetime,0,4);
 $tilepathstring = $zone."/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($tile,4,1);
 $outdir = "$outbase/$tilepathstring/$yearname"; if(!-d $outdir){system"mkdir -p $outdir";}
-system"cp $sourcebase/$yearlast/$tilepathstring/$last/$last\_GEN-LAST-DATE.tif $outdir/GEN-LAST-DATE.tif";
+system"cp $sourcebase/$yearlast/$tilepathstring/$last/$last\_GEN-LAST-DATE.tif $outdir/DIST-ANN_${tile}_${yearname}_${DISTversion}_GEN-LAST-DATE.tif";
+$Ngranules = @images;
+print("$Ngranules $tile $last\n");
 
 #print"$tile,$Ndates::";
-open (OUT, ">ANN_gen_$tile.cpp");
+open (OUT, ">temp/ANN_gen_$tile.cpp");
 print OUT"#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -446,12 +520,23 @@ GDALClose(INGDAL);
 
 uint8_t outgenstatus[ysize][xsize];memset(outgenstatus, 0, sizeof(outgenstatus[0][0]) * ysize * xsize);
 short index[ysize][xsize];memset(index, -1, sizeof(index[0][0]) * ysize * xsize);
+";
 
-for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
-  if(genstatus[0][y][x] == CONFLO){outgenstatus[y][x] = CONFLODONE;index[y][x]=0;}
-  else if(genstatus[0][y][x] == CONFHI){outgenstatus[y][x] = CONFHIDONE;index[y][x]=0;}
-  else if(genstatus[0][y][x] == NODATA){outgenstatus[y][x] = NODATA;}
-}}
+@uint8 = ("gencount");
+@short = ("genconf","genanommax","gendate","gendur");
+foreach $met (@uint8){
+  print OUT"uint8_t ${met}[ysize][xsize];memset(${met}, 0, sizeof(${met}[0][0]) * ysize * xsize);\n";
+  print OUT"uint8_t out${met}[ysize][xsize];memset(out${met}, 0, sizeof(out${met}[0][0]) * Ngranules * ysize * xsize);\n";
+}
+foreach $met (@short){
+  print OUT"short ${met}[ysize][xsize];memset(${met}, -1, sizeof(${met}[0][0]) * ysize * xsize);\n";
+  print OUT"short out${met}[ysize][xsize];memset(out${met}, -1, sizeof(out${met}[0][0]) * ysize * xsize);\n";
+}
+
+print OUT"
+bool datesNeeded[Ngranules] = {0};
+datesNeeded[0]=1;
+
 i=0;
 ";
 foreach $granule (@images){
@@ -465,30 +550,35 @@ i++;";
 }
 
 print OUT"
-bool datesNeeded[Ngranules] = {0};
-datesNeeded[0]=1;
+for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
+  if(genstatus[0][y][x] == CONFLO){outgenstatus[y][x] = CONFLO;index[y][x]=0;datesNeeded[0]=1;}
+  else if(genstatus[0][y][x] == CONFHI){outgenstatus[y][x] = CONFHI;index[y][x]=0;datesNeeded[0]=1;}
+  else if(genstatus[0][y][x] == NODATA){outgenstatus[y][x] = NODATA;}
+  else{index[y][x]=0;}
+}}
 
 for(i=1; i<Ngranules; i++){
   for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++){
-    if(outgenstatus[y][x] != 0){
+    if(outgenstatus[y][x] == 0 or outgenstatus[y][x] == NODATA){
       if(genstatus[i][y][x] == CONFLO){outgenstatus[y][x] = CONFLODONE; index[y][x]=i;datesNeeded[i]=1;}
       else if(genstatus[i][y][x] == CONFHI){outgenstatus[y][x] = CONFHIDONE;index[y][x]=i;datesNeeded[i]=1;}
     }
   }} 
 }
 
+for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
+  if(outgenstatus[y][x] == 0){
+    outgenanommax[y][x] = 0;
+    outgencount[y][x] = 0;
+    outgenconf[y][x] = 0;
+    outgendate[y][x] = 0;
+    outgendur[y][x] = 0;
+  }
+}}
+
 i=0;
 ";
-@uint8 = ("gencount");
-@short = ("genconf","genanommax","gendate","gendur");
-foreach $met (@uint8){
-  print OUT"uint8_t ${met}[ysize][xsize];memset(${met}, 0, sizeof(${met}[0][0]) * ysize * xsize);\n";
-  print OUT"uint8_t out${met}[ysize][xsize];memset(out${met}, 0, sizeof(out${met}[0][0]) * Ngranules * ysize * xsize);\n";
-}
-foreach $met (@short){
-  print OUT"short ${met}[ysize][xsize];memset(${met}, -1, sizeof(${met}[0][0]) * ysize * xsize);\n";
-  print OUT"short out${met}[ysize][xsize];memset(out${met}, -1, sizeof(out${met}[0][0]) * ysize * xsize);\n";
-}
+
 foreach $granule (@images){
 ($name,$datetime,$sensor,$Ttile,$FDISTversion)= split('_',$granule);
 $year = substr($datetime,0,4);
@@ -526,6 +616,17 @@ if(datesNeeded[i]){
 i++;";
 }
 print OUT"
+
+int Nvalid = 0;
+int Nnodata = 0;
+double percentData;
+for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
+  if(outgenstatus[y][x]!=NODATA){Nvalid++;}
+  else{Nnodata++;}
+}}
+
+percentData = (double)Nvalid/(Nnodata + Nvalid) * 100;
+
 //export results
 GDALDriver *OUTDRIVER;
 GDALDataset *OUTGDAL;
@@ -535,6 +636,7 @@ OGRSpatialReference oSRS;
 char *OUTPRJ = NULL;
 char **papszOptions = NULL;
 char **papszMetadata = NULL;
+char **currMetadata = NULL;
 
 OUTDRIVER = GetGDALDriverManager()->GetDriverByName(\"GTiff\"); if( OUTDRIVER == NULL ) {cout << \"no driver\" << endl; exit( 1 );};
 oSRS.SetWellKnownGeogCS( \"WGS84\" );
@@ -546,52 +648,85 @@ papszOptions = CSLSetNameValue( papszOptions, \"TILED\", \"YES\");
 const int Noverviews = 3;
 int overviewList[Noverviews] = {2,4,8};
 
+char s[6] = {0};
+snprintf(s, 6, \"%lf\", percentData);
+papszMetadata = CSLSetNameValue( papszMetadata, \"Percent_data\", s);
+
 //export results
 OUTGDAL = OUTDRIVER->Create( \"$outdir/GEN-DIST-STATUSTEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, \"flag_values\", \"0,2,4,5,6,255\");
+currMetadata = CSLSetNameValue( currMetadata, \"flag_meanings\", \"no_disturbance,confirmed_low_ongoing,confirmed_high_ongoing,confirmed_low_completed,confirmed_high_completed,no_data\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription(\"Generic_disturbance_status\");
 OUTBAND->SetNoDataValue(255);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, outgenstatus, xsize, ysize, GDT_Byte, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
-OUTGDAL->SetMetadata(papszMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
+OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 
 OUTGDAL = OUTDRIVER->Create( \"$outdir/GEN-ANOM-MAXTEMP.tif\", xsize, ysize, 1, GDT_Int16, papszOptions );
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_min\", \"0\");
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_max\", \"32000\");
+currMetadata = CSLSetNameValue( currMetadata, \"Units\", \"unitless\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription(\"Maximum_spectral_anomaly\");
 OUTBAND->SetNoDataValue(-1);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, outgenanommax, xsize, ysize, GDT_Int16, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
-OUTGDAL->SetMetadata(papszMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
+OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 
 OUTGDAL = OUTDRIVER->Create( \"$outdir/GEN-DIST-COUNTTEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_min\", \"0\");
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_max\", \"254\");
+currMetadata = CSLSetNameValue( currMetadata, \"Units\", \"observations\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription(\"Count_of_observations_with_spectral_anomaly\");
 OUTBAND->SetNoDataValue(255);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, outgencount, xsize, ysize, GDT_Byte, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
-OUTGDAL->SetMetadata(papszMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
+OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 
 OUTGDAL = OUTDRIVER->Create( \"$outdir/GEN-DIST-CONFTEMP.tif\", xsize, ysize, 1, GDT_Int16, papszOptions );
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_min\", \"0\");
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_max\", \"32000\");
+currMetadata = CSLSetNameValue( currMetadata, \"Units\", \"unitless\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription(\"Confidence_of_generic_disturbance\");
 OUTBAND->SetNoDataValue(-1);
-OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, genconf, xsize, ysize, GDT_Int16, 0, 0 ); 
+OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, outgenconf, xsize, ysize, GDT_Int16, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
-OUTGDAL->SetMetadata(papszMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
+OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 
 OUTGDAL = OUTDRIVER->Create( \"$outdir/GEN-DIST-DATETEMP.tif\", xsize, ysize, 1, GDT_Int16, papszOptions );
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_min\", \"0\");
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_max\", \"$lastDate\");
+currMetadata = CSLSetNameValue( currMetadata, \"Units\", \"days\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription(\"Day_of_generic_disturbance\");
 OUTBAND->SetNoDataValue(-1);
-OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, gendate, xsize, ysize, GDT_Int16, 0, 0 ); 
+OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, outgendate, xsize, ysize, GDT_Int16, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
-OUTGDAL->SetMetadata(papszMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
+OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 
 OUTGDAL = OUTDRIVER->Create( \"$outdir/GEN-DIST-DURTEMP.tif\", xsize, ysize, 1, GDT_Int16, papszOptions );
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_min\", \"0\");
+currMetadata = CSLSetNameValue( currMetadata, \"Valid_max\", \"366\");
+currMetadata = CSLSetNameValue( currMetadata, \"Units\", \"days\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription(\"Number_of_days_of_ongoing_spectral_anomalies_since_initial_detection\");
 OUTBAND->SetNoDataValue(-1);
-OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, gendur, xsize, ysize, GDT_Int16, 0, 0 ); 
+OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, outgendur, xsize, ysize, GDT_Int16, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
-OUTGDAL->SetMetadata(papszMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
+OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 ";
 foreach $filename ("GEN-DIST-STATUS","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR"){
 print OUT"
-system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $outdir/${filename}TEMP.tif $outdir/DIST-ANN_${tile}_${yearname}_${filename}.tif\");
+system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $outdir/${filename}TEMP.tif $outdir/DIST-ANN_${tile}_${yearname}_${DISTversion}_${filename}.tif\");
 system(\"rm $outdir/${filename}TEMP.tif\");
 ";
 }
@@ -599,6 +734,6 @@ print OUT"
 return 0;
 }";
 close (OUT);
-if($Ngranules>0){system("g++ ANN_gen_$tile.cpp -o ANN_gen_$tile -lgdal -Wno-unused-result -std=gnu++11");}
-system"./ANN_gen_$tile $zone; rm ANN_gen_$tile";
+if($Ngranules>0){system("cd temp;g++ ANN_gen_$tile.cpp -o ANN_gen_$tile -lgdal -Wno-unused-result -std=gnu++11");}
+system"cd temp; ./ANN_gen_$tile $zone; rm ANN_gen_$tile";
 }

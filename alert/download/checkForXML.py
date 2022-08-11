@@ -163,7 +163,7 @@ def download_granule(HLS_ID):
 
 #concurrently download all the links in the dictionary
 def download_parallel(granulelist):
-  Nsim = 100
+  Nsim = 200
   starttime = datetime.datetime.now()
   #granulelist = list(granuledictionary.values())
   print("Start download", len(granulelist),"granules", starttime)

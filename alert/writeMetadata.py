@@ -116,7 +116,7 @@ def main(ID,sensor,sourceXML,outdir,httppath,version,Errors):
     outDict['GranuleUR'] = ID
     outDict['TemporalExtent'] = sourceDict['Granule']['Temporal']
     outDict['ProviderDates']=[{'Date':datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),'Type':'Insert'}]
-    outDict['CollectionReference'] = {"ShortName": "OPERA_DIST-ALERT-HLS_PROVISIONAL_V0",'Version':"0"}
+    outDict['CollectionReference'] = {"ShortName": "OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0",'Version':"0"}
     outDict['DataGranule'] = {}
     outDict['DataGranule']['DayNightFlag'] = sourceDict['Granule']['DataGranule']['DayNightFlag'].capitalize()
     outDict['DataGranule']['ProductionDateTime'] = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
@@ -175,7 +175,7 @@ def main(ID,sensor,sourceXML,outdir,httppath,version,Errors):
     notiDict = {}
     notiDict['version'] = "1.4"
     notiDict['provider'] = "UMD_GLAD_OPERA"
-    notiDict['collection'] = 'OPERA_DIST-ALERT-HLS_PROVISIONAL_V0'
+    notiDict['collection'] = 'OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0'
     notiDict['submissionTime'] = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     notiDict['identifier'] = ID
     notiDict['product'] = {}

@@ -283,6 +283,10 @@ GDALClose(SGDAL);
 papszMetadata = CSLSetNameValue( papszMetadata, \"BaselineYearWindow\", \"$Nyears\");
 papszMetadata = CSLSetNameValue( papszMetadata, \"BaselineCalendarWindow\", \"$calWindow\");
 
+papszMetadata = CSLSetNameValue( papszMetadata, \"Units\", \"unitless\");
+papszMetadata = CSLSetNameValue( papszMetadata, \"Valid_min\", \"0\");
+papszMetadata = CSLSetNameValue( papszMetadata, \"Valid_max\", \"32000\");
+
 const int Noverviews = 3;
 int overviewList[Noverviews] = {2,4,8};
 ";
@@ -291,6 +295,7 @@ print OUT"
 OUTGDAL = OUTDRIVER->Create( \"${filename}TEMP.tif\", xsize, ysize, 1, GDT_Int16, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetNoDataValue(-1);
+OUTBAND->SetDescription(\"Spectral_anomaly\");
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, dist, xsize, ysize, GDT_Int16, 0, 0 );
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
 OUTGDAL->SetMetadata(papszMetadata,\"\");
