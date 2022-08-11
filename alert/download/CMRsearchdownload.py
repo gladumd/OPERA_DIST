@@ -137,8 +137,8 @@ def searchCMR(startdate,enddate):
           cursor.execute("SELECT HLS_ID from fulltable WHERE sensingTime > ? and sensingTime < ? and statusFlag > 1",(startYJT,endYJT)) 
           downloadedGrans = cursor.fetchall()
           downloadedGrans = [s for t in downloadedGrans for s in t]
-          #Select all that were already found but not downloaded
-          cursor.execute("SELECT HLS_ID from fulltable WHERE sensingTime > ? and sensingTime < ? and statusFlag <= 1",(startYJT,endYJT)) 
+          #Select all that were already found but not staged for downloaded
+          cursor.execute("SELECT HLS_ID from fulltable WHERE sensingTime > ? and sensingTime < ? and statusFlag < 1",(startYJT,endYJT)) 
           alreadyFoundGrans = cursor.fetchall()
           alreadyFoundGrans = [s for t in alreadyFoundGrans for s in t]
           #Select all that will be retried. 
@@ -155,16 +155,12 @@ def searchCMR(startdate,enddate):
               "downloaded,",len(retrygranules),
               "granules to retry for",searchdates])
           databaseChecked = True
-          for HLS_ID in newgranules:
-            #(HLS,sensor,Ttile,sensingTime,majorV,minorV)= HLS_ID.split('.')
-            #cursor.execute("INSERT or REPLACE INTO fulltable(HLS_ID,statusFlag,sensingTime) VALUES(?,?,?)",(HLS_ID,0,sensingTime))
-            #cursor.execute("COMMIT")
-            download_dict[HLS_ID] = url_dict[HLS_ID]
-          for HLS_ID in retrygranules:
-            #cursor.execute("UPDATE fulltable SET statusFlag = 0 WHERE HLS_ID = ?",(HLS_ID,))
-            #cursor.execute("COMMIT")
-            download_dict[HLS_ID] = url_dict[HLS_ID]
-      for HLS_ID in notdownloadedgranules: #moved outside of database open portion
+      #moved outside of database open portion
+      for HLS_ID in retrygranules:
+        download_dict[HLS_ID] = url_dict[HLS_ID]
+      for HLS_ID in notdownloadedgranules: 
+        download_dict[HLS_ID] = url_dict[HLS_ID]
+      for HLS_ID in newgranules: #moved to last
         download_dict[HLS_ID] = url_dict[HLS_ID]
     except sqlite3.OperationalError as error:
       if error.args[0] == 'database is locked':
@@ -217,7 +213,22 @@ def download_granule(links):
       status = lastLine
       with open("wgeterrors.txt","a") as log:
         log.write(img_url + ": " + lastLine+"\n")
-      break
+      wgetcommand = "wget --timeout=300 --output-document="+img_out+" "+img_url 
+          #The default is to retry 20 times, with the exception of fatal errors 
+          #like "connection refused" or "not found" (404), which are not retried.
+      report = subprocess.run([wgetcommand],capture_output=True,shell=True)
+          #need username and password in .netrc file. If have authentication error
+          #run earthengine_authenticate.py
+      lastLine = report.stderr.decode().split("\n")[-3]
+      if report.returncode == 0:
+        #status = "success"
+        with open("wgetlog.txt","a") as log:
+          log.write(lastLine+"\n")
+      else:
+        status = lastLine
+        with open("wgeterrors.txt","a") as log:
+          log.write(img_url + ": " + lastLine+"\n")
+        break
   statusFlag = checkGranule(HLS_ID,writeNew=True)
   if statusFlag[0] == 2:
     status = "success"
@@ -236,6 +247,8 @@ def download_parallel(granuledictionary,Nsim=200):
   starttime = datetime.datetime.now()
   granulelist = list(granuledictionary.values())
   processLOG(["Start download", len(granulelist),"granules", starttime])
+  #add granules to database with code 1 so that they aren't attempted in the next search
+  addGranuleList(list(granuledictionary.keys())) 
   #print("Start download", len(granulelist),"granules", starttime)
   procPool = Pool(Nsim)
   results = procPool.imap_unordered(download_granule,granulelist)
@@ -341,6 +354,26 @@ def checkGranuleList(granulelist):
       errors +=1
   processLOG(success,"granules successfully downloaded,", errors,"granules with errors",datetime.datetime.now())
   return granulesToDownload
+
+#check a granule for correctness and update it in the database with download success (2) or download failed (102)
+def addGranule(granule,writeNew=True,fromDownload=False):
+  (HLS,sensor,Ttile,sensingTime,majorV,minorV)= granule.split('.')
+  year = sensingTime[0:4]
+  tile = Ttile[1:6]
+  HLS_ID = granule
+  DIST_ID = "DIST-ALERT_"+sensingTime+"_"+sensor+"_"+Ttile+"_"+DISTversion
+  MGRStile = tile
+  sourcepath = source+"/"+sensor+"/"+year+"/"+tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/"+granule
+  statusFlag = 1
+  sqliteCommand = "INSERT or IGNORE INTO fulltable(HLS_ID,statusFlag,sensingTime,MGRStile,DIST_ID) VALUES(?,?,?,?,?)"
+  sqliteTuple = (HLS_ID,statusFlag,sensingTime,MGRStile,DIST_ID)
+  updateSqlite(sqliteCommand,sqliteTuple)
+
+#parallel adding of all granules in list
+def addGranuleList(granulelist):
+  Nsim = 40
+  granulesToDownload = []
+  results = Pool(Nsim).imap_unordered(addGranule,granulelist)
 
 #get list of all granules that need to be checked
 def getGranulesToCheck():

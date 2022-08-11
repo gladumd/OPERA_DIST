@@ -74,7 +74,7 @@ def processLOG(argv):
 ###############################################################################
 if __name__=='__main__':
   if len(sys.argv) == 2:
-    tilefile=None
+    tilefile="../tile_list_dist_project.txt"
     if sys.argv[1] == "cron":
       startdate = (datetime.datetime.utcnow() + datetime.timedelta(days=-5)).strftime("%Y%jT000000")
       enddate = datetime.datetime.utcnow().strftime("%Y%jT999999")
@@ -90,9 +90,9 @@ if __name__=='__main__':
         subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
         selCount = getGran.granuleList(104,"02_granules.txt",startdate,enddate,tilefile)
         #update 104 to 102
-        #if selCount > 0:
-        #  print("setting",selCount,"granules to re download",datetime.datetime.now())
-        #  resetGranules(104,102,startdate, enddate)
+        if selCount > 0:
+          print("setting",selCount,"granules to re download",datetime.datetime.now())
+          resetGranules(104,102,startdate, enddate)
       getGran.granuleList(4,"03_granules.txt",startdate,enddate)
       subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
       selCount = getGran.granuleList(105,"03_granules.txt",startdate,enddate)

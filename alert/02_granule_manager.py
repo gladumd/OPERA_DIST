@@ -52,7 +52,7 @@ def runGranule(server,granule):
   
   elif mode == "ALL" or mode == "SMOKE":
     #create VEG_ANOM
-    if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif"):# and not os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif"):#and !-e "$outdir/VEG_ANOM.tif"){
+    if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") and not os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif"):#and !-e "$outdir/VEG_ANOM.tif"){
       response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02B_VEG_ANOM_COG.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
       #Errors = Errors + str(response.stderr.decode())#.split('\n')[-1]
 
