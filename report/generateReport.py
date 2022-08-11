@@ -23,18 +23,18 @@ dateEnd = sys.argv[2]
 path = sys.argv[3]
 conn = None
 try:
-   conn = sqlite3.connect(path+'databaseE2Eend.db')
+   conn = sqlite3.connect('databaseFWDend.db')#path+'databaseE2Eend.db')
 except Error as e:
     print(e)
 
 cursor = conn.cursor()
 
 #this needs to take in all statusFlags
-strCommand = "SELECT HLS_ID, DIST_ID, statusFlag, availableTime, downloadTime,processedTime,Errors FROM fulltable WHERE sensingTime >= ? AND sensingTime < ?"
-cursor.execute(strCommand,(dateStart,dateEnd,))
+strCommand = "SELECT HLS_ID, DIST_ID, statusFlag, availableTime, downloadTime,processedTime,Errors FROM fulltable WHERE downloadTime >= ?"
+cursor.execute(strCommand,(dateStart,))
 rows = cursor.fetchall()
-
-outname_report = path + dateStart + "_"+dateEnd+"_productStatus.csv"
+conn.close()
+outname_report = "FWDend_productStatus.csv"
 col_names_report = ["HLS_ID","DIST_ID","status","availableTime","downloadTime","processedTime","Error","retrievalTime","productTime"]
 
 #for retrievel time report
@@ -74,5 +74,5 @@ with open(outname_report,'w') as out_csv_file:
         wrow.append(proTime)
         csv_out.writerow(wrow)
 
-conn.close()
+
 
