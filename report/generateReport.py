@@ -1,3 +1,5 @@
+#This is the script/ producing retrieval time report, production time report and data accounting report
+#Author: Zhen Song 08/16/2022
 from email.errors import StartBoundaryNotFoundDefect
 from locale import Error
 import sqlite3
@@ -19,12 +21,8 @@ import numpy as np
 #5    Disturbance alert time-series success
 #105  Disturbance alert time-series fail
 
-#date format as '2022170T000000' YYYYDOYTHHMMSS
 dateStart = '2022-08-09T15:00:00Z'
 dateEnd = '2022-08-11T16:00:00Z'
-#dateStart = sys.argv[1]
-#dateEnd = sys.argv[2]
-#path = sys.argv[3]
 conn = None
 try:
    conn = sqlite3.connect('database.db')
@@ -37,9 +35,93 @@ cursor = conn.cursor()
 strCommand = "SELECT HLS_ID, DIST_ID, statusFlag, availableTime, downloadTime,processedTime,Errors FROM fulltable WHERE downloadTime >= ? AND downloadTime <= ?"
 cursor.execute(strCommand,(dateStart,dateEnd,))
 rows = cursor.fetchall()
+
+strCommandStatus = "SELECT COUNT(*),statusFlag FROM fulltable WHERE downloadTime >= ? AND downloadTime <= ? group by statusFlag"
+cursor.execute(strCommandStatus,(dateStart,dateEnd,))
+statusRows = cursor.fetchall()
+
+numSubmitted = 0
+numPassed = 0
+numFailed = 0
+numExe = 0
+for status in statusRows:
+    num = int(status[0])
+    statusFlag = int(status[1])
+    numSubmitted = numSubmitted + num
+    if statusFlag == 5:
+        numPassed = numPassed + num
+    elif statusFlag  == 102 or statusFlag == 103 or statusFlag == 104 or statusFlag == 105:
+        numFailed = numFailed + num
+    elif statusFlag == 2 or statusFlag == 3 or statusFlag == 4:
+        numExe = numExe + num
+    else:
+        print("")
+
+strCommandHLSL30 = "SELECT COUNT(*),statusFlag FROM fulltable WHERE downloadTime >= ? AND downloadTime <= ? AND DIST_ID LIKE '%L30%' group by statusFlag"
+cursor.execute(strCommandHLSL30,(dateStart,dateEnd,))
+numL30Avail = 0
+numL30Dl = 0
+numL30Fail = 0
+rowsL30 = cursor.fetchall()
+for row in rowsL30:
+    num = int(row[0])
+    statusFlag = int(row[1])
+    if statusFlag >= 1:
+        numL30Avail = numL30Avail + num
+    
+    if statusFlag >=2 and  statusFlag != 102:
+        numL30Dl = numL30Dl + num
+    else:
+        numL30Fail = numL30Fail + num
+
+strCommandHLSS30 = "SELECT COUNT(*),statusFlag FROM fulltable WHERE downloadTime >= ? AND downloadTime <= ? AND DIST_ID LIKE '%S30%' group by statusFlag"
+cursor.execute(strCommandHLSS30,(dateStart,dateEnd,))
+numS30Avail = 0
+numS30Dl = 0
+numS30Fail = 0
+rowsS30 = cursor.fetchall()
+for row in rowsS30:
+    num = int(row[0])
+    statusFlag = int(row[1])
+    if statusFlag >= 1:
+        numS30Avail = numS30Avail + num
+    
+    if statusFlag >=2 and  statusFlag != 102:
+        numS30Dl = numS30Dl + num
+    else:
+        numS30Fail = numS30Fail + num
+
 conn.close()
 
-outname_report = "FWDend_productStatus.csv"
+#write the data accounting report
+outname_report_datacount = "OPERA_UMD_SDS_Activity_Report_"+dateStart+"_"+dateEnd+".csv"
+
+row_dataaccounting_tile = "Title: OPERA UMD SDS Activity Summary Report"+"\n"+\
+                          "Period of Performance: "+dateStart+"-"+dateEnd+"\n"+\
+                          "Time of Report:" + datetime.now().strftime("%m/%d/%YT%H:%M:%S") + "\n"
+
+with open(outname_report_datacount,'w') as out_csv_file_count:
+    out_csv_file_count.write(row_dataaccounting_tile)
+    out_csv_file_count.write("Summary of Workflows:"+str(numSubmitted)+" submitted "+\
+        str(numPassed)+" passed "+str(numFailed)+" failed "+str(numExe)+" executing"+"\n")
+    out_csv_file_count.write("Total Products Generated: "+str(numPassed)+" products" + "\n")
+    out_csv_file_count.write("Total Incoming Data: "+str(numSubmitted)+" files" + "\n" + "\n")
+    out_csv_file_count.write("Summary of Incoming Products from LP DAAC"+"," + \
+        "#Product Available,#ProdcutDownloaded,#Product Download Fail \n")
+    out_csv_file_count.write("L2_HLS_S30"+"," + \
+                             str(numS30Avail)+","+str(numS30Dl)+","+str(numS30Fail)+"\n")
+    out_csv_file_count.write("L2_HLS_L30"+"," + \
+                             str(numL30Avail)+","+str(numL30Dl)+","+str(numL30Fail)+"\n\n")
+    out_csv_file_count.write("Summary of Outgoing Products to LP DAAC \n")
+    out_csv_file_count.write("ProductType,#Prodcuts Produced,#Prodcuts Notified,#Products Delivered,Products Failed\n")
+    out_csv_file_count.write("L3_DIST_HLS," + str(numPassed) + "," + str(numPassed)+\
+        ","+str(numPassed) + "," + str(numFailed)+"\n\n" )
+    out_csv_file_count.write("Note: products count based on data delivery status \n"+\
+                            "Delivered: DELIVERED\nProduced: PRODUCED\nNotified: NOTIFIED\nFailed: ERROR_PRODUCED")
+
+out_csv_file_count.close()
+
+outname_report = "ProductStatus_"+dateStart+"_"+dateEnd+".csv"
 col_names_report = ["HLS_ID","DIST_ID","statusFlag","availableTime","downloadTime","processedTime","Error","retrievalTime","productTime"]
 
 #output all the data
@@ -71,13 +153,13 @@ with open(outname_report,'w') as out_csv_file:
         if not (availTime == 'NA' or dlTime == 'NA'):
             retriTime = (dlTime - availTime).total_seconds()/3600
         else:
-            retriTime = 'NA'
+            retriTime = float('NAN')
 
         if row[5] and statFlag==5:
             procdTime = datetime.strptime(row[5][0:19],"%Y-%m-%dT%H:%M:%S")  
             proTime = (procdTime - dlTime).total_seconds()/3600
         else:
-            proTime = 'NA'   
+            proTime = float('NAN')   
 
         #returns the hours
         wrow.append(retriTime)
@@ -87,10 +169,11 @@ with open(outname_report,'w') as out_csv_file:
 #read all the data records
 dfs = pd.read_csv(outname_report)
 
+#retrieval time report
 #max,median,mean,min,P_90
-p_90 = str(np.percentile(dfs['retrievalTime'],90))
+p_90 = str(np.nanpercentile(dfs['retrievalTime'],90))
 row_title_retrieval = "Title: OPERA Retrieval Time Summary \n"
-row_date_retrieval = datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + "\n"
+row_date_retrieval = datetime.now().strftime("%m/%d/%YT%H:%M:%S") + "\n"
 row_timeperiod = "Period of Coverage:"+dateStart+"-"+dateEnd + "\n"
 row_notes = "Statistics for retrieval time(hrs):\n"
 row_stats = "Max retrieval time = " + str(dfs['retrievalTime'].max()) + "\n" + \
@@ -99,7 +182,7 @@ row_stats = "Max retrieval time = " + str(dfs['retrievalTime'].max()) + "\n" + \
     "Min retrieval time = "+ str(dfs['retrievalTime'].min()) + "\n" + \
     "90% Percentile retrieval time = "+ p_90 + "\n"
 
-outname_report_retrieval = "RetrievalTimeReport.csv"
+outname_report_retrieval = "RetrievalTimeReport_"+dateStart+"_"+dateEnd+".csv"
 col_names_report_retrieval = ["OPERA Product Filename","PublicAvailableDateTime","ProductReceivedDateTime","RetrievalTime"]        
 
 with open(outname_report_retrieval,'w') as out_csv_file_retrieval:
@@ -123,17 +206,20 @@ with open(outname_report_retrieval,'a') as out_csv_file_retrieval:
 
 out_csv_file_retrieval.close()
 
+#production time report
 #max,median,mean,min
+p_90 = str(np.nanpercentile(dfs['productTime'],90))
 row_title_product = "Title: OPERA Production Time Summary \n"
-row_date_product = datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + "\n"
+row_date_product = datetime.now().strftime("%m/%d/%YT%H:%M:%S") + "\n"
 row_timeperiod = "Period of Coverage:"+dateStart+"-"+dateEnd + "\n"
 row_notes = "Statistics for production time (hrs):\n"
 row_stats = "Max production time = " + str(dfs['productTime'].max()) + "\n" + \
     "Median production time = "+ str(dfs['productTime'].median()) + "\n" + \
     "Average production time = "+ str(dfs['productTime'].mean()) + "\n" + \
-    "Min production time = "+ str(dfs['productTime'].min()) + "\n" 
+    "Min production time = "+ str(dfs['productTime'].min()) + "\n" + \
+        "90% Percentile production time = "+ p_90 + "\n"
 
-outname_report_product = "ProductionTimeReport.csv"
+outname_report_product = "ProductionTimeReport_"+dateStart+"_"+dateEnd+".csv"
 col_names_report_product = ["OPERA Product Filename","InputReceivedDateTime","DAACAlertedDateTime","ProductionTime"]       
 
 with open(outname_report_product,'w') as out_csv_file_product:
