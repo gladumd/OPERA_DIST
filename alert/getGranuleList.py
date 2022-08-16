@@ -42,7 +42,7 @@ def filterByTileList(granulelist,tilefile):
     tiles = tilelist.read().splitlines()
   for g in granulelist:
     (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= g.split('.')
-    tile = Ttile
+    tile = Ttile[1:]
     if tile in tiles:
       granulesout.append(g)
   return(granulesout)

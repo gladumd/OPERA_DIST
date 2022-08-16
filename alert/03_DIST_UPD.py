@@ -221,7 +221,7 @@ if __name__=='__main__':
   if os.path.exists("KILL_03_DIST_UPD") or os.path.exists("KILL_ALL"):
     print("KILL file exists. Delete and rerun. 03_DIST_UPD.py"+str(datetime.datetime.now())+"\n")
     sys.exit()
-  elif os.path.exists("03_DIST_UPD_RUNNING"):
+  elif os.path.exists("03_DIST_UPD_RUNNING") or os.path.exists("02_granule_manager_RUNNING"):
     print("03_DIST_UPD.py already running (or died with an error). Delete 03_DIST_UPD_RUNNING and rerun."+str(datetime.datetime.now())+"\n")
     sys.exit()
   else:

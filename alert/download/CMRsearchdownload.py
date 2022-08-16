@@ -431,7 +431,7 @@ def filterByTileList(granuleDict,tilefile):
     tiles = tilelist.read().splitlines()
   for g in granuleDict.keys():
     (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= g.split('.')
-    tile = Ttile#[1:]
+    tile = Ttile[1:]
     if tile in tiles:
       granulesout[g]=granuleDict[g]
   return(granulesout)
