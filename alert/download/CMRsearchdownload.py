@@ -198,7 +198,7 @@ def download_granule(links):
     if not os.path.isdir(path_out):
       os.makedirs(path_out)
 
-    wgetcommand = "wget --timeout=300 --output-document="+img_out+" "+img_url 
+    wgetcommand = "wget --timeout=100 --output-document="+img_out+" "+img_url 
         #The default is to retry 20 times, with the exception of fatal errors 
         #like "connection refused" or "not found" (404), which are not retried.
     report = subprocess.run([wgetcommand],capture_output=True,shell=True)
@@ -213,7 +213,7 @@ def download_granule(links):
       status = lastLine
       with open("wgeterrors.txt","a") as log:
         log.write(img_url + ": " + lastLine+"\n")
-      wgetcommand = "wget --timeout=300 --output-document="+img_out+" "+img_url 
+      wgetcommand = "wget --timeout=100 --output-document="+img_out+" "+img_url 
           #The default is to retry 20 times, with the exception of fatal errors 
           #like "connection refused" or "not found" (404), which are not retried.
       report = subprocess.run([wgetcommand],capture_output=True,shell=True)
