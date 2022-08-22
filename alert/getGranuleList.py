@@ -21,6 +21,7 @@ def granuleList(statusFlag,filename,startYJT=None, endYJT=None,tilefile=None):
           databaseChecked = True
       if tilefile != None:
         selectedGrans = filterByTileList(selectedGrans,tilefile)
+      selectedGrans = sortDates(selectedGrans)
       with open(filename,"w") as filelist:
         for g in selectedGrans:
           filelist.write(g+"\n")
@@ -35,6 +36,20 @@ def granuleList(statusFlag,filename,startYJT=None, endYJT=None,tilefile=None):
       print(sys.exc_info()) 
   return len(selectedGrans)
 
+def sortDates(listtosort):
+  datetimes = []
+  datetimeDict = {}
+  for Fscene in listtosort:
+    #(Fname,Fdatetime,Fsensor,FTtile,FDISTversion) = Fscene.split('_')
+    (HLS_ID,sensor,Ttile,Sdatetime,majorV,minorV)= Fscene.split('.')
+    datetimeDict[str(Sdatetime)]=Fscene
+    datetimes.append(Sdatetime)
+  datetimes.sort()
+  sorted = []
+  for dt in list(datetimes):
+    Fscene = datetimeDict[dt]
+    sorted.append(Fscene)
+  return sorted
 
 def filterByTileList(granulelist,tilefile):
   granulesout = []
@@ -58,9 +73,9 @@ if __name__=='__main__':
   elif len(sys.argv) == 6:
     statusFlag = sys.argv[1]
     outfilename = sys.argv[2]
-    tilefile = sys.argv[3]
-    startdate = sys.argv[4]+"T000000"
-    enddate = sys.argv[5]+"T999999"
+    startdate = sys.argv[3]+"T000000"
+    enddate = sys.argv[4]+"T999999"
+    tilefile = sys.argv[5]
   else:
     print("bad parameters. Enter: statusFlag outfilename tilelist(optional) startDate(YYYYJJJ) endDate(YYYYJJJ)")
     sys.exit(1)

@@ -138,6 +138,7 @@ def writeMetadata(ID,outdir,httppath,version,Errors,starttime,endtime,spatial_co
     outDict['ProviderDates']=[{'Date':ProductionDateTime,'Type':'Insert'}]
     outDict['CollectionReference'] = {"ShortName": "OPERA_L3_DIST-ANN-HLS_PROVISIONAL_V0",'Version':"0"}
     outDict['DataGranule'] = {}
+    outDict['DataGranule']['DayNightFlag'] = 'Day'
     outDict['DataGranule']['ProductionDateTime'] =ProductionDateTime
     outDict['SpatialExtent'] = getSpatialExtent(outdir,ID)
     ###NOT CLOUD COVER but SPATIAL_COVERAGE????
