@@ -19,7 +19,7 @@ $endyear = substr($enddate,0,4);
 #push(@serverlist, "20,15");
 #push(@serverlist, "21,15");
 #push(@serverlist, "16,15");
-push(@serverlist, "17,15");
+push(@serverlist, "17,70");
 
 my %h = ();
 my @list :shared;
@@ -39,6 +39,8 @@ foreach $thread (@ClassThreads)  {$thread->join();} @ClassThreads=();
  
 sub runTile(){($server,$threads)=split('_',$sline);
   while ($Ttile = shift(@tiles)){#if($Ttile eq "T21LYG"){
+    $Nleft = @tiles;
+    if($Nleft % 200 == 0){print"$Nleft / $Ntiles to go\n";}
     #find file list of VEG_DIST_STATUS between start and end date.
     $tile = substr($Ttile,1,5);
     $zone = substr($tile,0,2);
@@ -84,12 +86,18 @@ sub runTile(){($server,$threads)=split('_',$sline);
     $httppath = "$httpbase/$tilepathstring/$yearname";
     #print("@images\n");
 
+    $productionTime = strftime "%Y%jT%H%M%SZ", gmtime;
+    $ID = "OPERA_L3_DIST-ANN-HLS_${tile}_${yearname}_${productionTime}_30_${DISTversion}";
     $spatial_coverage = &vegANN(@images);
     &genANN(@images);
     
     $Errors = "NA";
-    print"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py DIST-ANN_${tile}_${yearname}_${DISTversion} $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors";
-    system"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py DIST-ANN_${tile}_${yearname}_${DISTversion} $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors";
+    #print"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py DIST-ANN_${tile}_${yearname}_${DISTversion} $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors";
+    $log = readpipe"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py $ID $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors";
+    open(OUT,">>annualLOG.txt"); print OUT"$log"; close(OUT);
+
+    print"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json\n";
+    #system"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+$outdir+"/"+$DIST_ID+".notification.json";
   }#}
 }
 
@@ -121,7 +129,7 @@ $zone = substr($tile,0,2);
 $yearlast = substr($datetime,0,4);
 $tilepathstring = $zone."/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($tile,4,1);
 $outdir = "$outbase/$tilepathstring/$yearname"; if(!-d $outdir){system"mkdir -p $outdir";}
-system"cp $sourcebase/$yearlast/$tilepathstring/$last/$last\_VEG-LAST-DATE.tif $outdir/DIST-ANN_${tile}_${yearname}_${DISTversion}_VEG-LAST-DATE.tif";
+system"cp $sourcebase/$yearlast/$tilepathstring/$last/$last\_VEG-LAST-DATE.tif $outdir/${ID}_VEG-LAST-DATE.tif";
 $Ngranules = @images;
 print("$Ngranules $tile $last\n");
 
@@ -342,7 +350,7 @@ int overviewList[Noverviews] = {2,4,8};
 char s[6] = {0};
 snprintf(s, 6, \"%lf\", percentData);
 papszMetadata = CSLSetNameValue( papszMetadata, \"Percent_data\", s);
-cout<<(double)percentData<<endl;
+//cout<<(double)percentData<<endl;
 
 //export results
 OUTGDAL = OUTDRIVER->Create( \"$outdir/VEG-DIST-STATUSTEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
@@ -442,7 +450,7 @@ OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 ";
 foreach $filename ("VEG-DIST-STATUS","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-HIST","VEG-IND-MAX"){
 print OUT"
-system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $outdir/${filename}TEMP.tif $outdir/DIST-ANN_${tile}_${yearname}_${DISTversion}_${filename}.tif\");
+system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $outdir/${filename}TEMP.tif $outdir/${ID}_${filename}.tif\");
 system(\"rm $outdir/${filename}TEMP.tif\");
 ";
 }
@@ -466,7 +474,7 @@ $zone = substr($tile,0,2);
 $yearlast = substr($datetime,0,4);
 $tilepathstring = $zone."/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($tile,4,1);
 $outdir = "$outbase/$tilepathstring/$yearname"; if(!-d $outdir){system"mkdir -p $outdir";}
-system"cp $sourcebase/$yearlast/$tilepathstring/$last/$last\_GEN-LAST-DATE.tif $outdir/DIST-ANN_${tile}_${yearname}_${DISTversion}_GEN-LAST-DATE.tif";
+system"cp $sourcebase/$yearlast/$tilepathstring/$last/$last\_GEN-LAST-DATE.tif $outdir/${ID}_GEN-LAST-DATE.tif";
 $Ngranules = @images;
 print("$Ngranules $tile $last\n");
 
@@ -726,7 +734,7 @@ OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 ";
 foreach $filename ("GEN-DIST-STATUS","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR"){
 print OUT"
-system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $outdir/${filename}TEMP.tif $outdir/DIST-ANN_${tile}_${yearname}_${DISTversion}_${filename}.tif\");
+system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $outdir/${filename}TEMP.tif $outdir/${ID}_${filename}.tif\");
 system(\"rm $outdir/${filename}TEMP.tif\");
 ";
 }
@@ -735,5 +743,5 @@ return 0;
 }";
 close (OUT);
 if($Ngranules>0){system("cd temp;g++ ANN_gen_$tile.cpp -o ANN_gen_$tile -lgdal -Wno-unused-result -std=gnu++11");}
-system"cd temp; ./ANN_gen_$tile $zone; rm ANN_gen_$tile";
+system"cd temp; ./ANN_gen_$tile $zone; rm ANN_gen_$tile; rm ANN_gen_$tile.cpp";
 }
