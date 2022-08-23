@@ -165,9 +165,11 @@ def writeMetadata(ID,outdir,httppath,version,Errors,starttime,endtime,spatial_co
     outDict['AdditionalAttributes'][6]['Name'] = 'ULY'
     outDict['AdditionalAttributes'][6]['Values'] = [str(coords[1])]
     if Errors == "NA":
-      print(ID,"success")
+      with open("annualLOG.txt", 'a') as LOG:
+        LOG.write(tile+","+ ID+",success\n")
     else:
-      print(ID,Errors)
+      with open("errorLOG.txt", 'a') as ERR:
+        ERR.write(tile+","+ ID+","+Errors+"\n")
     
     writeJSON(outDict, outdir+"/"+ID+".cmr.json")
 
@@ -215,12 +217,16 @@ def writeMetadata(ID,outdir,httppath,version,Errors,starttime,endtime,spatial_co
     writeJSON(notiDict, outdir+"/"+ID+".notification.json")
   except:
     with open("errorLOG.txt", 'a') as ERR:
-      ERR.write(ID+" error in writing Metadata\n")
+      ERR.write(tile+","+ ID+",error in writing Metadata\n")
     traceback.print_exc()
 
 if __name__ == "__main__":
-  (ID,outdir,alertsource, tile, startday ,endday,spatial_coverage,httppath,DISTversion,Errors) = (sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6],sys.argv[7],sys.argv[8],sys.argv[9],sys.argv[10])
-  gdict = selectSourceFiles(alertsource, tile, startday ,endday)
-  [minstart,maxend,cs_code,cs_name,platforms] = allMetaCSV(gdict,outdir,ID)
-  writeMetadata(ID,outdir,httppath,DISTversion,Errors,minstart,maxend,spatial_coverage,tile,cs_code,cs_name,platforms)
- 
+  (ID,outdir,alertsource, tile, startday ,endday,spatial_coverage,httppath,DISTversion,Errors) = (sys.argv[1],sys.argv[2],  sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6],sys.argv[7],sys.argv[8],sys.argv[9],sys.argv[10])
+  try:
+    gdict = selectSourceFiles(alertsource, tile, startday ,endday)
+    [minstart,maxend,cs_code,cs_name,platforms] = allMetaCSV(gdict,outdir,ID)
+    writeMetadata(ID,outdir,httppath,DISTversion,Errors,minstart,maxend,spatial_coverage,tile,cs_code,cs_name,platforms)
+  except:
+    with open("errorLOG.txt", 'a') as ERR:
+      ERR.write(tile+","+ ID+",error in writing Metadata\n")
+    traceback.print_exc()

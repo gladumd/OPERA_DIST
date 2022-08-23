@@ -6,6 +6,7 @@ $startdate = $ARGV[1];
 $enddate = $ARGV[2];
 $yearname = $ARGV[3];
 if($tilelist eq ""){die"mutst enter tilelist, startdate (YYYYJJJ), enddate, yearname: perl annual.pl tilelist.txt\n";}
+if(!-d "temp"){mkdir"temp";}
 
 $HLSsource = "/gpfs/glad3/HLS";
 $outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ANN";
@@ -16,6 +17,15 @@ $httpbase = "https://glad.umd.edu/projects/opera/DIST-ANN";
 $startyear = substr($startdate,0,4);
 $endyear = substr($enddate,0,4);
 
+if(-e "annualLOG.txt"){
+  if(-e "annualLOGold.txt"){system"cat annualLOG.txt >> annualLOGold.txt; rm annualLOG.txt";}
+  else{system"mv annualLOG.txt annualLOGold.txt";}
+}
+if(-e "errorLOG.txt"){
+  if(-e "errorLOGold.txt"){system"cat errorLOG.txt >> errorLOGold.txt;rm errorLOG.txt";}
+  else{system"mv errorLOG.txt errorLOGold.txt";}
+}
+
 #push(@serverlist, "20,15");
 #push(@serverlist, "21,15");
 #push(@serverlist, "16,15");
@@ -25,6 +35,7 @@ my %h = ();
 my @list :shared;
 open(DAT,$tilelist) or die"Filelist: $tilelist does not exist.";
 @list = <DAT>; close(DAT); foreach(@list){chomp;}
+@list = @list[0..5];
 
 my @tiles :shared;
 @tiles = @list;
@@ -36,19 +47,70 @@ for $line (@serverlist){
 ($server,$threads)=split(',',$line);
 for($threadID=1;$threadID<=$threads;$threadID++){$sline=$server."_".$threadID; push @ClassThreads, threads->create(\&runTile, $sline);} }
 foreach $thread (@ClassThreads)  {$thread->join();} @ClassThreads=();
- 
+
+&checkTiles();
+
+sub checkTiles(){
+  @tiles = @list;
+  open(DAT,"annualLOG.txt");
+  @successes = <DAT>; close(DAT);
+  my %good = ();
+  my %bad = ();
+  my %nograns = ();
+  foreach $line (@successes){
+    chomp($line);
+    ($tile,$ID,$state) = split(',',$line);
+    if($state == "success"){
+      $good{$tile} = "success";
+    }elsif($state == "no granules"){
+      $nograns{$tile} = $state;
+    }else{$bad{$tile} = $state;}
+  }
+  open(DAT,"errorLOG.txt");
+  @fails = <DAT>; close(DAT);
+  foreach $line (@fails){
+    chomp($line);
+    ($tile,$ID,$state) = split(',',$line);
+    $bad{$tile} = $state;
+  }
+  $Nboth =0;$Ngood=0; $Nbad=0;$Nmissing=0;$Nnograns=0;
+  @missing = ();
+  foreach $tile (@tiles){
+    if(exists $good{$tile} and exists $bad{$tile}){$Nboth++;print"$tile,goodAndBad\n";}
+    elsif(exists $good{$tile}){$Ngood++;}
+    elsif(exists $nograns{$tile}){$Nnograns++;}
+    elsif(exists $bad{$tile}){$Nbad++;}
+    else{$Nmissing++;push(@missing,$tile)}
+  }
+  if(($Nboth+$Nbad)>0){
+    open(OUT,">badtiles.txt"); 
+    foreach $tile (keys %bad){print OUT"$tile\n";}
+    close(OUT);
+  }
+  if(($Nmissing)>0){
+    open(OUT,">missingtiles.txt"); 
+    foreach $tile (@missing){print OUT"$tile\n";}
+    close(OUT);
+  }
+  print"annual.pl DONE
+  $Ngood: successfully processed
+  $Nnograns: no available granules
+  $Nbad: failed
+  $Nmissing: unaccounted for\n";
+}
+
 sub runTile(){($server,$threads)=split('_',$sline);
-  while ($Ttile = shift(@tiles)){#if($Ttile eq "T21LYG"){
+  while ($tile = shift(@tiles)){#if($Ttile eq "T21LYG"){
     $Nleft = @tiles;
     if($Nleft % 200 == 0){print"$Nleft / $Ntiles to go\n";}
     #find file list of VEG_DIST_STATUS between start and end date.
-    $tile = substr($Ttile,1,5);
+    #$tile = substr($Ttile,1,5);
     $zone = substr($tile,0,2);
     $tilepathstring = $zone."/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($tile,4,1);
     
     @granules = ();
     foreach $year ($startyear..$endyear){
-      @files = readpipe"ls $sourcebase/$year/$tilepathstring/*/*VEG-DIST-STATUS.tif";
+      @files = readpipe"ls $sourcebase/$year/$tilepathstring/*/*VEG-DIST-STATUS.tif 2>/dev/null";
       foreach $f (@files){
         @t = split('/',$f);
         $s = $t[-2];
@@ -62,42 +124,47 @@ sub runTile(){($server,$threads)=split('_',$sline);
         }
       }
     }
-
-    @sortedgranules = &sortDates(@granules);
-    $Ngranules = @sortedgranules;
-
-    @fullimages=();
-    my %date =();
-    my %useddates = ();
-    @images = @sortedgranules;
-    foreach $granule (@sortedgranules){ $currsize = @sortedgranules;
-      #print"$granule $currsize / $Ngranules\n";
-      ($name,$datetime,$sensor,$Ttile,$FDISTversion)= split('_',$granule);
-      $year = substr($datetime,0,4);$doy = substr($datetime,4,3);
-      #system"python ../dayDiff.py 2021001 $year$doy\n";
-      #$command = "python dayDiff.py 2021001 $year$doy";
-      $currDate = readpipe("python dayDiff.py 2021001 $year$doy"); chomp($currDate);
-      $date{"$granule"}="$currDate";
-      $useddates{$currDate}=1;
-    }
-    $Ndates = $Ngranules;
-    $lastDate = $currDate;
-    $outdir = "$outbase/$tilepathstring/$yearname";
-    $httppath = "$httpbase/$tilepathstring/$yearname";
-    #print("@images\n");
-
-    $productionTime = strftime "%Y%jT%H%M%SZ", gmtime;
-    $ID = "OPERA_L3_DIST-ANN-HLS_${tile}_${yearname}_${productionTime}_30_${DISTversion}";
-    $spatial_coverage = &vegANN(@images);
-    &genANN(@images);
     
-    $Errors = "NA";
-    #print"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py DIST-ANN_${tile}_${yearname}_${DISTversion} $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors";
-    $log = readpipe"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py $ID $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors";
-    open(OUT,">>annualLOG.txt"); print OUT"$log"; close(OUT);
+    $Ngranules = @granules;
+    if($Ngranules >0){
+      @sortedgranules = &sortDates(@granules);
+      $Ngranules = @sortedgranules;
 
-    print"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json\n";
-    #system"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+$outdir+"/"+$DIST_ID+".notification.json";
+      @fullimages=();
+      my %date =();
+      my %useddates = ();
+      @images = @sortedgranules;
+      foreach $granule (@sortedgranules){ $currsize = @sortedgranules;
+        #print"$granule $currsize / $Ngranules\n";
+        ($name,$datetime,$sensor,$Ttile,$FDISTversion)= split('_',$granule);
+        $year = substr($datetime,0,4);$doy = substr($datetime,4,3);
+        #system"python ../dayDiff.py 2021001 $year$doy\n";
+        #$command = "python dayDiff.py 2021001 $year$doy";
+        $currDate = readpipe("python dayDiff.py 2021001 $year$doy"); chomp($currDate);
+        $date{"$granule"}="$currDate";
+        $useddates{$currDate}=1;
+      }
+      $Ndates = $Ngranules;
+      $lastDate = $currDate;
+      $outdir = "$outbase/$tilepathstring/$yearname";
+      $httppath = "$httpbase/$tilepathstring/$yearname";
+      #print("@images\n");
+
+      $productionTime = strftime "%Y%jT%H%M%SZ", gmtime;
+      $ID = "OPERA_L3_DIST-ANN-HLS_${tile}_${yearname}_${productionTime}_30_${DISTversion}";
+      $veglog = &vegANN(@images);
+      $genlog = &genANN(@images);
+      ($vegstatus,$spatial_coverage) = split(',',$veglog);
+      if($vegstatus == "ok" and $genlog =="ok"){
+        $Errors = "NA";
+        #print"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py $ID   $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors";
+        system"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py $ID $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors";
+        #open(OUT,">>annualLOG.txt"); print OUT"$tile,$log"; close(OUT);
+
+        #print"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn   arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json\n";
+        #system"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+$outdir+"/"+$DIST_ID+".notification.json";
+      }else{open(OUT,">>errorLOG.txt"); print OUT"$tile,failed\n"; close(OUT);}
+    }else{open(OUT,">>annualLOG.txt"); print OUT"$tile,no granules\n"; close(OUT);}
   }#}
 }
 
@@ -131,7 +198,7 @@ $tilepathstring = $zone."/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($
 $outdir = "$outbase/$tilepathstring/$yearname"; if(!-d $outdir){system"mkdir -p $outdir";}
 system"cp $sourcebase/$yearlast/$tilepathstring/$last/$last\_VEG-LAST-DATE.tif $outdir/${ID}_VEG-LAST-DATE.tif";
 $Ngranules = @images;
-print("$Ngranules $tile $last\n");
+#print("$Ngranules $tile $last\n");
 
 #print"$tile,$Ndates::";
 open (OUT, ">temp/ANN_veg_$tile.cpp");
@@ -350,7 +417,6 @@ int overviewList[Noverviews] = {2,4,8};
 char s[6] = {0};
 snprintf(s, 6, \"%lf\", percentData);
 papszMetadata = CSLSetNameValue( papszMetadata, \"Percent_data\", s);
-//cout<<(double)percentData<<endl;
 
 //export results
 OUTGDAL = OUTDRIVER->Create( \"$outdir/VEG-DIST-STATUSTEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
@@ -455,13 +521,14 @@ system(\"rm $outdir/${filename}TEMP.tif\");
 ";
 }
 print OUT"
+cout<<\"ok\"<<','<<(double)percentData;
 return 0;
 }";
 close (OUT);
 if($Ngranules>0){system("cd temp;g++ ANN_veg_$tile.cpp -o ANN_veg_$tile -lgdal -Wno-unused-result -std=gnu++11");}
-$spatial_coverage = readpipe"cd temp; ./ANN_veg_$tile $zone; rm ANN_veg_$tile; rm ANN_veg_$tile.cpp";
-chomp($spatial_coverage);
-return($spatial_coverage);
+$templog = readpipe"cd temp; ./ANN_veg_$tile $zone; rm ANN_veg_$tile; rm ANN_veg_$tile.cpp";
+chomp($templog);
+return($templog);
 }
 
 
@@ -476,7 +543,7 @@ $tilepathstring = $zone."/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($
 $outdir = "$outbase/$tilepathstring/$yearname"; if(!-d $outdir){system"mkdir -p $outdir";}
 system"cp $sourcebase/$yearlast/$tilepathstring/$last/$last\_GEN-LAST-DATE.tif $outdir/${ID}_GEN-LAST-DATE.tif";
 $Ngranules = @images;
-print("$Ngranules $tile $last\n");
+#print("$Ngranules $tile $last\n");
 
 #print"$tile,$Ndates::";
 open (OUT, ">temp/ANN_gen_$tile.cpp");
@@ -739,9 +806,12 @@ system(\"rm $outdir/${filename}TEMP.tif\");
 ";
 }
 print OUT"
+cout<<\"ok\";
 return 0;
 }";
 close (OUT);
 if($Ngranules>0){system("cd temp;g++ ANN_gen_$tile.cpp -o ANN_gen_$tile -lgdal -Wno-unused-result -std=gnu++11");}
-system"cd temp; ./ANN_gen_$tile $zone; rm ANN_gen_$tile; rm ANN_gen_$tile.cpp";
+$templog = readpipe"cd temp; ./ANN_gen_$tile $zone; rm ANN_gen_$tile; rm ANN_gen_$tile.cpp";
+chomp($templog);
+return($templog);
 }
