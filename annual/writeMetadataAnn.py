@@ -41,9 +41,12 @@ def findAdditionalAttribute(atr,sourceDict,single=True):
         if single:
           return field['Values'][0]
         else:
-          field['Values']
+          return field['Values']
       else:
-        return field['Values']
+        if single:
+          return field['Values'][0]
+        else:
+          return field['Values']
   else:
     return "Null"
 
@@ -81,7 +84,7 @@ def allMetaCSV(gdict,outdir,ID):
         md["CollectionReference"]["Version"],
         findAdditionalAttribute("SPATIAL_COVERAGE",md)
       ]
-      if not cs_code:
+      if not cs_code and not cs_code == "Null":
         cs_code = findAdditionalAttribute("HORIZONTAL_CS_CODE",md)
       if not cs_name:
         cs_name = findAdditionalAttribute("HORIZONTAL_CS_NAME",md)
@@ -100,7 +103,7 @@ def writeJSON(data_dict,outJSONname):
 
 def getSpatialExtent(outdir,ID):
   gdalinfo = json.loads(subprocess.run(["gdalinfo -json "+outdir+"/"+ID+"_VEG-DIST-STATUS.tif"],capture_output=True,shell=True).stdout.decode())
-  print(gdalinfo['wgs84Extent']['coordinates'][0][0:4])
+  #print(gdalinfo['wgs84Extent']['coordinates'][0][0:4])
   coords = gdalinfo['wgs84Extent']['coordinates'][0][0:4]
   spatialExtent = {'HorizontalSpatialDomain':{}}
   spatialExtent = {'HorizontalSpatialDomain':{'Geometry':{}}}
@@ -130,7 +133,7 @@ def writeMetadata(ID,outdir,httppath,version,Errors,starttime,endtime,spatial_co
     ProductionDateTimeName = ProductionDateTimeSource.strftime("%Y%m%dT%H%M%SZ")
     ProductionDateTime = ProductionDateTimeSource.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     version = version[1:]
-    OUTID = "OPERA_L3_DIST-ANN-HLS_T"+tile+"_"+ProductionDateTimeName+"_30_v"+version
+    OUTID = ID
     outDict = {}
     outDict["MetadataSpecification"] ={"URL": "https://cdn.earthdata.nasa.gov/umm/granule/v1.6.3","Name": "UMM-G","Version": "1.6.3"}
     outDict['GranuleUR'] = OUTID
@@ -138,6 +141,7 @@ def writeMetadata(ID,outdir,httppath,version,Errors,starttime,endtime,spatial_co
     outDict['ProviderDates']=[{'Date':ProductionDateTime,'Type':'Insert'}]
     outDict['CollectionReference'] = {"ShortName": "OPERA_L3_DIST-ANN-HLS_PROVISIONAL_V0",'Version':"0"}
     outDict['DataGranule'] = {}
+    outDict['DataGranule']['DayNightFlag'] = 'Day'
     outDict['DataGranule']['ProductionDateTime'] =ProductionDateTime
     outDict['SpatialExtent'] = getSpatialExtent(outdir,ID)
     ###NOT CLOUD COVER but SPATIAL_COVERAGE????
@@ -211,7 +215,7 @@ def writeMetadata(ID,outdir,httppath,version,Errors,starttime,endtime,spatial_co
     writeJSON(notiDict, outdir+"/"+ID+".notification.json")
   except:
     with open("errorLOG.txt", 'a') as ERR:
-      ERR.write(ID+" error in writing Metadata")
+      ERR.write(ID+" error in writing Metadata\n")
     traceback.print_exc()
 
 if __name__ == "__main__":
