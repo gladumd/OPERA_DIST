@@ -162,7 +162,7 @@ sub runTile(){($server,$threads)=split('_',$sline);
         #open(OUT,">>annualLOG.txt"); print OUT"$tile,$log"; close(OUT);
 
         #print"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn   arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json\n";
-        #system"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+$outdir+"/"+$DIST_ID+".notification.json";
+        system"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+$outdir+"/"+$DIST_ID+".notification.json";
       }else{open(OUT,">>errorLOG.txt"); print OUT"$tile,failed\n"; close(OUT);}
     }else{open(OUT,">>annualLOG.txt"); print OUT"$tile,no granules\n"; close(OUT);}
   }#}
