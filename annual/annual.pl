@@ -35,7 +35,7 @@ my %h = ();
 my @list :shared;
 open(DAT,$tilelist) or die"Filelist: $tilelist does not exist.";
 @list = <DAT>; close(DAT); foreach(@list){chomp;}
-@list = @list[0..5];
+#@list = @list[0..1];
 
 my @tiles :shared;
 @tiles = @list;
@@ -101,8 +101,8 @@ sub checkTiles(){
 
 sub runTile(){($server,$threads)=split('_',$sline);
   while ($tile = shift(@tiles)){#if($Ttile eq "T21LYG"){
-    $Nleft = @tiles;
-    if($Nleft % 200 == 0){print"$Nleft / $Ntiles to go\n";}
+    #$Nleft = @tiles;
+    #if($Nleft % 200 == 0){print"$Nleft / $Ntiles to go\n";}
     #find file list of VEG_DIST_STATUS between start and end date.
     #$tile = substr($Ttile,1,5);
     $zone = substr($tile,0,2);
@@ -161,8 +161,8 @@ sub runTile(){($server,$threads)=split('_',$sline);
         system"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py $ID $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors";
         #open(OUT,">>annualLOG.txt"); print OUT"$tile,$log"; close(OUT);
 
-        #print"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn   arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json\n";
-        system"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+$outdir+"/"+$DIST_ID+".notification.json";
+        #print"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
+        readpipe"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
       }else{open(OUT,">>errorLOG.txt"); print OUT"$tile,failed\n"; close(OUT);}
     }else{open(OUT,">>annualLOG.txt"); print OUT"$tile,no granules\n"; close(OUT);}
   }#}
