@@ -133,8 +133,8 @@ def searchCMR(startdate,enddate):
     try:
       with closing(sqlite3.connect(dbpath+"database.db")) as connection:
         with closing(connection.cursor()) as cursor:
-          #Select all are already downloaded or failed.
-          cursor.execute("SELECT HLS_ID from fulltable WHERE sensingTime > ? and sensingTime < ? and statusFlag > 1",(startYJT,endYJT)) 
+          #Select all are already downloaded, staged for downloade, or failed.
+          cursor.execute("SELECT HLS_ID from fulltable WHERE sensingTime > ? and sensingTime < ? and statusFlag >= 1",(startYJT,endYJT)) 
           downloadedGrans = cursor.fetchall()
           downloadedGrans = [s for t in downloadedGrans for s in t]
           #Select all that were already found but not staged for downloaded
