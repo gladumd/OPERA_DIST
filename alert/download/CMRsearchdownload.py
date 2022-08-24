@@ -278,7 +278,16 @@ def checkDownloadComplete(sourcepath,granule,sensor):
   sout = os.popen("ls "+sourcepath+"/"+granule + ".B*.tif 2>/dev/null | wc -l");
   count = sout.read().strip()
   if not os.path.exists(sourcepath+"/"+granule+".cmr.xml"):
-    return "missing xml"
+    HLS_ID = granule
+    (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= HLS_ID.split('.')
+    year = Sdatetime[0:4]
+    tile = Ttile[1:6]
+    tilepathstring = tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]
+    xmlloc = source+"/"+sensor+"/"+year+"/"+tilepathstring+"/"+HLS_ID+"/"+HLS_ID+".cmr.xml"
+    httplink = "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLS"+sensor+".020/"+HLS_ID+"/"+HLS_ID+".cmr.xml"
+    wgetcommand = "wget --timeout=300 --output-document="+xmlloc+" "+httplink 
+    if not os.path.exists(sourcepath+"/"+granule+".cmr.xml"):
+      return "missing xml"
   if int(count) != Nbands[sensor]:
     return "missing bands only "+count+"/"+str(Nbands[sensor])+" bands "+sensor
   for band in bands[sensor]:
@@ -340,8 +349,8 @@ def checkGranule(granule,writeNew=True,fromDownload=False):
 
 #parallel checking of all granules in list
 def checkGranuleList(granulelist):
-  processLOG(len(granulelist),"granules to check", datetime.datetime.now())
-  Nsim = 12
+  processLOG([len(granulelist),"granules to check", datetime.datetime.now()])
+  Nsim = 30
   granulesToDownload = []
   results = Pool(Nsim).imap_unordered(checkGranule,granulelist)
   success = 0
@@ -352,7 +361,7 @@ def checkGranuleList(granulelist):
     else: 
       granulesToDownload.append(result[1])
       errors +=1
-  processLOG(success,"granules successfully downloaded,", errors,"granules with errors",datetime.datetime.now())
+  processLOG([success,"granules successfully downloaded,", errors,"granules with errors",datetime.datetime.now()])
   return granulesToDownload
 
 #check a granule for correctness and update it in the database with download success (2) or download failed (102)
@@ -431,7 +440,7 @@ def filterByTileList(granuleDict,tilefile):
     tiles = tilelist.read().splitlines()
   for g in granuleDict.keys():
     (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= g.split('.')
-    tile = Ttile#[1:]
+    tile = Ttile[1:]
     if tile in tiles:
       granulesout[g]=granuleDict[g]
   return(granulesout)

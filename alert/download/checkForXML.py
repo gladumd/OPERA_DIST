@@ -192,7 +192,7 @@ def getGranulesToCheck(startYJT,endYJT):
     try:
       with closing(sqlite3.connect(dbpath+"database.db")) as connection:
         with closing(connection.cursor()) as cursor:
-          cursor.execute("SELECT HLS_ID from fulltable WHERE sensingTime > ? and sensingTime < ? and statusFlag !=102",(startYJT,endYJT)) #select all that have been started or potentially queued for download but not yet checked.
+          cursor.execute("SELECT HLS_ID from fulltable WHERE sensingTime > ? and sensingTime < ?",(startYJT,endYJT)) #select all that have been started or potentially queued for download but not yet checked.
           uncheckedGrans = cursor.fetchall()
           uncheckedGrans = [s for t in uncheckedGrans for s in t]
           databaseChecked=True
