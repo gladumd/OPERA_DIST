@@ -150,5 +150,7 @@ smoke_test/new/*
 **/RUNNING*
 alert/temp/*
 user.profile
+annual/temp/*
+annual/*.txt
 
 alert/download/__pycache__/CMRsearchdownload.cpython-37.pyc
