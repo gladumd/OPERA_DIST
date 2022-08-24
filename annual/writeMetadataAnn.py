@@ -229,4 +229,5 @@ if __name__ == "__main__":
   except:
     with open("errorLOG.txt", 'a') as ERR:
       ERR.write(tile+","+ ID+",error in writing Metadata\n")
+    print(tile,ID)
     traceback.print_exc()
