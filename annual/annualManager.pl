@@ -29,7 +29,7 @@ if(-e "errorLOG.txt"){
 #push(@serverlist, "20,15");
 #push(@serverlist, "21,15");
 #push(@serverlist, "16,15");
-push(@serverlist, "17,60");
+push(@serverlist, "17,50");
 
 my %h = ();
 my @list :shared;
@@ -60,10 +60,10 @@ sub checkTiles(){
   foreach $line (@successes){
     chomp($line);
     ($tile,$ID,$state) = split(',',$line);
-    if($state == "success"){
+    if($state eq "success"){
       $good{$tile} = "success";
-    }elsif($state == "no granules"){
-      $nograns{$tile} = $state;
+    }elsif($state eq "no_granules"){
+      $nograns{$tile} = "no_granules";
     }else{$bad{$tile} = $state;}
   }
   open(DAT,"errorLOG.txt");
@@ -101,8 +101,8 @@ sub checkTiles(){
 
 sub runTile{($server,$threadID)=split('_',$sline);
   while ($tile = shift(@tiles)){
-    $Nleft = @tiles;
-    print"\r$tile $Nleft / $Ntiles left";
+    #$Nleft = @tiles;
+    #print"\r$tile $Nleft / $Ntiles left";
     system"ssh gladapp$server \'cd $currdir; perl annualWorker.pl $tile $startdate $enddate $yearname\'";
   }
 }

@@ -73,7 +73,7 @@ if($Ngranules >0){
     #print"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
     readpipe"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
   }else{open(OUT,">>errorLOG.txt"); print OUT"$tile,failed\n"; close(OUT);}
-}else{open(OUT,">>annualLOG.txt"); print OUT"$tile,no granules\n"; close(OUT);}
+}else{open(OUT,">>annualLOG.txt"); print OUT"$tile,NoID,no_granules\n"; close(OUT);}
 
 
 sub sortDates(){
