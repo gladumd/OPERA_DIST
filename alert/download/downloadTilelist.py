@@ -7,28 +7,57 @@ import datetime
 #                                                                             #
 ###############################################################################
 if __name__=='__main__':
-  if len(sys.argv) == 4:
+  if len(sys.argv) == 5:
     tilefile = sys.argv[1]
     startdate = datetime.datetime.strptime(sys.argv[2], "%Y-%m-%d")
     enddate = datetime.datetime.strptime(sys.argv[3], "%Y-%m-%d")
+    mode =sys.argv[4]
   else:
-    print("Need to enter tilelist.txt startdate enddate")
+    print("Need to enter tilelist.txt startdate enddate mode(DURING or END for download attempt)")
 
-  granuleDict = {}
-  oneday = datetime.timedelta(days = 5)
-  start = startdate
-  end = start + oneday
-  while start < enddate:
-    url_dict = sd.searchCMR(start,end)
-    with open('url_dict','w') as out:
-      for key in list(url_dict.keys()):
-        out.write(key+"\n")
-      #for url in url_dict[list(url_dict.keys())[10]]:
-      #  out.write(url+"\n")
-    granuleDict.update(sd.filterByTileList(url_dict,tilefile))
-    print(len(granuleDict), "granules for tilelist")
-    start = start + oneday
-    end = start + oneday
-  granulesToDownload = sd.checkGranuleList(list(granuleDict.keys()))
-  granDownloadDist = {granule: granuleDict[granule] for granule in granulesToDownload}
-  sd.download_parallel(granDownloadDist)
+  if mode == "DURING":
+    granuleDict = {}
+    fiveday = datetime.timedelta(days = 10)
+    oneday = datetime.timedelta(days = 1)
+    start = startdate
+    end = start + fiveday
+    while start < enddate:
+      url_dict = sd.searchCMR(start,end)
+      with open('url_dict','w') as out:
+        for key in list(url_dict.keys()):
+          out.write(key+"\n")
+        #for url in url_dict[list(url_dict.keys())[10]]:
+        #  out.write(url+"\n")
+      #granuleDict.update(sd.filterByTileList(url_dict,tilefile))
+      granuleDict = sd.filterByTileList(url_dict,tilefile)
+      print(len(granuleDict), "granules for tilelist")
+      start = start + fiveday + oneday
+      end = start + fiveday
+      granulesToDownload = sd.checkGranuleList(list(granuleDict.keys()))
+      granDownloadDist = {granule: granuleDict[granule] for granule in granulesToDownload}
+      sd.download_parallel(granDownloadDist,200)
+
+  elif mode =="END":
+    granuleDict = {}
+    fiveday = datetime.timedelta(days = 10)
+    oneday = datetime.timedelta(days = 1)
+    start = startdate
+    end = start + fiveday
+    while start < enddate:
+      url_dict = sd.searchCMR(start,end)
+      with open('url_dict','w') as out:
+        for key in list(url_dict.keys()):
+          out.write(key+"\n")
+        #for url in url_dict[list(url_dict.keys())[10]]:
+        #  out.write(url+"\n")
+      granuleDict.update(sd.filterByTileList(url_dict,tilefile))
+      #granuleDict = sd.filterByTileList(url_dict,tilefile)
+      print(len(granuleDict), "granules for tilelist")
+      start = start + fiveday + oneday
+      end = start + fiveday
+    granulesToDownload = sd.checkGranuleList(list(granuleDict.keys()))
+    granDownloadDist = {granule: granuleDict[granule] for granule in granulesToDownload}
+    sd.download_parallel(granDownloadDist,50)
+
+  else:
+    print("must enter mode as DURING or END")
