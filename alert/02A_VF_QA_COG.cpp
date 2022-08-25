@@ -4620,7 +4620,8 @@ int calVF(string sceneName,string sceneNameOUT, string outdir)
       	short X3 = nirData[ipix];
       	short X4 = swir1Data[ipix];
       	short X5 = swir2Data[ipix];
-        if (X2 <= 0 || X3 <= 0 || X4 <= 0 || X5 <= 0)
+        //add qf==255 as the filter for nodata, band and qa not consistent sometimes
+        if (X2 <= 0 || X3 <= 0 || X4 <= 0 || X5 <= 0||qf==255)
             continue;
         //calculate qa      			
        	cloud = (qf/2) % 2;
