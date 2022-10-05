@@ -1,5 +1,6 @@
 #This is the script/ producing retrieval time report, production time report and data accounting report
 #Author: Zhen Song 08/16/2022
+#Update on 10/05/2022 due to updates on statusFlag 
 from email.errors import StartBoundaryNotFoundDefect
 from locale import Error
 import sqlite3
@@ -20,6 +21,7 @@ import numpy as np
 #104  Generic and vegetation disturbance anomaly fail
 #5    Disturbance alert time-series success
 #105  Disturbance alert time-series fail
+#6    DIST product sent to LP DAAC
 
 dateStart = '2022-08-09T15:00:00Z'
 dateEnd = '2022-08-11T16:00:00Z'
@@ -40,9 +42,15 @@ strCommandStatus = "SELECT COUNT(*),statusFlag FROM fulltable WHERE downloadTime
 cursor.execute(strCommandStatus,(dateStart,dateEnd,))
 statusRows = cursor.fetchall()
 
+#number of the granules to be processed
 numSubmitted = 0
+#number of the granules produced successfully
 numPassed = 0
+#number of the granules sent to LP DAAC
+numSent = 0
+#number of granules failed during the processing
 numFailed = 0
+#number of granules in processing
 numExe = 0
 for status in statusRows:
     num = int(status[0])
@@ -54,6 +62,9 @@ for status in statusRows:
         numFailed = numFailed + num
     elif statusFlag == 2 or statusFlag == 3 or statusFlag == 4:
         numExe = numExe + num
+    elif statusFlag ==6:
+        numSent = numSent + num
+        numPassed = numPassed + num
     else:
         print("")
 
@@ -113,9 +124,9 @@ with open(outname_report_datacount,'w') as out_csv_file_count:
     out_csv_file_count.write("L2_HLS_L30"+"," + \
                              str(numL30Avail)+","+str(numL30Dl)+","+str(numL30Fail)+"\n\n")
     out_csv_file_count.write("Summary of Outgoing Products to LP DAAC \n")
-    out_csv_file_count.write("ProductType,#Prodcuts Produced,#Prodcuts Notified,#Products Delivered,Products Failed\n")
-    out_csv_file_count.write("L3_DIST_HLS," + str(numPassed) + "," + str(numPassed)+\
-        ","+str(numPassed) + "," + str(numFailed)+"\n\n" )
+    out_csv_file_count.write("ProductType,#Products Produced,#Products Sent,#Products Delivered,Products Failed\n")
+    out_csv_file_count.write("L3_DIST_HLS," + str(numPassed) + "," + str(numSent)+\
+        ","+"TBD by LP DAAC" + "," + str(numFailed)+"\n\n" )
     out_csv_file_count.write("Note: products count based on data delivery status \n"+\
                             "Delivered: DELIVERED\nProduced: PRODUCED\nNotified: NOTIFIED\nFailed: ERROR_PRODUCED")
 
