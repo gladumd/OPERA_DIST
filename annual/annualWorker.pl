@@ -20,18 +20,22 @@ my $zone = substr($tile,0,2);
 my $tilepathstring = $zone."/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($tile,4,1);
 
 my @granules = ();
+my %OUTID;
 foreach $year ($startyear..$endyear){
-  my @files = readpipe"ls $sourcebase/$year/$tilepathstring/*/*VEG-DIST-STATUS.tif 2>/dev/null";
+  my @files = readpipe"ls $sourcebase/$year/$tilepathstring/*/OPERA_L3_DIST-ALERT-HLS*VEG-DIST-STATUS.tif 2>/dev/null";
   foreach $f (@files){
     my @t = split('/',$f);
     my $s = $t[-2];
+    my $id = substr($t[-1],0,-19);
     #print"$f,$s\n";
     ($name,$datetime,$sensor,$Ttile,$FDISTversion)= split('_',$s);
     my $date = substr($datetime,0,7);
     if($date>=$startdate and $date < $enddate){
-      if(-e "$sourcebase/$year/$tilepathstring/$s/$s\_GEN-DIST-STATUS.tif"){
+      $f =~ s/VEG/GEN/g;
+      if(-e "$f"){
+        $OUTID{$s}=$id
         push(@granules, $s);
-      }else{open(OUT,">>badinputsLOG.txt"); print OUT"missing $sourcebase/$year/$tilepathstring/$s/$s\_GEN-DIST-STATUS.tif\n";close(OUT);}
+      }else{open(OUT,">>badinputsLOG.txt"); print OUT"missing $f\n";close(OUT);}
     }
   }
 }
@@ -60,7 +64,7 @@ if($Ngranules >0){
   $httppath = "$httpbase/$tilepathstring/$yearname";
   #print("@images\n");
   $productionTime = strftime "%Y%jT%H%M%SZ", gmtime;
-  $ID = "OPERA_L3_DIST-ANN-HLS_${tile}_${yearname}_${productionTime}_30_${DISTversion}";
+  $ID = "OPERA_L3_DIST-ANN-HLS_${Ttile}_${yearname}_${productionTime}_30_${DISTversion}";
   
   $veglog = &vegANN(@images);
   $genlog = &genANN(@images);
@@ -73,7 +77,7 @@ if($Ngranules >0){
     #print"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
     readpipe"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
   }else{open(OUT,">>errorLOG.txt"); print OUT"$tile,failed\n"; close(OUT);}
-}else{open(OUT,">>annualLOG.txt"); print OUT"$tile,NoID,no_granules\n"; close(OUT);}
+}else{open(OUT,">>strataLOG.txt"); print OUT"$tile,NoID,no_granules\n"; close(OUT);}
 
 
 sub sortDates(){
@@ -104,7 +108,7 @@ $zone = substr($tile,0,2);
 $yearlast = substr($datetime,0,4);
 $tilepathstring = $zone."/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($tile,4,1);
 $outdir = "$outbase/$tilepathstring/$yearname"; if(!-d $outdir){system"mkdir -p $outdir";}
-system"cp $sourcebase/$yearlast/$tilepathstring/$last/$last\_VEG-LAST-DATE.tif $outdir/${ID}_VEG-LAST-DATE.tif";
+system"cp $sourcebase/$yearlast/$tilepathstring/$last/$OUTID{$last}\_VEG-LAST-DATE.tif $outdir/${ID}_VEG-LAST-DATE.tif";
 $Ngranules = @images;
 #print("$Ngranules $tile $last\n");
 
@@ -149,7 +153,7 @@ int ysize, xsize;
 const int Ngranules = $Ngranules;
 //int imagedate[$Ndates];
 
-filename=\"$sourcebase/$yearlast/$tilepathstring/$last/$last\_VEG-DIST-STATUS.tif\";
+filename=\"$sourcebase/$yearlast/$tilepathstring/$last/$OUTID{$last}\_VEG-DIST-STATUS.tif\";
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
 ysize = INBAND->GetYSize();xsize = INBAND->GetXSize();
 double GeoTransform[6];
@@ -187,7 +191,7 @@ foreach $granule (@images){
 $year = substr($datetime,0,4);
 #$imagedate=$date{"$granule"};
 print OUT"
-filename= \"$sourcebase/$year/$tilepathstring/$granule/$granule\_VEG-DIST-STATUS.tif\"; 
+filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-DIST-STATUS.tif\"; 
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vegstatus[i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
 i++;";
@@ -231,27 +235,27 @@ $year = substr($datetime,0,4);
 print OUT"
 if(datesNeeded[i]){
 
-  filename= \"$sourcebase/$year/$tilepathstring/$granule/$granule\_VEG-HIST.tif\"; 
+  filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-HIST.tif\"; 
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, veghist, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
   
-  filename= \"$sourcebase/$year/$tilepathstring/$granule/$granule\_VEG-ANOM-MAX.tif\"; 
+  filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-ANOM-MAX.tif\"; 
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, veganommax, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
 
-  filename= \"$sourcebase/$year/$tilepathstring/$granule/$granule\_VEG-DIST-COUNT.tif\"; 
+  filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-DIST-COUNT.tif\"; 
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vegcount, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
   
-  filename= \"$sourcebase/$year/$tilepathstring/$granule/$granule\_VEG-DIST-CONF.tif\"; 
+  filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-DIST-CONF.tif\"; 
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vegconf, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
 
-  filename= \"$sourcebase/$year/$tilepathstring/$granule/$granule\_VEG-DIST-DATE.tif\"; 
+  filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-DIST-DATE.tif\"; 
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vegdate, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
 
-  filename= \"$sourcebase/$year/$tilepathstring/$granule/$granule\_VEG-DIST-DUR.tif\"; 
+  filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-DIST-DUR.tif\"; 
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vegdur, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
 
@@ -275,7 +279,7 @@ $year = substr($datetime,0,4);
 #$imagedate=$date{"$granule"};
 print OUT"
 //imagedate[i]=$imagedate;
-filename= \"$sourcebase/$year/$tilepathstring/$granule/$granule\_VEG-IND.tif\"; 
+filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-IND.tif\"; 
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vegind[i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
 i++;";
@@ -449,7 +453,7 @@ my $zone = substr($tile,0,2);
 my $yearlast = substr($datetime,0,4);
 my $tilepathstring = $zone."/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($tile,4,1);
 my $outdir = "$outbase/$tilepathstring/$yearname"; if(!-d $outdir){system"mkdir -p $outdir";}
-system"cp $sourcebase/$yearlast/$tilepathstring/$last/$last\_GEN-LAST-DATE.tif $outdir/${ID}_GEN-LAST-DATE.tif";
+system"cp $sourcebase/$yearlast/$tilepathstring/$last/$OUTID{$last}\_GEN-LAST-DATE.tif $outdir/${ID}_GEN-LAST-DATE.tif";
 my $Ngranules = @images;
 #print("$Ngranules $tile $last\n");
 
@@ -493,7 +497,7 @@ int ysize, xsize;
 const int Ngranules = $Ngranules;
 //int imagedate[$Ndates];
 
-filename=\"$sourcebase/$yearlast/$tilepathstring/$last/$last\_GEN-DIST-STATUS.tif\";
+filename=\"$sourcebase/$yearlast/$tilepathstring/$last/$OUTID{$last}\_GEN-DIST-STATUS.tif\";
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
 ysize = INBAND->GetYSize();xsize = INBAND->GetXSize();
 double GeoTransform[6];
@@ -526,7 +530,7 @@ foreach $granule (@images){
   ($name,$datetime,$sensor,$Ttile,$FDISTversion)= split('_',$granule);
 $year = substr($datetime,0,4);
 print OUT"
-filename= \"$sourcebase/$year/$tilepathstring/$granule/$granule\_GEN-DIST-STATUS.tif\"; 
+filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_GEN-DIST-STATUS.tif\"; 
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, genstatus[i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
 i++;";
@@ -567,23 +571,23 @@ foreach $granule (@images){
 $year = substr($datetime,0,4);
 print OUT"
 if(datesNeeded[i]){
-  filename= \"$sourcebase/$year/$tilepathstring/$granule/$granule\_GEN-ANOM-MAX.tif\"; 
+  filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_GEN-ANOM-MAX.tif\"; 
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, genanommax, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
 
-  filename= \"$sourcebase/$year/$tilepathstring/$granule/$granule\_GEN-DIST-COUNT.tif\"; 
+  filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_GEN-DIST-COUNT.tif\"; 
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, gencount, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
   
-  filename= \"$sourcebase/$year/$tilepathstring/$granule/$granule\_GEN-DIST-CONF.tif\"; 
+  filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_GEN-DIST-CONF.tif\"; 
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, genconf, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
 
-  filename= \"$sourcebase/$year/$tilepathstring/$granule/$granule\_GEN-DIST-DATE.tif\"; 
+  filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_GEN-DIST-DATE.tif\"; 
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, gendate, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
 
-  filename= \"$sourcebase/$year/$tilepathstring/$granule/$granule\_GEN-DIST-DUR.tif\"; 
+  filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_GEN-DIST-DUR.tif\"; 
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, gendur, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
 
@@ -640,6 +644,7 @@ OUTGDAL = OUTDRIVER->Create( \"$outdir/GEN-DIST-STATUSTEMP.tif\", xsize, ysize, 
 currMetadata = CSLDuplicate(papszMetadata);
 currMetadata = CSLSetNameValue( currMetadata, \"flag_values\", \"0,2,4,5,6,255\");
 currMetadata = CSLSetNameValue( currMetadata, \"flag_meanings\", \"no_disturbance,confirmed_low_ongoing,confirmed_high_ongoing,confirmed_low_completed,confirmed_high_completed,no_data\");
+currMetadata = CSLSetNameValue( currMetadata, \"Units\", \"unitless\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetDescription(\"Generic_disturbance_status\");
 OUTBAND->SetNoDataValue(255);

@@ -38,6 +38,7 @@ import getGranuleList as getGran
 import sqlite3
 from contextlib import closing
 import time
+import os
 
 dbpath = "/gpfs/glad3/HLSDIST/System/database/"
 
@@ -75,8 +76,15 @@ def processLOG(argv):
 if __name__=='__main__':
   if len(sys.argv) == 2:
     tilefile=None#"../hls_tiles_disturbance_alerts.txt"
+    sendToDAAC = "False"
+    if os.path.exists("MASTER_RUNNING"):
+      print("MASTER already running (or died with an error). Delete MASTER_RUNNING and rerun. Quit MASTER.py "+str(datetime.datetime.now())+"\n")
+      sys.exit()
+    else:
+      with open("MASTER_RUNNING",'w') as OUT:
+        OUT.write("started: "+str(datetime.datetime.now()))
     if sys.argv[1] == "cron":
-      startdate = (datetime.datetime.utcnow() + datetime.timedelta(days=-10)).strftime("%Y%jT000000")
+      startdate = (datetime.datetime.utcnow() + datetime.timedelta(days=-7)).strftime("%Y%jT000000")
       enddate = datetime.datetime.utcnow().strftime("%Y%jT999999")
       processLOG(["MASTER.py started for ",startdate,enddate, " at",datetime.datetime.now()])
       getGran.granuleList(2,"02_granules.txt",startdate,enddate,tilefile)
@@ -92,18 +100,18 @@ if __name__=='__main__':
         #update 104 to 102
         if selCount > 0:
           processLOG(["setting",selCount,"granules to re download",datetime.datetime.now()])
-          resetGranules(104,102,startdate, enddate)
+          #resetGranules(104,102,startdate, enddate)
       getGran.granuleList(4,"03_granules.txt",startdate,enddate,tilefile)
-      subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
+      subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE "+sendToDAAC+"; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
       selCount = getGran.granuleList(105,"03_granules.txt",startdate,enddate,tilefile)
       if selCount > 0:
         processLOG(["retrying",selCount,"granules for 03_DIST_UPD.py",datetime.datetime.now()])
-        subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
+        subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE "+sendToDAAC+"; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
         selCount = getGran.granuleList(105,"03_granules.txt",startdate,enddate,tilefile)
         if selCount > 0:
           #update 105 to 102
           processLOG(["setting",selCount,"granules to re download",datetime.datetime.now()])
-          resetGranules(105,102,startdate, enddate)
+          #resetGranules(105,102,startdate, enddate)
   else:
     if len(sys.argv) == 3:
       tilefile=None

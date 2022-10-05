@@ -10,6 +10,7 @@ import subprocess
 from contextlib import closing
 import multiprocessing
 import traceback
+import writeMetadata
 
 currdir = os.getcwd()
 DISTversion = "v0"
@@ -58,6 +59,7 @@ def runTile(server,Ttile,tempscenes):
   sortedScenes = sortDates(scenes)
   (tname,firstdatetime,tsensor,tTtile,tDISTversion) = sortedScenes[0].split('_')
   if updateMode == "UPDATE":
+    outIDdict = {}
     prev = []
     response = subprocess.run(["ls "+outbase+"/*/"+tilepathstring+"/*/*VEG-DIST-STATUS.tif"],capture_output=True,shell=True)
     if response.stdout.decode().strip() == "":
@@ -74,6 +76,7 @@ def runTile(server,Ttile,tempscenes):
           (tname,prevdatetime,tsensor,tTtile,tDISTversion) = gran.split('_')
           if prevdatetime < firstdatetime:
             prev.append(gran)
+            outIDdict[gran] = folders[-1][0:-20]
       if len(prev) == 0:
         previousSource = "first"
       else:
@@ -81,7 +84,8 @@ def runTile(server,Ttile,tempscenes):
         previous = sortedprev[-1]
         (tname,prevdatetime,tsensor,tTtile,tDISTversion)= previous.split('_')
         prevyear = prevdatetime[0:4]
-        previousSource = outbase+"/"+prevyear+"/"+tilepathstring+"/"+previous+"/"+previous
+        #updated to source the OUT_ID of the previous file
+        previousSource = outbase+"/"+prevyear+"/"+tilepathstring+"/"+previous+"/"+outIDdict[previous]
     else:
       previousSource = "first"
   elif updateMode == "RESTART":
@@ -122,7 +126,8 @@ def runTile(server,Ttile,tempscenes):
         response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03B_alertUpdateGEN "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
         errgen = response.stderr.decode().strip()
         if errveg == "" and errgen == "":
-          previousSource = outdir+"/"+DIST_ID
+          ###need to update this so that it send with the production time.
+          #previousSource = outdir+"/"+DIST_ID
           Errors = "NA"
         else:
           Errors = errveg+" "+errgen
@@ -141,15 +146,21 @@ def runTile(server,Ttile,tempscenes):
             sqliteTuple = (DIST_ID,)
             updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
           else:
-            #print("python writeMetadata.py",DIST_ID,sensor,xmlfile,outdir,httppath,DISTversion,Errors)
-            response = subprocess.run(["python writeMetadata.py "+DIST_ID+" "+sensor+" "+xmlfile+" "+outdir+" "+httppath+" "+DISTversion+" "+Errors],capture_output=True,shell=True)
-            errmeta = response.stderr.decode().strip()
-            
-            if errmeta == "":
-              response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+DIST_ID+".notification.json"],capture_output=True,shell=True)
-            else:
-              errorLOG(DIST_ID+errmeta)
-
+            ##print("python writeMetadata.py",DIST_ID,sensor,xmlfile,outdir,httppath,DISTversion,Errors)
+            #response = subprocess.run(["python writeMetadata.py "+DIST_ID+" "+xmlfile+" "+outdir+" "+httppath+" "+DISTversion+" "+Errors],capture_output=True,shell=True)
+            #errmeta = response.stderr.decode().strip()
+            #
+            #if errmeta == "":
+            #  if sendToDAAC:
+            #    response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+DIST_ID+".notification.json"],#capture_output=True,shell=True)
+            #else:
+            #  errorLOG(DIST_ID+errmeta)
+            (response,OUT_ID) = writeMetadata.writeMetadata(DIST_ID,xmlfile,outdir,httppath,DISTversion,Errors,sendToDAAC)
+            if response == "ok":
+              previousSource = outdir+"/"+OUT_ID
+              if sendToDAAC:
+                #print("module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+OUT_ID+".notification.json")
+                response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+OUT_ID+".notification.json"],capture_output=True,shell=True)
 
       except:
         traceback.print_exc()
@@ -215,6 +226,11 @@ if __name__=='__main__':
   try:
     filelist = sys.argv[1]
     updateMode = sys.argv[2]
+    sendToDAAC = sys.argv[3]
+    if sendToDAAC == "True":
+      sendToDAAC = True
+    else:
+      sendToDAAC = False
   except:
     print("must enter filelist and updateMode ('RESTART' to ignore all existing time-series layers or 'UPDATE' to use the last available VEG-DIST-STATUS.tif/GEN-DIST-STATUS.tif): python 03_DIST_UPD.py filelist.txt updateMode")
 
@@ -222,7 +238,7 @@ if __name__=='__main__':
     print("KILL file exists. Delete and rerun. 03_DIST_UPD.py"+str(datetime.datetime.now())+"\n")
     sys.exit()
   elif os.path.exists("03_DIST_UPD_RUNNING") or os.path.exists("02_granule_manager_RUNNING"):
-    print("03_DIST_UPD.py already running (or died with an error). Delete 03_DIST_UPD_RUNNING and rerun."+str(datetime.datetime.now())+"\n")
+    print("Process already running (or died with an error). Delete *_RUNNING and rerun. Quit 03_DIST_UPD "+str(datetime.datetime.now())+"\n")
     sys.exit()
   else:
     with open("03_DIST_UPD_RUNNING",'w') as OUT:
@@ -257,7 +273,7 @@ if __name__=='__main__':
   for tile in tiles:
     tileQueue.put(tile)
   
-  serverlist = [(17,40),(16,20),(15,20),(14,20)]
+  serverlist = [(17,60),(16,40),(15,40),(14,40)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

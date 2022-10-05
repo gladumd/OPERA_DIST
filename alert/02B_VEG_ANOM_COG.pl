@@ -220,7 +220,7 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
       countOUT[y][x] = count;
       sdOUT[y][x]=sd;
       countAreaCompared++;
-    }else{minOUT[y][x]=200; countOUT[y][x] = 0; sdOUT[y][x]=200; anomaly[y][x]=200;anomalySD[y][x]=200;}
+    }else{minOUT[y][x]=200; countOUT[y][x] = 0; sdOUT[y][x]=200; anomaly[y][x]=255;anomalySD[y][x]=255;}
   }else{minOUT[y][x]=255;anomaly[y][x]=255;anomalySD[y][x]=255;sdOUT[y][x]=255;}
 }}
 

@@ -207,11 +207,14 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
       shadow = (qf/8) % 2;
       ice = (qf/16) % 2;
       water = (qf/32) % 2;
-      aerosol = (qf/64) % 4;
+      //aerosol = (qf/64) % 4;
   
       //exclude cloud/cloud shadow/adjacent to cloud/shadow pixel/snow,ice/high aerosol/water pixels
-      if (cloud == 1 || cbuffer == 1 || shadow == 1 || ice == 1 || aerosol ==3 ||water==1){continue;}
+      if (cloud == 1 || cbuffer == 1 || shadow == 1 || ice == 1 || water==1 || qf == 255){continue;}//|| aerosol ==3 
       else{
+        for(int b = 0; b < Nbands; b++){
+          if(hist[i][b][y][x] <=0){continue;}
+        }
         for(int b = 0; b < Nbands; b++){
           basesum[b] += hist[i][b][y][x];
           baseobs[b][count] = hist[i][b][y][x];
@@ -251,7 +254,7 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
         //cout<<endl;
         //}
       }else{dist[y][x] = -3;}
-    }else{countOUT[y][x] = count; dist[y][x] = -2;}
+    }else{countOUT[y][x] = count;}
     
   }else{dist[y][x] = -1;}
 }}

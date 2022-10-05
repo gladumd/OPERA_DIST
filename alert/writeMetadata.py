@@ -46,9 +46,13 @@ def writeJSON(data_dict,outJSONname):
 def findAdditionalAttribute(atr,sourceDict):
   for field in sourceDict['Granule']['AdditionalAttributes']['AdditionalAttribute']:
     if field['Name'] == atr:
-      return field['Values']['Value']
+      values = field['Values']['Value']
+      if type(values) == list:
+        return values
+      else:
+        return [values]
   else:
-    return "Null"
+    return ["Null"]
 
 def getSpatialExtentBB(sourceDict):
   if type(sourceDict['Granule']['Spatial']['HorizontalSpatialDomain']['Geometry']['GPolygon']) is dict:
@@ -106,30 +110,81 @@ def getSpatialExtent(sourceDict):
     spatialExtent['HorizontalSpatialDomain']['Geometry']['GPolygons'][i]['Boundary']['Points'].append({'Longitude':float(list[0]['PointLongitude']),'Latitude':float(list[0]['PointLatitude'])})
   return spatialExtent
 
-def main(ID,sensor,sourceXML,outdir,httppath,version,Errors):
+def writeMetadata(ID,sourceXML,outdir,httppath,version,Errors,sendToDAAC):
   try:
     version = version[1:]
+    (name,Sdatetime,sensor,Ttile,DISTversion) = ID.split('_')
+    sensingTime = datetime.datetime.strptime(Sdatetime, "%Y%jT%H%M%SZ")
+    ProductionDateTimeSource =datetime.datetime.utcnow()
+    #ProductionDateTimeName = ProductionDateTimeSource.strftime("%Y%jT%H%M%SZ")
+    ProductionDateTimeName = ProductionDateTimeSource.strftime("%Y%m%dT%H%M%SZ")
+    ProductionDateTime = ProductionDateTimeSource.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     baselineDays = 15; baselineYear=3
     sourceDict = xmlToDict(sourceXML,ID)
     outDict = {}
+    #OPERA_L3_DIST-ALERT-HLS_TXXXX_20210205T163901Z_20220101T140222Z_S2A_30_v1.0_VEG-IND.tif
+    if sensor == "L30":
+      prodIDs = findAdditionalAttribute('LANDSAT_PRODUCT_ID',sourceDict)
+      if prodIDs[0][0:4] == "LC09":
+        platform = "LANDSAT-9"
+        satellite = "L9"
+      elif prodIDs[0][0:4] == "LC08":
+        platform = "LANDSAT-8"
+        satellite = "L8"
+    elif sensor == "S30":
+      platform=sourceDict['Granule']['Platforms']['Platform']['ShortName']
+      prodIDs = findAdditionalAttribute('PRODUCT_URI',sourceDict)
+      satellite = prodIDs[0][0:3]
+
+    #OUT_ID = "OPERA_L3_DIST-ALERT-HLS_"+Ttile+"_"+Sdatetime+"Z_"+ProductionDateTimeName+"_"+satellite+"_30_"+DISTversion
+    OUT_ID = "OPERA_L3_DIST-ALERT-HLS_"+Ttile+"_"+sensingTime+"Z_"+ProductionDateTimeName+"_"+satellite+"_30_"+DISTversion
+
+    for image in imagelist:
+      #os.rename(outdir+"/"+ID+"_"+image+".tif",outdir+"/"+OUT_ID+"_"+image+".tif")
+      os.system("cp "+outdir+"/"+ID+"_"+image+".tif "+outdir+"/"+OUT_ID+"_"+image+".tif")
+    #os.rename(outdir+"/"+ID+"_VEG-DIST-PERC.tif",outdir+"/"+OUT_ID+"_VEG-DIST-PERC.tif")
+    #os.rename(outdir+"/"+ID+"_GEN-DIST-PERC.tif",outdir+"/"+OUT_ID+"_GEN-DIST-PERC.tif")
+    os.system("cp "+outdir+"/"+ID+"_VEG-DIST-PERC.tif "+outdir+"/"+OUT_ID+"_VEG-DIST-PERC.tif")
+    os.system("cp "+outdir+"/"+ID+"_GEN-DIST-PERC.tif "+outdir+"/"+OUT_ID+"_GEN-DIST-PERC.tif")
+
+    tmpTif=outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.tmp.tif"
+    pngFile=outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.png"
+    colorRamp = "browseColorRamp.clr"
+
+    # Create a temporary GeoTIFF file, subsampling to 1024 samples on the
+    # x-axis, with subsampling on the y-axis maintained to the aspect ratio of
+    # the source data. Force it to remember the nodata value is 255.
+    # E.g., if you wanted a higher subsampling rate, you could try a number like
+    # 512, or for less subsampling, you could try 2048. You can also play with
+    # values like 50%. For data like SNWG, I'd start with 1024, and play
+    # with it as needed.
+    subprocess.run(["gdal_translate -of GTiff -outsize 1024 0 -a_nodata 255 " + outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.tif "+tmpTif],capture_output=True,shell=True)
+    #os.system("gdal_translate -of GTiff -outsize 1024 0 -a_nodata 255 " + outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.tif "+tmpTif)
+
+    # Create a colorized PNG, with a transparent alpha band. The "nv" line in
+    # the color ramp includes a fourth dimension to specify full transparency
+    # for nodata values.
+    subprocess.run(["gdaldem color-relief -of PNG -alpha "+tmpTif+" "+ colorRamp +" "+pngFile],capture_output=True,shell=True)
+    #os.system("gdaldem color-relief -of PNG -alpha "+tmpTif+" "+ colorRamp +" "+pngFile)
+    os.system("rm "+tmpTif+"; rm "+pngFile+".aux.xml")
+
     outDict["MetadataSpecification"] ={"URL": "https://cdn.earthdata.nasa.gov/umm/granule/v1.6.3","Name": "UMM-G","Version": "1.6.3"}
-    outDict['GranuleUR'] = ID
+    outDict['GranuleUR'] = OUT_ID
     outDict['TemporalExtent'] = sourceDict['Granule']['Temporal']
-    outDict['ProviderDates']=[{'Date':datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),'Type':'Insert'}]
+    outDict['ProviderDates']=[{'Date':ProductionDateTime,'Type':'Insert'}]
     outDict['CollectionReference'] = {"ShortName": "OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0",'Version':"0"}
     outDict['DataGranule'] = {}
     outDict['DataGranule']['DayNightFlag'] = sourceDict['Granule']['DataGranule']['DayNightFlag'].capitalize()
-    outDict['DataGranule']['ProductionDateTime'] = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-    #print(sourceDict['Granule']['Platforms'])
-    outDict['Platforms'] = [{}]
-    outDict['Platforms'][0]['ShortName']=sourceDict['Granule']['Platforms']['Platform']['ShortName']
-    outDict['Platforms'][0]['Instruments']=[{'ShortName':sourceDict['Granule']['Platforms']['Platform']['Instruments']['Instrument']['ShortName']}]
-    #print(ID)
-    #print(ID,type(sourceDict['Granule']['Spatial']['HorizontalSpatialDomain']['Geometry']['GPolygon']),sourceDict['Granule']['Spatial']['HorizontalSpatialDomain']['Geometry']['GPolygon'])
-    outDict['SpatialExtent'] = getSpatialExtent(sourceDict)
-    outDict['CloudCover'] = float(findAdditionalAttribute("CLOUD_COVERAGE",sourceDict))
+    outDict['DataGranule']['ProductionDateTime'] = ProductionDateTime
 
-    outDict['AdditionalAttributes'] = [{},{},{},{},{},{},{},{},{},{},{},{},{}]
+    outDict['Platforms'] = [{}]
+    outDict['Platforms'][0]['ShortName']=platform
+    outDict['Platforms'][0]['Instruments']=[{'ShortName':sourceDict['Granule']['Platforms']['Platform']['Instruments']['Instrument']['ShortName']}]
+    
+    outDict['SpatialExtent'] = getSpatialExtent(sourceDict)
+    outDict['CloudCover'] = float(findAdditionalAttribute("CLOUD_COVERAGE",sourceDict)[0])
+
+    outDict['AdditionalAttributes'] = [{},{},{},{},{},{},{},{},{},{},{},{},{},{}]
     outDict['AdditionalAttributes'][0]['Name']='BaselineCalendarWindow'
     outDict['AdditionalAttributes'][0]['Values']= ["+/- " + str(baselineDays) + " days"]
     outDict['AdditionalAttributes'][1]['Name']='BaselineYearWindow'
@@ -142,74 +197,85 @@ def main(ID,sensor,sourceXML,outdir,httppath,version,Errors):
     outDict['AdditionalAttributes'][4]['Name'] = 'HLSGranuleUR'
     outDict['AdditionalAttributes'][4]['Values'] = [sourceDict['Granule']['GranuleUR']]
     i=5
-    #if sensor == 'S30':
-    #  outDict['AdditionalAttributes'][i]['Name'] = 'Source_Satellite_GranuleUR'
-    #  outDict['AdditionalAttributes'][i]['Values'] = [findAdditionalAttribute('PRODUCT_URI',sourceDict)]
-    #  i += 1
-    ##  outDict['AdditionalAttributes'][i]['Name'] = 'PROCESSING_BASELINE'
-    ##  outDict['AdditionalAttributes'][i]['Values'] = [findAdditionalAttribute('PROCESSING_BASELINE',sourceDict)]
-    ##  i +=1
-    #else:
-    #  outDict['AdditionalAttributes'][i]['Name']= 'Source_Satellite_GranuleUR'
-    #  outDict['AdditionalAttributes'][i]['Values'] = [findAdditionalAttribute('LANDSAT_PRODUCT_ID',sourceDict)]
+    if sensor == 'S30':
+      outDict['AdditionalAttributes'][i]['Name'] = 'SENSOR_PRODUCT_ID'
+      outDict['AdditionalAttributes'][i]['Values'] = findAdditionalAttribute('PRODUCT_URI',sourceDict)
+      i += 1
+    #  outDict['AdditionalAttributes'][i]['Name'] = 'PROCESSING_BASELINE'
+    #  outDict['AdditionalAttributes'][i]['Values'] = findAdditionalAttribute('PROCESSING_BASELINE',sourceDict)
     #  i +=1
+    else:
+      outDict['AdditionalAttributes'][i]['Name']= 'SENSOR_PRODUCT_ID'
+      outDict['AdditionalAttributes'][i]['Values'] = findAdditionalAttribute('LANDSAT_PRODUCT_ID',sourceDict)
+      i +=1
     for atr in ['SPATIAL_COVERAGE','MGRS_TILE_ID','HLS_PROCESSING_TIME','SENSING_TIME','HORIZONTAL_CS_CODE','HORIZONTAL_CS_NAME','ULX','ULY']:
       outDict['AdditionalAttributes'][i]['Name'] = atr
-      value = findAdditionalAttribute(atr,sourceDict)
-      if type(value) == list:
-        outDict['AdditionalAttributes'][i]['Values'] = value
-      else:
-        outDict['AdditionalAttributes'][i]['Values'] = [value]
+      outDict['AdditionalAttributes'][i]['Values'] = findAdditionalAttribute(atr,sourceDict)
       i +=1
     if Errors == "NA":
+      if sendToDAAC:
+        statusFlag=6
+      else:
+        statusFlag=5
       sqliteCommand = "UPDATE fulltable SET processedTime = ?, availableTime = ?, statusFlag = ?, Errors = '' where HLS_ID = ?"
-      sqliteTuple = (outDict['DataGranule']  ['ProductionDateTime'],sourceDict['Granule']['InsertTime'],5, sourceDict['Granule']['GranuleUR'])
+      sqliteTuple = (outDict['DataGranule']['ProductionDateTime'],sourceDict['Granule']['InsertTime'],statusFlag, sourceDict['Granule']['GranuleUR'])
     else:
       sqliteCommand = "UPDATE fulltable SET availableTime = ?, Errors = ?, statusFlag = ? where HLS_ID = ?"
       sqliteTuple = (sourceDict['Granule']['InsertTime'], Errors,105,sourceDict['Granule']['GranuleUR'])
     updateSqlite(sqliteCommand,sqliteTuple)
     
-    print(outDict['AdditionalAttributes'])
-    writeJSON(outDict, outdir+"/"+ID+".cmr.json")
+    writeJSON(outDict, outdir+"/"+OUT_ID+".cmr.json")
 
     notiDict = {}
     notiDict['version'] = "1.4"
     notiDict['provider'] = "UMD_GLAD_OPERA"
     notiDict['collection'] = 'OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0'
     notiDict['submissionTime'] = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-    notiDict['identifier'] = ID
+    notiDict['identifier'] = OUT_ID
     notiDict['product'] = {}
-    notiDict['product']['name'] = ID
+    notiDict['product']['name'] = OUT_ID
     notiDict['product']['dataVersion'] = version
-    notiDict['product']['files'] = [""]*(len(imagelist)+1)
+    notiDict['product']['files'] = [""]*(len(imagelist)+2)
     i=0
     for image in imagelist:
       #imagefile = re.sub("-","_",image)
       notiDict['product']['files'][i] = {}
       notiDict['product']['files'][i]['type'] = "data"
-      notiDict['product']['files'][i]['uri'] = httppath+"/"+ID+"_"+image+".tif"
-      notiDict['product']['files'][i]['name'] = ID+"_"+image+".tif"
+      notiDict['product']['files'][i]['uri'] = httppath+"/"+OUT_ID+"_"+image+".tif"
+      notiDict['product']['files'][i]['name'] = OUT_ID+"_"+image+".tif"
       #size = subprocess.run(["du "+outdir+"/"+imagefile+".tif"],capture_output=True,shell=True).stdout.decode().split()[0]
-      notiDict['product']['files'][i]['size'] = os.path.getsize(outdir+"/"+ID+"_"+image+".tif")
-      checksum = subprocess.run(["sha512sum "+outdir+"/"+ID+"_"+image+".tif"],capture_output=True,shell=True).stdout.decode().split()[0]
+      notiDict['product']['files'][i]['size'] = os.path.getsize(outdir+"/"+OUT_ID+"_"+image+".tif")
+      checksum = subprocess.run(["sha512sum "+outdir+"/"+OUT_ID+"_"+image+".tif"],capture_output=True,shell=True).stdout.decode().split()[0]
       notiDict['product']['files'][i]['checksum'] = checksum
       notiDict['product']['files'][i]['checksumType'] = "sha512"
       i+=1
     notiDict['product']['files'][i] = {}
     notiDict['product']['files'][i]['type'] = "metadata"
-    notiDict['product']['files'][i]['uri'] = httppath+"/"+ID+".cmr.json"
-    notiDict['product']['files'][i]['name'] = ID+".cmr.json"
+    notiDict['product']['files'][i]['uri'] = httppath+"/"+OUT_ID+".cmr.json"
+    notiDict['product']['files'][i]['name'] = OUT_ID+".cmr.json"
     #size = subprocess.run(["du "+outdir+"/"+ID+"_cmr.json"],capture_output=True,shell=True).stdout.decode().split()[0]
-    notiDict['product']['files'][i]['size'] = os.path.getsize(outdir+"/"+ID+".cmr.json")
-    checksum = subprocess.run(["sha512sum "+outdir+"/"+ID+".cmr.json"],capture_output=True,shell=True).stdout.decode().split()[0]
+    notiDict['product']['files'][i]['size'] = os.path.getsize(outdir+"/"+OUT_ID+".cmr.json")
+    checksum = subprocess.run(["sha512sum "+outdir+"/"+OUT_ID+".cmr.json"],capture_output=True,shell=True).stdout.decode().split()[0]
+    notiDict['product']['files'][i]['checksum'] = checksum
+    notiDict['product']['files'][i]['checksumType'] = "sha512"
+    i+=1
+    notiDict['product']['files'][i] = {}
+    notiDict['product']['files'][i]['type'] = "browse"
+    notiDict['product']['files'][i]['uri'] = httppath+"/"+OUT_ID+"_VEG-DIST-STATUS.png"
+    notiDict['product']['files'][i]['name'] = OUT_ID+"_VEG-DIST-STATUS.png"
+    #size = subprocess.run(["du "+outdir+"/"+ID+"_cmr.json"],capture_output=True,shell=True).stdout.decode().split()[0]
+    notiDict['product']['files'][i]['size'] = os.path.getsize(outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.png")
+    checksum = subprocess.run(["sha512sum "+outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.png"],capture_output=True,shell=True).stdout.decode().split()[0]
     notiDict['product']['files'][i]['checksum'] = checksum
     notiDict['product']['files'][i]['checksumType'] = "sha512"
 
-    writeJSON(notiDict, outdir+"/"+ID+".notification.json")
+    writeJSON(notiDict, outdir+"/"+OUT_ID+".notification.json")
+    return("ok",OUT_ID)
   except:
     with open("errorLOG.txt", 'a') as ERR:
       ERR.write(ID+" error in writing Metadata")
     traceback.print_exc()
+    return("fail",OUT_ID)
 
 def updateSqlite(sqliteCommand,sqliteTuple):
   written = False
@@ -231,5 +297,5 @@ def updateSqlite(sqliteCommand,sqliteTuple):
       break
   
 if __name__ == "__main__":
-  main(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6],sys.argv[7])
+  writeMetadata(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6],sys.argv[7])
  

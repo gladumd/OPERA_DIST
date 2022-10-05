@@ -13,15 +13,22 @@ def granuleList(statusFlag,filename,startYJT=None, endYJT=None,tilefile=None):
       with closing(sqlite3.connect(dbpath+"database.db")) as connection:
         with closing(connection.cursor()) as cursor:
           if startYJT != None:
-            cursor.execute("SELECT HLS_ID from fulltable WHERE statusFlag = ? and sensingTime > ? and sensingTime < ?",(statusFlag,startYJT,endYJT)) 
+            if statusFlag == "ALL":
+               cursor.execute("SELECT HLS_ID from fulltable WHERE sensingTime > ? and sensingTime < ?",(startYJT,endYJT)) 
+            else:
+              cursor.execute("SELECT HLS_ID from fulltable WHERE statusFlag = ? and sensingTime > ? and sensingTime < ?",(statusFlag,startYJT,endYJT)) 
           else:
-            cursor.execute("SELECT HLS_ID from fulltable WHERE statusFlag = ?",(statusFlag,)) 
+            if statusFlag == "ALL":
+              cursor.execute("SELECT HLS_ID from fulltable") 
+            else:
+              cursor.execute("SELECT HLS_ID from fulltable WHERE statusFlag = ?",(statusFlag,)) 
           selectedGrans = cursor.fetchall()
           selectedGrans = [s for t in selectedGrans for s in t]
           databaseChecked = True
       if tilefile != None:
         selectedGrans = filterByTileList(selectedGrans,tilefile)
-      selectedGrans = sortDates(selectedGrans)
+      selectedGrans.sort()
+      #selectedGrans = sortDates(selectedGrans)
       with open(filename,"w") as filelist:
         for g in selectedGrans:
           filelist.write(g+"\n")
@@ -36,20 +43,20 @@ def granuleList(statusFlag,filename,startYJT=None, endYJT=None,tilefile=None):
       print(sys.exc_info()) 
   return len(selectedGrans)
 
-def sortDates(listtosort):
-  datetimes = []
-  datetimeDict = {}
-  for Fscene in listtosort:
-    #(Fname,Fdatetime,Fsensor,FTtile,FDISTversion) = Fscene.split('_')
-    (HLS_ID,sensor,Ttile,Sdatetime,majorV,minorV)= Fscene.split('.')
-    datetimeDict[str(Sdatetime)]=Fscene
-    datetimes.append(Sdatetime)
-  datetimes.sort()
-  sorted = []
-  for dt in list(datetimes):
-    Fscene = datetimeDict[dt]
-    sorted.append(Fscene)
-  return sorted
+#def sortDates(listtosort):
+#  datetimes = []
+#  datetimeDict = {}
+#  for Fscene in listtosort:
+#    #(Fname,Fdatetime,Fsensor,FTtile,FDISTversion) = Fscene.split('_')
+#    (HLS_ID,sensor,Ttile,Sdatetime,majorV,minorV)= Fscene.split('.')
+#    datetimeDict[str(Sdatetime)]=Fscene
+#    datetimes.append(Sdatetime)
+#  datetimes.sort()
+#  sorted = []
+#  for dt in list(datetimes):
+#    Fscene = datetimeDict[dt]
+#    sorted.append(Fscene)
+#  return sorted
 
 def filterByTileList(granulelist,tilefile):
   granulesout = []

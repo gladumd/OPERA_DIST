@@ -106,7 +106,7 @@ OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, strata, xsize, ysize, GDT_Byte,
 
 system(("gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q "+outpath+"/strataTEMP.tif "+outpath+"/strata.tif").c_str());
   system(("rm "+outpath+"/strataTEMP.tif.tif").c_str());
-}
+
 
 return 0;
 }

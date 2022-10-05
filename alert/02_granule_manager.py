@@ -51,6 +51,12 @@ def runGranule(server,granule):
       updateSqlite(DIST_ID,sqliteCommand,(Errors,HLS_ID,))
   
   elif mode == "ALL" or mode == "SMOKE":
+    if rewrite == True:
+      try:
+        os.remove(+outdir+"/"+DIST_ID+"_VEG-ANOM.tif")
+        os.remove(+outdir+"/"+DIST_ID+"_GEN_ANOM.tif")
+      except:
+        removed = True
     #create VEG_ANOM
     if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") and not os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif"):#and !-e "$outdir/VEG_ANOM.tif"){
       response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02B_VEG_ANOM_COG.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
@@ -144,15 +150,21 @@ if __name__=='__main__':
   except:
     sys.stderr.write("must enter filelist and mode ('VEG_IND' to only create VEG_IND images or 'ALL' to create VEG_IND, VEG_ANOM, GEN_ANOM): perl 02_scene_manager.pl filelist.txt mode")
 
+  rewrite=False
+  if len(sys.argv) == 4:
+    rewrite = sys.argv[3]
+
+  #print('rewrite', rewrite)
+
   if os.path.exists("KILL_02_granule_manager") or os.path.exists("KILL_ALL"):
     print("KILL file exists. Delete and rerun.\n")
     sys.exit()
-  elif os.path.exists("02_granule_manager_RUNNING"):
-    print("02_granule_manager.py already running (or died with an error) 02_granule_manager_RUNNING exists\n")
+  elif os.path.exists("02_granule_manager_RUNNING") or os.path.exists("03_DIST_UPD_RUNNING"):
+    print("Process already running (or died with an error) *_RUNNING exists. Quit 02_granule_manager.py\n")
     sys.exit()
   else:
     with open("02_granule_manager_RUNNING",'a') as OUT:
-      OUT.write("started: "+str(datetime.datetime.now()))
+      OUT.write("started: "+str(datetime.datetime.now())+" "+filelist+" "+mode)
 
   now = datetime.datetime.now()
 
@@ -171,7 +183,7 @@ if __name__=='__main__':
 
   processLOG(["starting \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",now])
 
-  serverlist = [(17,70),(14,40),(15,40),(16,40),(19,40)]#[(18,40),(14,40),(19,20)]#[(17,60),(15,15),(16,20)]
+  serverlist = [(17,80),(14,30),(15,40),(16,40),(19,40),(21,30),(21,30)]#[(18,40),(14,40),(19,20)]#[(17,60),(15,15),(16,20)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

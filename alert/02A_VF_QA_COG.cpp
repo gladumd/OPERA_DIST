@@ -4630,11 +4630,11 @@ int calVF(string sceneName,string sceneNameOUT, string outdir)
       	water = (qf/32) % 2;
         //aerosol = (qf/64) % 4;
 
-        if (water == 1)
-            vfData[ipix] = 0;
+        //if (water == 1)
+        //    vfData[ipix] = 0;
       		               
        	//exclude cloud/cloud shadow/adjacent to cloud/shadow pixel/snow,ice/high aerosol/water pixels
-        if (cloud == 1 || cbuffer == 1 || shadow == 1 || ice == 1 || aerosol ==3 ||water==1 || qf==255)//why does nthe qf==255 not work?
+        if (cloud == 1 || cbuffer == 1 || shadow == 1 || ice == 1 ||water==1 || qf==255)//why does nthe qf==255 not work? //|| aerosol ==3 
             continue;
         else
             qaData[ipix] = 1;  
@@ -4654,6 +4654,7 @@ int calVF(string sceneName,string sceneNameOUT, string outdir)
     //cout<<"Output VF..."<<endl;
     char** predOptions = NULL;
     char **papszMetadata = NULL;
+    char **currMetadata = NULL;
   	predOptions = CSLSetNameValue(predOptions, "COMPRESS", "DEFLATE");
   	predOptions = CSLSetNameValue(predOptions, "TILED", "YES");
     vector<string> metFields = {"SENSING_TIME","spatial_coverage","cloud_coverage"};//,"SPACECRAFT_NAME","PRODUCT_URI"};
@@ -4679,11 +4680,16 @@ int calVF(string sceneName,string sceneNameOUT, string outdir)
       papszMetadata = CSLSetNameValue( papszMetadata, "SOURCE_PRODUCT_ID", CSLFetchNameValue(sourceMetadata,"PRODUCT_URI")); 
     }else{cout << "ERROR: unknown satellite!\n";}
   	
+    currMetadata = CSLDuplicate(papszMetadata);
+    currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+    currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "100");
+    currMetadata = CSLSetNameValue( currMetadata, "Units", "percent");
+
     predDR = GetGDALDriverManager()->GetDriverByName("GTiff");  
   	predDS = predDR->Create(fnameOutVFtemp.c_str(), ncol, nrow, 1, GDT_Byte, predOptions);
   	predDS->SetGeoTransform(adfGeoTransform);
   	predDS->SetProjection(pszSRS_WKT);
-  	predDS->SetMetadata(papszMetadata);
+  	predDS->SetMetadata(currMetadata);
     
   	predBD = predDS->GetRasterBand(1);
   	predBD->RasterIO(GF_Write, 0, 0, ncol, nrow, vfData, ncol, nrow, GDT_Byte, 0, 0);
@@ -4697,6 +4703,11 @@ int calVF(string sceneName,string sceneNameOUT, string outdir)
     system(("rm "+fnameOutVFtemp).c_str());
     
     //export QA file
+    currMetadata = CSLDuplicate(papszMetadata);
+    currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+    currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "1");
+    currMetadata = CSLSetNameValue( currMetadata, "Units", "unitless");
+
     qaDS = predDR->Create(fnameOutQAtemp.c_str(), ncol, nrow, 1, GDT_Byte, predOptions);
     qaDS->SetGeoTransform(adfGeoTransform);
     qaDS->SetProjection(pszSRS_WKT);

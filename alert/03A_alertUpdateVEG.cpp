@@ -228,6 +228,7 @@ filename = outpath + "/"+DIST_ID+"_VEG-DIST-STATUSTEMP.tif";
 currMetadata = CSLDuplicate(papszMetadata);
 currMetadata = CSLSetNameValue( currMetadata, "flag_values", "0,1,2,3,4,255");
 currMetadata = CSLSetNameValue( currMetadata, "flag_meanings", "no_disturbance,provisional_<50%,confirmed_<50%,provisional_>=50%,confirmed_>=50%,no_data");
+currMetadata = CSLSetNameValue( currMetadata, "Units", "unitless");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Byte, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetDescription("Vegetation_disturbance_status");

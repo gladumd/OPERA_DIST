@@ -129,7 +129,7 @@ def compare():
   for line in lines:
     (gran,updtime)=line.split(',')
     cmr_dict[gran]=updtime
-  with open("/gpfs/glad3/HLSDIST/System/database/2022212T000000_2022220T999999_productStatus.csv", 'r') as db:
+  with open("/gpfs/glad3/HLSDIST/System/report/2022212T000000_2022220T999999_productStatus.csv", 'r') as db:
     lines = db.read().splitlines()
   db_dict = {}
   (HLS_ID,DIST_ID,status,availableTime,downloadTime,processedTime,Error,retrievalTime,productTime)=lines[1].split(',')
@@ -150,30 +150,48 @@ def compare():
 def compareLPDAAC():
   startYJT = startdate.strftime("%Y%jT000000")
   endYJT = enddate.strftime("%Y%jT999999")
-  with open("LPDAACcompleted.csv", 'r') as cmr:
+  with open("/gpfs/glad3/HLSDIST/System/report/DAAC_DISTALERT_complete.txt", 'r') as cmr:#LPDAACcompleted.csv", 'r') as cmr:
     lines = cmr.read().splitlines()
   lp_dict = {}
+  for gran in lines:
+    gran.strip()
+    #(gran,updtime)=line.split(',')
+    lp_dict[gran]="complete"#updtime
+  with open("/gpfs/glad3/HLSDIST/System/report/DAAC_DISTALERT_errors.txt", 'r') as cmr:#LPDAACcompleted.csv", 'r') as cmr:
+    lines = cmr.read().splitlines()
   for line in lines:
-    (gran,updtime)=line.split(',')
-    lp_dict[gran]=updtime
-  with open("/gpfs/glad3/HLSDIST/System/database/2022212T000000_2022220T999999_productStatus.csv", 'r') as db:
+    (gran,status)=line.split(',')
+    lp_dict[gran]=status#updtime
+  with open("/gpfs/glad3/HLSDIST/System/report/E2Eend.csv", 'r') as db:
     lines = db.read().splitlines()
-  db_dict = {}
-  (HLS_ID,DIST_ID,status,availableTime,downloadTime,processedTime,Error,retrievalTime,productTime)=lines[1].split(',')
+  db_dict = {}#HLS.L30.T44QRK.2022212T044346.v2.0,DIST-ALERT_2022212T044346_L30_T44QRK_v0,5,44QRK,2022212T044346,2022-08-02T10:16:50.261822Z,2022-08-02T10:18:09Z,2022-08-05T20:09:10.322546Z
+  (HLS_ID,DIST_ID,status,tile,sensingTime,availableTime,downloadTime,processedTime)=lines[1].split(',')
   processed = 0
   count =0
+  missing =0
+  queued =0
   for line in lines:
-    (HLS_ID,DIST_ID,status,availableTime,downloadTime,processedTime,Error,retrievalTime,productTime)=line.split(',')
-    db_dict[DIST_ID] = line
-    if DIST_ID in lp_dict.keys():
-      count +=1
-      #print(line)
+    (HLS_ID,DIST_ID,status,tile,sensingTime,availableTime,downloadTime,processedTime)=line.split(',')
+    if status == "5":
+      if processedTime > '2022-08-05T21:00:00Z':
+        db_dict[DIST_ID] = line
+      if DIST_ID in lp_dict.keys():
+        if lp_dict[DIST_ID] == "complete":
+          count +=1
+        elif lp_dict[DIST_ID] == "queued":
+          queued +=1
+      else:
+        print("NOT_AT_DAAC,"+DIST_ID)
+        missing +=1
+        #print(line)
+  print(list(lp_dict.keys())[1]+','+list(db_dict.keys())[1]+',')
   for gran in lp_dict.keys():
     if not gran in db_dict.keys():
-      print("NOT_IN_DB,"+gran+","+lp_dict[gran])
+      skipped =1
+      #print("NOT_IN_DB,"+gran+","+lp_dict[gran])
     else:
       processed +=1
-  print (processed)
+  print (processed,missing,count,queued)
 
 def compareLPDAACreport():
   startYJT = startdate.strftime("%Y%jT000000")
@@ -184,7 +202,7 @@ def compareLPDAACreport():
   for line in lines:
     (gran,updtime)=line.split(',')
     lp_dict[gran]=updtime
-  with open("/gpfs/glad3/HLSDIST/System/database/2022212T000000_2022220T999999_productStatus.csv", 'r') as db:
+  with open("/gpfs/glad3/HLSDIST/System/report/2022212T000000_2022220T999999_productStatus.csv", 'r') as db:
     lines = db.read().splitlines()
   db_dict = {}
   (HLS_ID,DIST_ID,status,availableTime,downloadTime,processedTime,Error,retrievalTime,productTime)=lines[1].split(',')
@@ -220,6 +238,6 @@ if __name__=='__main__':
     enddate = datetime.datetime.strptime(sys.argv[2], "%Y-%m-%d")
     checkFirst=False
   #getCMRlist(startdate,enddate)
-  compare()
+  #compare()
   compareLPDAAC()
-  compareLPDAACreport()
+  #compareLPDAACreport()

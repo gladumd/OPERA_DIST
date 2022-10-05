@@ -8,8 +8,8 @@ $HLSsource = "/gpfs/glad3/HLS";
 $outbase = "/gpfs/glad3/HLSDIST/000_HLS_Alert_Test";
 system"g++ 04_strata.cpp -o 04_strata -lgdal -std=gnu++11 -Wno-unused-result";
 
-$startdate = 2021060;
-$enddate = 2022060;
+$startdate = 2021274;
+$enddate = 2022274;
 $startyear = substr($startdate,0,4);
 $endyear = substr($enddate,0,4);
 

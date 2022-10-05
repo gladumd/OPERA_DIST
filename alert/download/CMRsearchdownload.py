@@ -30,6 +30,7 @@ from contextlib import closing
 from multiprocessing import Pool
 
 collections = ['C2021957657-LPCLOUD', 'C2021957295-LPCLOUD']
+satelliteList = ['LC08','LC09','S2A','S2B','S2']
 source = "/gpfs/glad3/HLS" #"/cephfs/glad4/HLS"
 bands = {}
 bands['S30'] = ['B04','B8A','B11','B12','Fmask']
@@ -229,7 +230,7 @@ def download_granule(links):
         with open("wgeterrors.txt","a") as log:
           log.write(img_url + ": " + lastLine+"\n")
         break
-  statusFlag = checkGranule(HLS_ID,writeNew=True)
+  statusFlag = checkGranule(HLS_ID,writeNew=True,fromDownload=True)
   if statusFlag[0] == 2:
     status = "success"
   else:
@@ -278,7 +279,13 @@ def checkDownloadComplete(sourcepath,granule,sensor):
   sout = os.popen("ls "+sourcepath+"/"+granule + ".B*.tif 2>/dev/null | wc -l");
   count = sout.read().strip()
   if not os.path.exists(sourcepath+"/"+granule+".cmr.xml"):
-    return "missing xml"
+    (HLS,sensor,Ttile,sensingTime,majorV,minorV)= granule.split('.')
+    xmlloc = sourcepath+"/"+granule+".cmr.xml"
+    httplink = "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLS"+sensor+".020/"+granule+"/"+granule+".cmr.xml"
+    wgetcommand = "wget --timeout=300 --output-document="+xmlloc+" "+httplink 
+    report = subprocess.run([wgetcommand],capture_output=True,shell=True)
+    if report.returncode != 0:
+      return "missing xml"
   if int(count) != Nbands[sensor]:
     return "missing bands only "+count+"/"+str(Nbands[sensor])+" bands "+sensor
   for band in bands[sensor]:
@@ -314,20 +321,39 @@ def checkGranule(granule,writeNew=True,fromDownload=False):
   sourcepath = source+"/"+sensor+"/"+year+"/"+tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/"+granule
   check = checkDownloadComplete(sourcepath,granule,sensor)
   if check == "complete":
-    downloadTime = getDownloadTime(sourcepath)
-    availTime = getAvailableTime(sourcepath+"/"+granule+".cmr.xml",DIST_ID)
+    Errors = None
+    if fromDownload:
+      downloadTime = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    else:
+      downloadTime = getDownloadTime(sourcepath)
+    (availTime,satellite) = checkMetadata(sourcepath+"/"+granule+".cmr.xml",DIST_ID,sensor)
     if availTime == 'NA':
       statusFlag = 102
+      Errors = satellite
     else:
-      statusFlag = 2
+      if satellite in satelliteList:
+        statusFlag = 2
+      else:
+        statusFlag = 202
+        Errors = satellite
     if(writeNew):
-      sqliteCommand = "INSERT or REPLACE INTO fulltable(HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID,availableTime) VALUES(?,?,?,?,?,?,?)"
-      sqliteTuple = (HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID,availTime)
+      if not Errors == None:
+        sqliteCommand = "INSERT or REPLACE INTO fulltable(HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID,availableTime) VALUES(?,?,?,?,?,?,?)"
+        sqliteTuple = (HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID,availTime)
+      else:
+        sqliteCommand = "INSERT or REPLACE INTO fulltable(HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID,availableTime,Errors) VALUES(?,?,?,?,?,?,?,?)"
+        sqliteTuple = (HLS_ID,statusFlag,sensingTime,MGRStile,downloadTime,DIST_ID,availTime,Errors)
     else:
-      sqliteCommand = "UPDATE fulltable SET statusFlag = ?, downloadTime = ?, DIST_ID = ?, MGRStile = ?, availableTime = ? WHERE HLS_ID = ?"
-      sqliteTuple = (statusFlag,downloadTime,DIST_ID,MGRStile,availTime,HLS_ID)
+      if not Errors == None:
+        sqliteCommand = "UPDATE fulltable SET statusFlag = ?, downloadTime = ?, DIST_ID = ?, MGRStile = ?, availableTime = ? WHERE HLS_ID = ?"
+        sqliteTuple = (statusFlag,downloadTime,DIST_ID,MGRStile,availTime,HLS_ID)
+      else:
+        sqliteCommand = "UPDATE fulltable SET statusFlag = ?, downloadTime = ?, DIST_ID = ?, MGRStile = ?, availableTime = ?, Errors = ? WHERE HLS_ID = ?"
+        sqliteTuple = (statusFlag,downloadTime,DIST_ID,MGRStile,availTime,Errors,HLS_ID)
   else:
     statusFlag = 102
+    #if not checkSensor(sourcepath+"/"+granule+".cmr.xml",DIST_ID,sensor) in satelliteList:
+    #  statusFlag == 200
     Errors = check
     if(writeNew):
       sqliteCommand = "INSERT or REPLACE INTO fulltable(HLS_ID,statusFlag,sensingTime,MGRStile,DIST_ID,Errors) VALUES(?,?,?,?,?,?)"
@@ -340,8 +366,8 @@ def checkGranule(granule,writeNew=True,fromDownload=False):
 
 #parallel checking of all granules in list
 def checkGranuleList(granulelist):
-  processLOG(len(granulelist),"granules to check", datetime.datetime.now())
-  Nsim = 12
+  processLOG([len(granulelist),"granules to check", datetime.datetime.now()])
+  Nsim = 30
   granulesToDownload = []
   results = Pool(Nsim).imap_unordered(checkGranule,granulelist)
   success = 0
@@ -352,7 +378,7 @@ def checkGranuleList(granulelist):
     else: 
       granulesToDownload.append(result[1])
       errors +=1
-  processLOG(success,"granules successfully downloaded,", errors,"granules with errors",datetime.datetime.now())
+  processLOG([success,"granules successfully downloaded,", errors,"granules with errors",datetime.datetime.now()])
   return granulesToDownload
 
 #check a granule for correctness and update it in the database with download success (2) or download failed (102)
@@ -454,6 +480,58 @@ def updateSqlite(sqliteCommand,sqliteTuple):
     except:
       print(sys.exc_info())
       break
+
+def findAdditionalAttribute(atr,sourceDict):
+  for field in sourceDict['Granule']['AdditionalAttributes']['AdditionalAttribute']:
+    if field['Name'] == atr:
+      values = field['Values']['Value']
+      if type(values) == list:
+        return values[0]
+      else:
+        return values
+  else:
+    return "Null"
+
+def checkSensor(xmlfilename,DIST_ID,sensor):
+  try:
+    satel = 'Null'
+    with open(xmlfilename) as xml_file:
+      dict = xmltodict.parse(xml_file.read())
+    if sensor == "L30":
+      LID = findAdditionalAttribute("LANDSAT_PRODUCT_ID",dict)
+      satel = LID[0:4]
+    elif sensor =="S30":
+      #SID = findAdditionalAttribute("PRODUCT_URI",dict)
+      #satel = SID[0][0:3]
+      satel ="S2"
+    return satel
+  except:
+    with open("../errorLOG.txt", 'a') as ERR:
+      ERR.write(xmlfilename+" is empty\n")
+    sqliteCommand = "UPDATE fulltable SET Errors = ?, statusFlag = ? where DIST_ID = ?"
+    sqliteTuple = ("xml file is empty",102,DIST_ID)
+    updateSqlite(sqliteCommand,sqliteTuple)
+
+def checkMetadata(xmlfilename,DIST_ID,sensor):
+  try:
+    satel = 'Null'
+    with open(xmlfilename) as xml_file:
+      dict = xmltodict.parse(xml_file.read())
+    if sensor == "L30":
+      LID = findAdditionalAttribute("LANDSAT_PRODUCT_ID",dict)
+      satel = LID[0:4]
+    elif sensor =="S30":
+      #SID = findAdditionalAttribute("PRODUCT_URI",dict)
+      #satel = SID[0:3]
+      satel ="S2"
+    return (dict['Granule']['InsertTime'],satel)
+  except:
+    with open("../errorLOG.txt", 'a') as ERR:
+      ERR.write(xmlfilename+" is empty\n")
+    #sqliteCommand = "UPDATE fulltable SET Errors = ?, statusFlag = ? where DIST_ID = ?"
+    #sqliteTuple = ("xml file is empty",102,DIST_ID)
+    #updateSqlite(sqliteCommand,sqliteTuple)
+    return('NA','empty_xml')
 
 def getAvailableTime(xmlfilename,DIST_ID):
   try:
