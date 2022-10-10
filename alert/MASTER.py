@@ -76,7 +76,7 @@ def processLOG(argv):
 if __name__=='__main__':
   if len(sys.argv) == 2:
     tilefile=None#"../hls_tiles_disturbance_alerts.txt"
-    sendToDAAC = "False"
+    sendToDAAC = "True"
     if os.path.exists("MASTER_RUNNING"):
       print("MASTER already running (or died with an error). Delete MASTER_RUNNING and rerun. Quit MASTER.py "+str(datetime.datetime.now())+"\n")
       sys.exit()
@@ -84,7 +84,7 @@ if __name__=='__main__':
       with open("MASTER_RUNNING",'w') as OUT:
         OUT.write("started: "+str(datetime.datetime.now()))
     if sys.argv[1] == "cron":
-      startdate = (datetime.datetime.utcnow() + datetime.timedelta(days=-7)).strftime("%Y%jT000000")
+      startdate = (datetime.datetime.utcnow() + datetime.timedelta(days=-6)).strftime("%Y%jT000000")
       enddate = datetime.datetime.utcnow().strftime("%Y%jT999999")
       processLOG(["MASTER.py started for ",startdate,enddate, " at",datetime.datetime.now()])
       getGran.granuleList(2,"02_granules.txt",startdate,enddate,tilefile)
@@ -112,6 +112,8 @@ if __name__=='__main__':
           #update 105 to 102
           processLOG(["setting",selCount,"granules to re download",datetime.datetime.now()])
           #resetGranules(105,102,startdate, enddate)
+    os.remove("MASTER_RUNNING")
+
   else:
     if len(sys.argv) == 3:
       tilefile=None

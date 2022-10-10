@@ -27,20 +27,23 @@ if __name__=='__main__':
   else:
     with open("download_RUNNING",'a') as OUT:
       OUT.write("started: "+str(datetime.datetime.now()))
-
-    oneday = datetime.timedelta(days = 1)
-    start = startdate
-    download_dict = {}
-    while start < enddate:
-      #moveOldFiles(cutoffdate.strftime("%Y%j"))
-      url_dict = sd.searchCMR(start,start)
-      if url_dict != "CMR error":
-        download_dict.update(url_dict)
-        #sd.download_parallel(url_dict,50)
-      else:
-        sd.processLOG(["CMR error, unable to search.", datetime.datetime.now()])
-      start = start + oneday
-    granuleDict = sd.filterByTileList(download_dict,'../../hls_tiles_dist.txt')
-    sd.download_parallel(granuleDict,150)
-    os.remove("download_RUNNING")
+    
+    try:
+      oneday = datetime.timedelta(days = 1)
+      start = startdate
+      download_dict = {}
+      while start < enddate:
+        #moveOldFiles(cutoffdate.strftime("%Y%j"))
+        url_dict = sd.searchCMR(start,start)
+        if url_dict != "CMR error":
+          download_dict.update(url_dict)
+          #sd.download_parallel(url_dict,50)
+        else:
+          sd.processLOG(["CMR error, unable to search.", datetime.datetime.now()])
+        start = start + oneday
+      #granuleDict = sd.filterByTileList(download_dict,'../../hls_tiles_dist.txt')
+      sd.download_parallel(download_dict,150)
+      os.remove("download_RUNNING")
+    except:
+      os.remove("download_RUNNING")
 

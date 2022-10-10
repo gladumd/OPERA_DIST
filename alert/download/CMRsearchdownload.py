@@ -28,6 +28,7 @@ import subprocess
 import xmltodict
 from contextlib import closing
 from multiprocessing import Pool
+import traceback
 
 collections = ['C2021957657-LPCLOUD', 'C2021957295-LPCLOUD']
 satelliteList = ['LC08','LC09','S2A','S2B','S2']
@@ -121,7 +122,7 @@ def searchCMR(startdate,enddate):
     cmr_pg = get_cmr_pages_urls(collections, searchdates)
     url_dict = asyncio.run(get_granules_url_dict(cmr_pg))
   except:
-    sys.stderr(sys.exc_info())
+    traceback.print_exc()
     with open("../errorLOG.txt", 'a') as log:
       log.write("CMR error, unable to search "+str(datetime.datetime.now())+"\n")
     return "CMR error"

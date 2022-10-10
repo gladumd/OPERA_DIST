@@ -33,7 +33,11 @@ foreach $year ($startyear..$endyear){
     if($date>=$startdate and $date < $enddate){
       $f =~ s/VEG/GEN/g;
       if(-e "$f"){
-        $OUTID{$s}=$id
+        if(exists $OUTID{$s}){
+          ($fOPERA,$fL3,$fDIST,$fTtile,$fsensingTime,$fProdTime,$fsatellite,$fres,$fDISTversion)=split('_',$OUTID{$s});
+          ($sOPERA,$sL3,$sDIST,$sTtile,$ssensingTime,$sProdTime,$ssatellite,$sres,$sDISTversion)=split('_',$id);
+          if($sProdTime > $fProdTime){$OUTID{$s}=$id}
+        }else{$OUTID{$s}=$id;}
         push(@granules, $s);
       }else{open(OUT,">>badinputsLOG.txt"); print OUT"missing $f\n";close(OUT);}
     }

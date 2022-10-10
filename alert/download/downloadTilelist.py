@@ -22,14 +22,15 @@ if __name__=='__main__':
     start = startdate
     end = start + fiveday
     while start < enddate:
-      url_dict = sd.searchCMR(start,end)
-      with open('url_dict','w') as out:
-        for key in list(url_dict.keys()):
-          out.write(key+"\n")
-        #for url in url_dict[list(url_dict.keys())[10]]:
-        #  out.write(url+"\n")
+      granuleDict = sd.searchCMR(start,end)
+      #with open('url_dict','w') as out:
+      #  for key in list(granuleDict.keys()):
+      #    out.write(key+"\n")
+      #  #for url in url_dict[list(url_dict.keys())[10]]:
+      #  #  out.write(url+"\n")
       #granuleDict.update(sd.filterByTileList(url_dict,tilefile))
-      granuleDict = sd.filterByTileList(url_dict,tilefile)
+      if tilefile != "ALL":
+        granuleDict = sd.filterByTileList(granuleDict,tilefile)
       print(len(granuleDict), "granules for tilelist")
       start = start + fiveday + oneday
       end = start + fiveday
@@ -44,13 +45,14 @@ if __name__=='__main__':
     start = startdate
     end = start + fiveday
     while start < enddate:
-      url_dict = sd.searchCMR(start,end)
+      granuleDict = sd.searchCMR(start,end)
       #with open('url_dict','w') as out:
       #  for key in list(url_dict.keys()):
       #    out.write(key+"\n")
       #  for url in url_dict[list(url_dict.keys())[10]]:
       #    out.write(url+"\n")
-      granuleDict.update(sd.filterByTileList(url_dict,tilefile))
+      if tilefile != "ALL":
+        granuleDict = sd.filterByTileList(granuleDict,tilefile)
       #granuleDict = sd.filterByTileList(url_dict,tilefile)
       print(len(granuleDict), "granules for tilelist")
       start = start + fiveday + oneday

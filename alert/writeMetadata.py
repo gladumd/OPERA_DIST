@@ -9,6 +9,7 @@ import os
 from contextlib import closing
 import subprocess
 
+currdir = os.getcwd()
 dbpath = "/gpfs/glad3/HLSDIST/System/database/"
 imagelist = ["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","LAND-MASK"]
 
@@ -114,7 +115,7 @@ def writeMetadata(ID,sourceXML,outdir,httppath,version,Errors,sendToDAAC):
   try:
     version = version[1:]
     (name,Sdatetime,sensor,Ttile,DISTversion) = ID.split('_')
-    sensingTime = datetime.datetime.strptime(Sdatetime, "%Y%jT%H%M%SZ")
+    sensingTime = datetime.datetime.strptime(Sdatetime, "%Y%jT%H%M%S").strftime("%Y%m%dT%H%M%SZ")
     ProductionDateTimeSource =datetime.datetime.utcnow()
     #ProductionDateTimeName = ProductionDateTimeSource.strftime("%Y%jT%H%M%SZ")
     ProductionDateTimeName = ProductionDateTimeSource.strftime("%Y%m%dT%H%M%SZ")
@@ -137,7 +138,7 @@ def writeMetadata(ID,sourceXML,outdir,httppath,version,Errors,sendToDAAC):
       satellite = prodIDs[0][0:3]
 
     #OUT_ID = "OPERA_L3_DIST-ALERT-HLS_"+Ttile+"_"+Sdatetime+"Z_"+ProductionDateTimeName+"_"+satellite+"_30_"+DISTversion
-    OUT_ID = "OPERA_L3_DIST-ALERT-HLS_"+Ttile+"_"+sensingTime+"Z_"+ProductionDateTimeName+"_"+satellite+"_30_"+DISTversion
+    OUT_ID = "OPERA_L3_DIST-ALERT-HLS_"+Ttile+"_"+sensingTime+"_"+ProductionDateTimeName+"_"+satellite+"_30_"+DISTversion
 
     for image in imagelist:
       #os.rename(outdir+"/"+ID+"_"+image+".tif",outdir+"/"+OUT_ID+"_"+image+".tif")
@@ -147,9 +148,9 @@ def writeMetadata(ID,sourceXML,outdir,httppath,version,Errors,sendToDAAC):
     os.system("cp "+outdir+"/"+ID+"_VEG-DIST-PERC.tif "+outdir+"/"+OUT_ID+"_VEG-DIST-PERC.tif")
     os.system("cp "+outdir+"/"+ID+"_GEN-DIST-PERC.tif "+outdir+"/"+OUT_ID+"_GEN-DIST-PERC.tif")
 
-    tmpTif=outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.tmp.tif"
+    tmpTif=outdir+"/"+OUT_ID+"_VEG-DIST-STATUS_tmp.tif"
     pngFile=outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.png"
-    colorRamp = "browseColorRamp.clr"
+    colorRamp = currdir+"/browseColorRamp.clr"
 
     # Create a temporary GeoTIFF file, subsampling to 1024 samples on the
     # x-axis, with subsampling on the y-axis maintained to the aspect ratio of
@@ -158,13 +159,13 @@ def writeMetadata(ID,sourceXML,outdir,httppath,version,Errors,sendToDAAC):
     # 512, or for less subsampling, you could try 2048. You can also play with
     # values like 50%. For data like SNWG, I'd start with 1024, and play
     # with it as needed.
-    subprocess.run(["gdal_translate -of GTiff -outsize 1024 0 -a_nodata 255 " + outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.tif "+tmpTif],capture_output=True,shell=True)
+    response = subprocess.run(["ssh gladapp17 'gdal_translate -of GTiff -outsize 1024 0 -a_nodata 255 " + outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.tif "+tmpTif+"'"],capture_output=True,shell=True)
     #os.system("gdal_translate -of GTiff -outsize 1024 0 -a_nodata 255 " + outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.tif "+tmpTif)
 
     # Create a colorized PNG, with a transparent alpha band. The "nv" line in
     # the color ramp includes a fourth dimension to specify full transparency
     # for nodata values.
-    subprocess.run(["gdaldem color-relief -of PNG -alpha "+tmpTif+" "+ colorRamp +" "+pngFile],capture_output=True,shell=True)
+    response = subprocess.run(["ssh gladapp17 'gdaldem color-relief -of PNG -alpha "+tmpTif+" "+ colorRamp +" "+pngFile+"'"],capture_output=True,shell=True)
     #os.system("gdaldem color-relief -of PNG -alpha "+tmpTif+" "+ colorRamp +" "+pngFile)
     os.system("rm "+tmpTif+"; rm "+pngFile+".aux.xml")
 
@@ -229,12 +230,13 @@ def writeMetadata(ID,sourceXML,outdir,httppath,version,Errors,sendToDAAC):
     notiDict = {}
     notiDict['version'] = "1.4"
     notiDict['provider'] = "UMD_GLAD_OPERA"
-    notiDict['collection'] = 'OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0'
+    notiDict['collection'] = outDict['CollectionReference']['ShortName']
+    today = datetime.datetime.utcnow().strftime("%Y%m%d")
     notiDict['submissionTime'] = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     notiDict['identifier'] = OUT_ID
     notiDict['product'] = {}
     notiDict['product']['name'] = OUT_ID
-    notiDict['product']['dataVersion'] = version
+    notiDict['product']['dataVersion'] = outDict['CollectionReference']['Version']
     notiDict['product']['files'] = [""]*(len(imagelist)+2)
     i=0
     for image in imagelist:
@@ -270,6 +272,12 @@ def writeMetadata(ID,sourceXML,outdir,httppath,version,Errors,sendToDAAC):
     notiDict['product']['files'][i]['checksumType'] = "sha512"
 
     writeJSON(notiDict, outdir+"/"+OUT_ID+".notification.json")
+
+    if sendToDAAC:
+      with open("/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/sentToLP_"+today+".rpt", 'a') as rpt:
+        for j in range(0,i+1):
+          rpt.write(notiDict['collection']+","+notiDict['product']['dataVersion']+","+notiDict['product']['name']+","+notiDict['product']['files'][j]['name']+","+str(notiDict['product']['files'][j]['size'])+","+notiDict['submissionTime']+","+notiDict['product']['files'][j]['checksum']+"\n")
+
     return("ok",OUT_ID)
   except:
     with open("errorLOG.txt", 'a') as ERR:
