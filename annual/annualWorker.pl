@@ -24,9 +24,10 @@ my %OUTID;
 foreach $year ($startyear..$endyear){
   my @files = readpipe"ls $sourcebase/$year/$tilepathstring/*/OPERA_L3_DIST-ALERT-HLS*VEG-DIST-STATUS.tif 2>/dev/null";
   foreach $f (@files){
+    chomp($f);
     my @t = split('/',$f);
     my $s = $t[-2];
-    my $id = substr($t[-1],0,-19);
+    my $id = substr($t[-1],0,-20);
     #print"$f,$s\n";
     ($name,$datetime,$sensor,$Ttile,$FDISTversion)= split('_',$s);
     my $date = substr($datetime,0,7);
@@ -78,8 +79,8 @@ if($Ngranules >0){
     #print"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py $ID $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors\n";
     system"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py $ID $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors";
     #open(OUT,">>annualLOG.txt"); print OUT"$tile,$log"; close(OUT);
-    #print"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
-    readpipe"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
+    print"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
+    #readpipe"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
   }else{open(OUT,">>errorLOG.txt"); print OUT"$tile,failed\n"; close(OUT);}
 }else{open(OUT,">>strataLOG.txt"); print OUT"$tile,NoID,no_granules\n"; close(OUT);}
 

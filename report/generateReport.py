@@ -23,11 +23,22 @@ import numpy as np
 #105  Disturbance alert time-series fail
 #6    DIST product sent to LP DAAC
 
-dateStart = '2022-08-09T15:00:00Z'
-dateEnd = '2022-08-11T16:00:00Z'
+#dateStart = '2022-10-06T18:15:00Z'
+#dateEnd = '2022-10-08T20:31:00Z'
+#databaseStr = 'database_20221008T163100.db'
+if len(sys. argv) !=3:
+    print("Please input start time(YYYY-MM-DDTHH:MM:SSZ), end time(YYYY-MM-DDTHH:MM:SSZ) and database name!")
+    sys.exit()
+
+dateStart = sys.argv[1]
+dateEnd = sys.argv[2]
+databaseStr = sys.argv[3]
+
+dateStartStr = dateStart[0:4]+dateStart[5:7]+dateStart[8:13]+dateStart[14:16]+dateStart[17:20]
+dateEndStr = dateEnd[0:4]+dateEnd[5:7]+dateEnd[8:13]+dateEnd[14:16]+dateEnd[17:20]
 conn = None
 try:
-   conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect(databaseStr)
 except Error as e:
     print(e)
 
@@ -105,7 +116,7 @@ for row in rowsS30:
 conn.close()
 
 #write the data accounting report
-outname_report_datacount = "OPERA_UMD_SDS_Activity_Report_"+dateStart+"_"+dateEnd+".csv"
+outname_report_datacount = "OPERA_UMD_SDS_Activity_Report_"+dateStartStr+"_"+dateEndStr+".csv"
 
 row_dataaccounting_tile = "Title: OPERA UMD SDS Activity Summary Report"+"\n"+\
                           "Period of Performance: "+dateStart+"-"+dateEnd+"\n"+\
@@ -132,7 +143,7 @@ with open(outname_report_datacount,'w') as out_csv_file_count:
 
 out_csv_file_count.close()
 
-outname_report = "ProductStatus_"+dateStart+"_"+dateEnd+".csv"
+outname_report = "ProductStatus_"+dateStartStr+"_"+dateEndStr+".csv"
 col_names_report = ["HLS_ID","DIST_ID","statusFlag","availableTime","downloadTime","processedTime","Error","retrievalTime","productTime"]
 
 #output all the data
@@ -166,7 +177,7 @@ with open(outname_report,'w') as out_csv_file:
         else:
             retriTime = float('NAN')
 
-        if row[5] and statFlag==5:
+        if row[5] and (statFlag==5 or statFlag==6):
             procdTime = datetime.strptime(row[5][0:19],"%Y-%m-%dT%H:%M:%S")  
             proTime = (procdTime - dlTime).total_seconds()/3600
         else:
@@ -193,7 +204,7 @@ row_stats = "Max retrieval time = " + str(dfs['retrievalTime'].max()) + "\n" + \
     "Min retrieval time = "+ str(dfs['retrievalTime'].min()) + "\n" + \
     "90% Percentile retrieval time = "+ p_90 + "\n"
 
-outname_report_retrieval = "RetrievalTimeReport_"+dateStart+"_"+dateEnd+".csv"
+outname_report_retrieval = "RetrievalTimeReport_"+dateStartStr+"_"+dateEndStr+".csv"
 col_names_report_retrieval = ["OPERA Product Filename","PublicAvailableDateTime","ProductReceivedDateTime","RetrievalTime"]        
 
 with open(outname_report_retrieval,'w') as out_csv_file_retrieval:
@@ -230,7 +241,7 @@ row_stats = "Max production time = " + str(dfs['productTime'].max()) + "\n" + \
     "Min production time = "+ str(dfs['productTime'].min()) + "\n" + \
         "90% Percentile production time = "+ p_90 + "\n"
 
-outname_report_product = "ProductionTimeReport_"+dateStart+"_"+dateEnd+".csv"
+outname_report_product = "ProductionTimeReport_"+dateStartStr+"_"+dateEndStr+".csv"
 col_names_report_product = ["OPERA Product Filename","InputReceivedDateTime","DAACAlertedDateTime","ProductionTime"]       
 
 with open(outname_report_product,'w') as out_csv_file_product:

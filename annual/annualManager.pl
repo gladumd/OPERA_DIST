@@ -29,7 +29,9 @@ if(-e "errorLOG.txt"){
 #push(@serverlist, "20,15");
 #push(@serverlist, "21,15");
 #push(@serverlist, "16,15");
-push(@serverlist, "17,50");
+push(@serverlist, "18,15");
+push(@serverlist, "20,15");
+push(@serverlist, "21,15");
 
 my %h = ();
 my @list :shared;

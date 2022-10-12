@@ -26,7 +26,7 @@ def selectSourceFiles(alertsource, tile, startday ,endday):
     genfile = file; re.sub("VEG","GEN",genfile)
     if os.path.exists(genfile):
       folders = file.split('/')
-      path = ('/').join(folders[0:-1])
+      path = ('/').join(folders)[0:-20]
       gran = folders[-2]
       (product,fdatetime,sensor,Ttile,version) = gran.split('_')
       fdate = fdatetime[0:7]
@@ -61,7 +61,7 @@ def allMetaCSV(gdict,outdir,ID):
   with open(outdir+"/"+ID+"_sourcemetadata.csv",'w') as csv:
     csv.write("GranuleUR,HLSGranuleUR,BeginningDateTime,EndingDateTime,ProductionDateTime,CloudCover,Platform,Instrument,N_BaselineImages,ValidationLevel,Version,SPATIAL_COVERAGE\n")
     for g in list(gdict.keys()):
-      metafile = gdict[g]['path']+"/"+g+".cmr.json"
+      metafile = gdict[g]['path']+".cmr.json"
       with open(metafile, 'r') as metajson:
         md = json.loads(metajson.read())
       gstart = md["TemporalExtent"]["RangeDateTime"]["BeginningDateTime"]
