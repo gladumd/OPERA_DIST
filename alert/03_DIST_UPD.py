@@ -273,7 +273,7 @@ if __name__=='__main__':
   for tile in tiles:
     tileQueue.put(tile)
   
-  serverlist = [(17,60),(16,40),(15,40),(14,40)]
+  serverlist =  [(17,80),(14,40),(15,40),(16,40),(19,40),(20,40),(21,40)]#[(17,60),(16,40),(15,40),(14,40)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

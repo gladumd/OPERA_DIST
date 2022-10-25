@@ -121,15 +121,30 @@ for($i=0;$i<$Nsensordates;$i++){
 ($im1,$im2)=split(',',$selectedfiles[$i]);
 $year = substr($im1,11,4);
 print OUT"
-filename=\"$VFsource/$year/$tilepathstring/$im1/$im1\_VEG-IND.tif\";
-INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, histVF[$i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+try{
+  filename=\"$VFsource/$year/$tilepathstring/$im1/$im1\_VEG-IND.tif\";
+  INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); if(INGDAL==NULL){throw \"Not Found\";} 
+  INBAND = INGDAL->GetRasterBand(1);if(INBAND==NULL){throw \"Corrupted\";} 
+  CPLErr inresult = INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, histVF[$i], xsize, ysize, GDT_Byte, 0, 0); if(inresult != CE_None){throw \"bad band\";}
+  GDALClose(INGDAL);
+} catch (\.\.\.){
+  cout<<\"deleting $VFsource/$year/$tilepathstring/$im1/$im1\_VEG-IND.tif\"<<endl;
+  system(\"test -f $VFsource/$year/$tilepathstring/$im1/$im1\_VEG-IND.tif && rm $VFsource/$year/$tilepathstring/$im1/$im1\_VEG-IND.tif;\");
+  for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {histVF[$i][y][x]=255;}}
+}
 ";
 if($im2 ne ""){
-print OUT"filename=\"$VFsource/$year/$tilepathstring/$im2/$im2\_VEG-IND.tif\";
-INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, temp, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
-
+print OUT"
+try{
+  filename=\"$VFsource/$year/$tilepathstring/$im2/$im2\_VEG-IND.tif\";
+  INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); if(INGDAL==NULL){throw \"Not Found\";} 
+  INBAND = INGDAL->GetRasterBand(1);if(INBAND==NULL){throw \"Corrupted\";} 
+  CPLErr inresult = INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, temp, xsize, ysize, GDT_Byte, 0, 0); if(inresult != CE_None){throw \"bad band\";}
+  GDALClose(INGDAL);
+} catch (\.\.\.){
+  system(\"test -f $VFsource/$year/$tilepathstring/$im2/$im2\_VEG-IND.tif && rm $VFsource/$year/$tilepathstring/$im2/$im2\_VEG-IND.tif\");
+  for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {histVF[$i][y][x]=255;}}
+}
 for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {if(histVF[$i][y][x]==255){histVF[$i][y][x]=temp[y][x];}}}
 ";
 }

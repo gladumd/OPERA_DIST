@@ -102,11 +102,11 @@ if __name__=='__main__':
           processLOG(["setting",selCount,"granules to re download",datetime.datetime.now()])
           #resetGranules(104,102,startdate, enddate)
       getGran.granuleList(4,"03_granules.txt",startdate,enddate,tilefile)
-      subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE "+sendToDAAC+"; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
+      subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE "+sendToDAAC+" 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
       selCount = getGran.granuleList(105,"03_granules.txt",startdate,enddate,tilefile)
       if selCount > 0:
         processLOG(["retrying",selCount,"granules for 03_DIST_UPD.py",datetime.datetime.now()])
-        subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE "+sendToDAAC+"; 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
+        subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE "+sendToDAAC+" 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
         selCount = getGran.granuleList(105,"03_granules.txt",startdate,enddate,tilefile)
         if selCount > 0:
           #update 105 to 102

@@ -200,7 +200,7 @@ def download_granule(links):
     if not os.path.isdir(path_out):
       os.makedirs(path_out)
 
-    wgetcommand = "wget --timeout=300 --output-document="+img_out+" "+img_url 
+    wgetcommand = "wget --load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies --timeout=300 --output-document="+img_out+" "+img_url 
         #The default is to retry 20 times, with the exception of fatal errors 
         #like "connection refused" or "not found" (404), which are not retried.
     report = subprocess.run([wgetcommand],capture_output=True,shell=True)
@@ -215,7 +215,7 @@ def download_granule(links):
       status = lastLine
       with open("wgeterrors.txt","a") as log:
         log.write(img_url + ": " + lastLine+"\n")
-      wgetcommand = "wget --timeout=300 --output-document="+img_out+" "+img_url 
+      wgetcommand = "wget --load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies --timeout=300 --output-document="+img_out+" "+img_url 
           #The default is to retry 20 times, with the exception of fatal errors 
           #like "connection refused" or "not found" (404), which are not retried.
       report = subprocess.run([wgetcommand],capture_output=True,shell=True)
@@ -283,7 +283,7 @@ def checkDownloadComplete(sourcepath,granule,sensor):
     (HLS,sensor,Ttile,sensingTime,majorV,minorV)= granule.split('.')
     xmlloc = sourcepath+"/"+granule+".cmr.xml"
     httplink = "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLS"+sensor+".020/"+granule+"/"+granule+".cmr.xml"
-    wgetcommand = "wget --timeout=300 --output-document="+xmlloc+" "+httplink 
+    wgetcommand = "wget --load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies --timeout=300 --output-document="+xmlloc+" "+httplink 
     report = subprocess.run([wgetcommand],capture_output=True,shell=True)
     if report.returncode != 0:
       return "missing xml"

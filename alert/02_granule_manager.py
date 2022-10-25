@@ -153,6 +153,8 @@ if __name__=='__main__':
   rewrite=False
   if len(sys.argv) == 4:
     rewrite = sys.argv[3]
+    if rewrite == "True":
+      rewrite = True
 
   #print('rewrite', rewrite)
 
@@ -183,7 +185,7 @@ if __name__=='__main__':
 
   processLOG(["starting \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",now])
 
-  serverlist = [(17,80),(14,30),(15,40),(16,40),(19,40),(21,30),(21,30)]#[(18,40),(14,40),(19,20)]#[(17,60),(15,15),(16,20)]
+  serverlist = [(17,80),(14,40),(15,40),(16,40),(19,40),(20,40),(21,40)]#[(18,40),(14,40),(19,20)]#[(17,60),(15,15),(16,20)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp
