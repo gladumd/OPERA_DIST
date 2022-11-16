@@ -6,7 +6,7 @@ reportDate = today = (datetime.datetime.utcnow() + datetime.timedelta(days=-0)).
 reconciliationFile = "/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/reconciliation.json"
 
 with open(reconciliationFile,'w') as noti:
-  noti.write("{\"report\": {\"uri\": \"https://glad.umd.edu/projects/opera/ingestReports/sentToLP"+reportDate+".rpt\"}}\n")
+  noti.write("{\"report\": {\"uri\": \"https://glad.umd.edu/projects/opera/ingestReports/sentToLP_"+reportDate+".rpt\"}}\n")
 
 print("module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --region 'us-west-2' --topic-arn arn:aws:sns:us-west-2:560130786230:lp-uat-reconciliation-notification --message file://"+reconciliationFile)
 #response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-west-2:560130786230:lp-uat-reconciliation-notification --message file://"+reconciliationFile],capture_output=True,shell=True)

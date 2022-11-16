@@ -14,7 +14,7 @@ def granuleList(statusFlag,filename,startYJT=None, endYJT=None,tilefile=None):
         with closing(connection.cursor()) as cursor:
           if startYJT != None:
             if statusFlag == "ALL":
-               cursor.execute("SELECT HLS_ID from fulltable WHERE sensingTime > ? and sensingTime < ?",(startYJT,endYJT)) 
+               cursor.execute("SELECT HLS_ID from fulltable WHERE sensingTime = ? and sensingTime < ?",(startYJT,endYJT)) 
             else:
               cursor.execute("SELECT HLS_ID from fulltable WHERE statusFlag = ? and sensingTime > ? and sensingTime < ?",(statusFlag,startYJT,endYJT)) 
           else:
@@ -67,6 +67,24 @@ def filterByTileList(granulelist,tilefile):
     tile = Ttile[1:]
     if tile in tiles:
       granulesout.append(g)
+  return(granulesout)
+
+def filterByTileList2(granulelist,tilefile):
+  granulesout = []
+  with open(tilefile, 'r') as tilelist:
+    lines = tilelist.read().splitlines()
+    tiles= {}
+    for ln in lines:
+      (tile,date) = ln.split(',')
+      tiles[tile[1:]]=date
+      #print(tile[1:],date)
+
+  for g in granulelist:
+    (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= g.split('.')
+    tile = Ttile[1:]
+    if tile in tiles.keys():
+      if(Sdatetime >= tiles[tile]):
+        granulesout.append(g)
   return(granulesout)
 
   ###############################################################################

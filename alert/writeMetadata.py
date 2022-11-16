@@ -24,10 +24,12 @@ def xmlToDict(xmlfilename,ID):
     tilepathstring = tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]
     xmlloc = "/gpfs/glad3/HLS/"+sensor+"/"+Sdatetime[0:4]+"/"+tilepathstring+"/HLS."+sensor+"."+Ttile+"."+Sdatetime+".v2.0/HLS."+sensor+"."+Ttile+"."+Sdatetime+".v2.0.cmr.xml"
     httplink = "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLS"+sensor+".020/HLS."+sensor+"."+Ttile+"."+Sdatetime+".v2.0/HLS."+sensor+"."+Ttile+"."+Sdatetime+".v2.0.cmr.xml"
-    wgetcommand = "wget --timeout=300 --output-document="+xmlloc+" "+httplink 
+    wgetcommand = "wget --timeout=30 --output-document="+xmlloc+" "+httplink 
     report = subprocess.run([wgetcommand],capture_output=True,shell=True)
+    
     if report.returncode == 0:
       try:
+        os.system("cp "+xmlloc + " "+xmlfilename)
         with open(xmlfilename) as xml_file:
           dict = xmltodict.parse(xml_file.read())
         return dict
@@ -111,7 +113,7 @@ def getSpatialExtent(sourceDict):
     spatialExtent['HorizontalSpatialDomain']['Geometry']['GPolygons'][i]['Boundary']['Points'].append({'Longitude':float(list[0]['PointLongitude']),'Latitude':float(list[0]['PointLatitude'])})
   return spatialExtent
 
-def writeMetadata(ID,sourceXML,outdir,httppath,version,Errors,sendToDAAC):
+def writeMetadata(ID,sourceXML,outdir,version):
   try:
     version = version[1:]
     (name,Sdatetime,sensor,Ttile,DISTversion) = ID.split('_')
@@ -159,15 +161,15 @@ def writeMetadata(ID,sourceXML,outdir,httppath,version,Errors,sendToDAAC):
     # 512, or for less subsampling, you could try 2048. You can also play with
     # values like 50%. For data like SNWG, I'd start with 1024, and play
     # with it as needed.
-    response = subprocess.run(["ssh gladapp17 'gdal_translate -of GTiff -outsize 1024 0 -a_nodata 255 " + outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.tif "+tmpTif+"'"],capture_output=True,shell=True)
-    #os.system("gdal_translate -of GTiff -outsize 1024 0 -a_nodata 255 " + outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.tif "+tmpTif)
+    #response = subprocess.run(["ssh gladapp17 'gdal_translate -of GTiff -outsize 1024 0 -a_nodata 255 " + outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.tif "+tmpTif+"'"],capture_output=True,shell=True)
+    ##os.system("gdal_translate -of GTiff -outsize 1024 0 -a_nodata 255 " + outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.tif "+tmpTif)
 
-    # Create a colorized PNG, with a transparent alpha band. The "nv" line in
-    # the color ramp includes a fourth dimension to specify full transparency
-    # for nodata values.
-    response = subprocess.run(["ssh gladapp17 'gdaldem color-relief -of PNG -alpha "+tmpTif+" "+ colorRamp +" "+pngFile+"'"],capture_output=True,shell=True)
-    #os.system("gdaldem color-relief -of PNG -alpha "+tmpTif+" "+ colorRamp +" "+pngFile)
-    os.system("rm "+tmpTif+"; rm "+pngFile+".aux.xml")
+    ## Create a colorized PNG, with a transparent alpha band. The "nv" line in
+    ## the color ramp includes a fourth dimension to specify full transparency
+    ## for nodata values.
+    #response = subprocess.run(["ssh gladapp17 'gdaldem color-relief -of PNG -alpha "+tmpTif+" "+ colorRamp +" "+pngFile+"'"],capture_output=True,shell=True)
+    ##os.system("gdaldem color-relief -of PNG -alpha "+tmpTif+" "+ colorRamp +" "+pngFile)
+    #os.system("rm "+tmpTif+"; rm "+pngFile+".aux.xml")
 
     outDict["MetadataSpecification"] ={"URL": "https://cdn.earthdata.nasa.gov/umm/granule/v1.6.3","Name": "UMM-G","Version": "1.6.3"}
     outDict['GranuleUR'] = OUT_ID
@@ -191,6 +193,9 @@ def writeMetadata(ID,sourceXML,outdir,httppath,version,Errors,sendToDAAC):
     outDict['AdditionalAttributes'][1]['Name']='BaselineYearWindow'
     outDict['AdditionalAttributes'][1]['Values']=[str(baselineYear)]
     outDict['AdditionalAttributes'][2]['Name'] = 'BaselineImageIds'
+    sourceFiles = open(outdir+"/additional/HLSsourceFiles.txt").read().split()
+    if len(sourceFiles) == 0:
+      sourceFiles = ["NA"]
     outDict['AdditionalAttributes'][2]['Values']= open(outdir+"/additional/HLSsourceFiles.txt").read().split()
     outDict['AdditionalAttributes'][3]['Name'] = 'ValidationLevel'
     outDict['AdditionalAttributes'][3]['Values'] = ["0"]
@@ -213,77 +218,15 @@ def writeMetadata(ID,sourceXML,outdir,httppath,version,Errors,sendToDAAC):
       outDict['AdditionalAttributes'][i]['Name'] = atr
       outDict['AdditionalAttributes'][i]['Values'] = findAdditionalAttribute(atr,sourceDict)
       i +=1
-    if Errors == "NA":
-      if sendToDAAC:
-        statusFlag=6
-      else:
-        statusFlag=5
-      sqliteCommand = "UPDATE fulltable SET processedTime = ?, availableTime = ?, statusFlag = ?, Errors = '' where HLS_ID = ?"
-      sqliteTuple = (outDict['DataGranule']['ProductionDateTime'],sourceDict['Granule']['InsertTime'],statusFlag, sourceDict['Granule']['GranuleUR'])
-    else:
-      sqliteCommand = "UPDATE fulltable SET availableTime = ?, Errors = ?, statusFlag = ? where HLS_ID = ?"
-      sqliteTuple = (sourceDict['Granule']['InsertTime'], Errors,105,sourceDict['Granule']['GranuleUR'])
-    updateSqlite(sqliteCommand,sqliteTuple)
     
     writeJSON(outDict, outdir+"/"+OUT_ID+".cmr.json")
 
-    notiDict = {}
-    notiDict['version'] = "1.4"
-    notiDict['provider'] = "UMD_GLAD_OPERA"
-    notiDict['collection'] = outDict['CollectionReference']['ShortName']
-    today = datetime.datetime.utcnow().strftime("%Y%m%d")
-    notiDict['submissionTime'] = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-    notiDict['identifier'] = OUT_ID
-    notiDict['product'] = {}
-    notiDict['product']['name'] = OUT_ID
-    notiDict['product']['dataVersion'] = outDict['CollectionReference']['Version']
-    notiDict['product']['files'] = [""]*(len(imagelist)+2)
-    i=0
-    for image in imagelist:
-      #imagefile = re.sub("-","_",image)
-      notiDict['product']['files'][i] = {}
-      notiDict['product']['files'][i]['type'] = "data"
-      notiDict['product']['files'][i]['uri'] = httppath+"/"+OUT_ID+"_"+image+".tif"
-      notiDict['product']['files'][i]['name'] = OUT_ID+"_"+image+".tif"
-      #size = subprocess.run(["du "+outdir+"/"+imagefile+".tif"],capture_output=True,shell=True).stdout.decode().split()[0]
-      notiDict['product']['files'][i]['size'] = os.path.getsize(outdir+"/"+OUT_ID+"_"+image+".tif")
-      checksum = subprocess.run(["sha512sum "+outdir+"/"+OUT_ID+"_"+image+".tif"],capture_output=True,shell=True).stdout.decode().split()[0]
-      notiDict['product']['files'][i]['checksum'] = checksum
-      notiDict['product']['files'][i]['checksumType'] = "sha512"
-      i+=1
-    notiDict['product']['files'][i] = {}
-    notiDict['product']['files'][i]['type'] = "metadata"
-    notiDict['product']['files'][i]['uri'] = httppath+"/"+OUT_ID+".cmr.json"
-    notiDict['product']['files'][i]['name'] = OUT_ID+".cmr.json"
-    #size = subprocess.run(["du "+outdir+"/"+ID+"_cmr.json"],capture_output=True,shell=True).stdout.decode().split()[0]
-    notiDict['product']['files'][i]['size'] = os.path.getsize(outdir+"/"+OUT_ID+".cmr.json")
-    checksum = subprocess.run(["sha512sum "+outdir+"/"+OUT_ID+".cmr.json"],capture_output=True,shell=True).stdout.decode().split()[0]
-    notiDict['product']['files'][i]['checksum'] = checksum
-    notiDict['product']['files'][i]['checksumType'] = "sha512"
-    i+=1
-    notiDict['product']['files'][i] = {}
-    notiDict['product']['files'][i]['type'] = "browse"
-    notiDict['product']['files'][i]['uri'] = httppath+"/"+OUT_ID+"_VEG-DIST-STATUS.png"
-    notiDict['product']['files'][i]['name'] = OUT_ID+"_VEG-DIST-STATUS.png"
-    #size = subprocess.run(["du "+outdir+"/"+ID+"_cmr.json"],capture_output=True,shell=True).stdout.decode().split()[0]
-    notiDict['product']['files'][i]['size'] = os.path.getsize(outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.png")
-    checksum = subprocess.run(["sha512sum "+outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.png"],capture_output=True,shell=True).stdout.decode().split()[0]
-    notiDict['product']['files'][i]['checksum'] = checksum
-    notiDict['product']['files'][i]['checksumType'] = "sha512"
-
-    writeJSON(notiDict, outdir+"/"+OUT_ID+".notification.json")
-
-    if sendToDAAC:
-      with open("/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/sentToLP_"+today+".rpt", 'a') as rpt:
-        for j in range(0,i+1):
-          rpt.write(notiDict['collection']+","+notiDict['product']['dataVersion']+","+notiDict['product']['name']+","+notiDict['product']['files'][j]['name']+","+str(notiDict['product']['files'][j]['size'])+","+notiDict['submissionTime']+","+notiDict['product']['files'][j]['checksum']+"\n")
-
-    return("ok",OUT_ID)
+    return("ok",OUT_ID,ProductionDateTime)
   except:
     with open("errorLOG.txt", 'a') as ERR:
       ERR.write(ID+" error in writing Metadata")
     traceback.print_exc()
-    return("fail",OUT_ID)
+    return("fail",ID)
 
 def updateSqlite(sqliteCommand,sqliteTuple):
   written = False
@@ -305,5 +248,5 @@ def updateSqlite(sqliteCommand,sqliteTuple):
       break
   
 if __name__ == "__main__":
-  writeMetadata(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6],sys.argv[7])
+  writeMetadata(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4])
  

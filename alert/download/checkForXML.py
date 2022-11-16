@@ -138,19 +138,19 @@ def download_granule(HLS_ID):
   tilepathstring = tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]
   xmlloc = source+"/"+sensor+"/"+year+"/"+tilepathstring+"/"+HLS_ID+"/"+HLS_ID+".cmr.xml"
   if not os.path.exists(xmlloc) or os.path.getsize(xmlloc)==0:
-    httplink = "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLS"+sensor+".020/"+HLS_ID+"/"+HLS_ID+".cmr.xml"
+    httplink = "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLS."+sensor+".020/"+HLS_ID+"/"+HLS_ID+".cmr.xml"
   
-    wgetcommand = "wget --timeout=300 --output-document="+xmlloc+" "+httplink 
+    wgetcommand = "wget --load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies --timeout=300 --output-document="+xmlloc+" "+httplink 
           #The default is to retry 20 times, with the exception of fatal errors 
           #like "connection refused" or "not found" (404), which are not retried.
     report = subprocess.run([wgetcommand],capture_output=True,shell=True)
           #need username and password in .netrc file. If have authentication error
           #run earthengine_authenticate.py
-    lastLine = report.stderr.decode().split("\n")[-3]
     if report.returncode == 0:
       status = "success"
     else:
-      status = lastLine
+      #lastLine = report.stderr.decode().split("\n")[-3]
+      status = "failed"
   else:
     status="exists"
   DISTversion = "v0"

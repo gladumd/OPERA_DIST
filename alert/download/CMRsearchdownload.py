@@ -283,7 +283,7 @@ def checkDownloadComplete(sourcepath,granule,sensor):
     (HLS,sensor,Ttile,sensingTime,majorV,minorV)= granule.split('.')
     xmlloc = sourcepath+"/"+granule+".cmr.xml"
     httplink = "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLS"+sensor+".020/"+granule+"/"+granule+".cmr.xml"
-    wgetcommand = "wget --load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies --timeout=300 --output-document="+xmlloc+" "+httplink 
+    wgetcommand = "wget --load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies --timeout=30 --output-document="+xmlloc+" "+httplink 
     report = subprocess.run([wgetcommand],capture_output=True,shell=True)
     if report.returncode != 0:
       return "missing xml"

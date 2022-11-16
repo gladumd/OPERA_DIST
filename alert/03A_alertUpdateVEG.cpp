@@ -47,6 +47,11 @@ uint8_t currVF[ysize][xsize];
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, currVF, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
 
+filename = outpath+"/"+DIST_ID+"_LAND-MASK.tif";
+uint8_t land[ysize][xsize];
+INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, land, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+
 uint8_t status[ysize][xsize];
 uint8_t max[ysize][xsize];
 short conf[ysize][xsize];
@@ -111,7 +116,7 @@ double mean, prevmean, tempconf;
 int prevcount, prevnocount;
 
 for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
-  if(currAnom[y][x]<=100){
+  if(land[y][x]==1 and currAnom[y][x]<=100){//currAnom[y][x]<=100){
     lastObs[y][x] = currDate;
     if((currDate - date[y][x])>365){
       status[y][x]=0;

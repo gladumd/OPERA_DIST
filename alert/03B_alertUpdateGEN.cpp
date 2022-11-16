@@ -25,6 +25,10 @@ int currDate = atoi (argv[3]);
 string outpath = argv[4];
 int zone = atoi (argv[5]);
 
+//parameters
+int lowthresh = 20;
+int highthresh = 200;
+
 //GDAL
 GDALAllRegister();
 GDALDataset  *INGDAL;
@@ -52,7 +56,7 @@ uint8_t count[ysize][xsize];
 uint8_t percent[ysize][xsize];
 short dur[ysize][xsize];
 short lastObs[ysize][xsize];
-
+short currAnomConf;
 
 if(prevsource == "first"){
   memset(status, 255, sizeof(status[0][0]) * ysize * xsize);
@@ -119,8 +123,8 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
     prevcount = count[y][x];
     if(percent[y][x]<=100){prevnocount = (int)(((double)(100-percent[y][x])/percent[y][x])*prevcount);}
     else{prevnocount=0;}
-    if(currAnom[y][x]>=50){
-      if(date[y][x]==0){
+    if(currAnom[y][x]>=lowthresh){
+      if(date[y][x]==0 or date[y][x]==-1){
         date[y][x] = currDate;
         max[y][x] = currAnom[y][x];
         //histVF[y][x] = currVF[y][x] + currAnom[y][x];
@@ -155,16 +159,22 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
     }
     
     if(conf[y][x]>0){
+      if(currAnom[y][x]>100){currAnomConf = 100;}else{currAnomConf = currAnom[y][x];}
       prevmean = (double)conf[y][x]/(prevcount*prevcount);
-      mean = (prevmean * (prevcount + prevnocount) + currAnom[y][x])/(prevcount + prevnocount + 1);
+      mean = (prevmean * (prevcount + prevnocount) + currAnomConf)/(prevcount + prevnocount + 1);
       tempconf = mean * count[y][x] * count[y][x];
-      if(tempconf > 65000){conf[y][x]=65000;}else{conf[y][x]=static_cast<int>(tempconf);}
-    }else{if(currAnom[y][x]>=50){conf[y][x] = currAnom[y][x];}else{conf[y][x]=0;}}
+      if(tempconf > 32000){conf[y][x]=32000;}else{conf[y][x]=static_cast<int>(tempconf);}
+    }else{
+      if(currAnom[y][x]>=lowthresh){
+        if(currAnom[y][x]>100){currAnomConf = 100;}else{currAnomConf = currAnom[y][x];}
+        conf[y][x] = currAnomConf;
+      }else{conf[y][x]=0;}
+    }
     
-    if(max[y][x]>=200){
+    if(max[y][x]>=highthresh){
       if(conf[y][x]>=1600){status[y][x]=4;}//if(percent[y][x]>=75 and count[y][x]>=3){status[y][x]=4;}
       else if(status[y][x]!=4){status[y][x]=3;}
-    }else if(max[y][x]>=50){
+    }else if(max[y][x]>=lowthresh){
       if(conf[y][x]>=1600){status[y][x]=2;}//if(percent[y][x]>=75 and count[y][x]>=4){status[y][x]=2;}
       else if(status[y][x]!=2){status[y][x]=1;}
     }else{status[y][x]=0;}

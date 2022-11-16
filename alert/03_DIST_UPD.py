@@ -4,13 +4,13 @@ import time
 import sys
 import sqlite3
 import os
-import signal
 import re
 import subprocess
 from contextlib import closing
 import multiprocessing
 import traceback
 import writeMetadata
+import sendToDAACmod
 
 currdir = os.getcwd()
 DISTversion = "v0"
@@ -18,6 +18,7 @@ HLSsource = "/gpfs/glad3/HLS"
 outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"
 httpbase = "https://glad.umd.edu/projects/opera/DIST-ALERT"
 dbpath = "/gpfs/glad3/HLSDIST/System/database/"
+imagelist = ["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","LAND-MASK"]
 
 
 def sortDates(listtosort):
@@ -61,7 +62,7 @@ def runTile(server,Ttile,tempscenes):
   if updateMode == "UPDATE":
     outIDdict = {}
     prev = []
-    response = subprocess.run(["ls "+outbase+"/*/"+tilepathstring+"/*/*VEG-DIST-STATUS.tif"],capture_output=True,shell=True)
+    response = subprocess.run(["ls "+outbase+"/*/"+tilepathstring+"/*/OPERA*VEG-DIST-STATUS.tif"],capture_output=True,shell=True)
     if response.stdout.decode().strip() == "":
       NumPrev = 0
     else:
@@ -75,17 +76,37 @@ def runTile(server,Ttile,tempscenes):
           gran = folders[-2]
           (tname,prevdatetime,tsensor,tTtile,tDISTversion) = gran.split('_')
           if prevdatetime < firstdatetime:
-            prev.append(gran)
-            outIDdict[gran] = folders[-1][0:-20]
+            (sOPERA,sL3,sDIST,sTtile,ssensingTime,sProdTime,ssatellite,sres,sDISTversion)=folders[-1][0:-20].split('_')
+            if sProdTime > '20221103T000000Z':
+              if not gran in outIDdict.keys():
+                prev.append(gran)
+                outIDdict[gran] = folders[-1][0:-20]
+              else:
+                (fOPERA,fL3,fDIST,fTtile,fsensingTime,fProdTime,fsatellite,fres,fDISTversion)=outIDdict[gran].split('_')
+                (sOPERA,sL3,sDIST,sTtile,ssensingTime,sProdTime,ssatellite,sres,sDISTversion)=folders[-1][0:-20].split('_')
+                if sProdTime > fProdTime:
+                  outIDdict[gran] = folders[-1][0:-20]
       if len(prev) == 0:
         previousSource = "first"
       else:
         sortedprev = sortDates(prev)
-        previous = sortedprev[-1]
-        (tname,prevdatetime,tsensor,tTtile,tDISTversion)= previous.split('_')
-        prevyear = prevdatetime[0:4]
-        #updated to source the OUT_ID of the previous file
-        previousSource = outbase+"/"+prevyear+"/"+tilepathstring+"/"+previous+"/"+outIDdict[previous]
+        index = -1
+        notFound = True
+        while(notFound and abs(index) < len(sortedprev)):
+          previous = sortedprev[index]
+          (tname,prevdatetime,tsensor,tTtile,tDISTversion)= previous.split('_')
+          prevyear = prevdatetime[0:4]
+          #updated to source the OUT_ID of the previous file
+          previousSource = outbase+"/"+prevyear+"/"+tilepathstring+"/"+previous+"/"+outIDdict[previous]
+          response = subprocess.run(["ls "+previousSource+"*.tif"],capture_output=True,shell=True)
+          if not response.stdout.decode().strip() == "":
+            tempfiles = str(response.stdout.decode().strip()).split('\n')
+            NumFiles = len(tempfiles)
+            if NumFiles == (len(imagelist)+2):
+              notFound = False
+          index -= 1
+        if notFound:
+          previousSource = "first"
     else:
       previousSource = "first"
   elif updateMode == "RESTART":
@@ -121,46 +142,63 @@ def runTile(server,Ttile,tempscenes):
     else:
       try:
         Errors=""
+        errveg=""
         response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03A_alertUpdateVEG "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
         errveg = response.stderr.decode().strip()
+        
         response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03B_alertUpdateGEN "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
         errgen = response.stderr.decode().strip()
         if errveg == "" and errgen == "":
           ###need to update this so that it send with the production time.
           #previousSource = outdir+"/"+DIST_ID
-          Errors = "NA"
+          Errors = ""
         else:
           Errors = errveg+" "+errgen
           errorLOG(DIST_ID+Errors +"ERRORs")
-        if not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-DIST-STATUS.tif") or not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-DIST-STATUS.tif"):
-          errorLOG(DIST_ID+"_GEN-DIST-STATUS.tif not made")
-          statusFlag=104
+        sout = os.popen("ls "+outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID +"*.tif 2>/dev/null | wc -l");
+        count = int(sout.read().strip())
+        if not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-DIST-STATUS.tif") or not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-DIST-STATUS.tif") or count < 22:
+          errorLOG(DIST_ID+"not all time-series layers made")
+          statusFlag=105
+          sqliteCommand = "UPDATE fulltable SET statusFlag = ?, Errors = 'failed to create time-series layers' where HLS_ID = ?"
+          sqliteTuple = (statusFlag, HLS_ID)
+          updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
         else:
           statusFlag = 5
         if statusFlag == 5:
-          response = subprocess.run(["ls "+outdir+"/additional/*.xml"],capture_output=True,shell=True)
-          xmlfile = response.stdout.decode().strip()
+          HLS_ID = "HLS."+sensor+"."+Ttile+"."+Sdatetime+".v2.0"
+          xmlfile = outdir+"/additional/"+HLS_ID+".cmr.xml"
+          if not os.path.exists(xmlfile):
+            httplink = "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLS"+sensor+".020/"+HLS_ID+"/"+HLS_ID+".cmr.xml"
+            wgetcommand = "wget --load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies --timeout=30 --output-document="+xmlfile+" "+httplink 
+            report = subprocess.run([wgetcommand],capture_output=True,shell=True)
           if not os.path.exists(xmlfile):
             errorLOG("ERROR:: "+DIST_ID+" no XML file.")
             sqliteCommand = "UPDATE fulltable SET Errors = 'source xmlfile does not exist', statusFlag = 102 where DIST_ID=?"
             sqliteTuple = (DIST_ID,)
             updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
           else:
-            ##print("python writeMetadata.py",DIST_ID,sensor,xmlfile,outdir,httppath,DISTversion,Errors)
-            #response = subprocess.run(["python writeMetadata.py "+DIST_ID+" "+xmlfile+" "+outdir+" "+httppath+" "+DISTversion+" "+Errors],capture_output=True,shell=True)
-            #errmeta = response.stderr.decode().strip()
-            #
-            #if errmeta == "":
-            #  if sendToDAAC:
-            #    response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+DIST_ID+".notification.json"],#capture_output=True,shell=True)
-            #else:
-            #  errorLOG(DIST_ID+errmeta)
-            (response,OUT_ID) = writeMetadata.writeMetadata(DIST_ID,xmlfile,outdir,httppath,DISTversion,Errors,sendToDAAC)
+            (response,OUT_ID,ProductionDateTime) = writeMetadata.writeMetadata(DIST_ID,xmlfile,outdir,DISTversion)
             if response == "ok":
               previousSource = outdir+"/"+OUT_ID
+              statusFlag = 5
+              sqliteCommand = "UPDATE fulltable SET processedTime = ?, statusFlag = ?, Errors = '' where HLS_ID = ?"
               if sendToDAAC:
-                #print("module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+OUT_ID+".notification.json")
-                response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+OUT_ID+".notification.json"],capture_output=True,shell=True)
+                response = sendToDAACmod.sendNotification(OUT_ID,outdir,httppath)
+                if response == "ok":
+                  statusFlag = 6
+                else:
+                  statusFlag = 106
+                  sqliteCommand = "UPDATE fulltable SET processedTime = ?, statusFlag = ?, Errors = 'failed to send to LPDAAC' where HLS_ID = ?"
+              sqliteTuple = (ProductionDateTime,statusFlag, OUT_ID)
+              updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
+            else:
+              statusFlag = 105
+              sqliteCommand = "UPDATE fulltable SET statusFlag = ?, Errors = 'failed to write metadata' where HLS_ID = ?"
+              sqliteTuple = (statusFlag, HLS_ID)
+              updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
+              #print("module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+OUT_ID+".notification.json")
+              #response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+OUT_ID+".notification.json"],capture_output=True,shell=True)
 
       except:
         traceback.print_exc()
@@ -273,7 +311,7 @@ if __name__=='__main__':
   for tile in tiles:
     tileQueue.put(tile)
   
-  serverlist =  [(17,80),(14,40),(15,40),(16,40),(19,40),(20,40),(21,40)]#[(17,60),(16,40),(15,40),(14,40)]
+  serverlist =  [(17,60),(15,50),(19,50),(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

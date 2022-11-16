@@ -134,6 +134,9 @@ for($i=0;$i<$Nsensordates;$i++){
   $b = 0;
   if($tsensor eq "S30"){@bands = ("B04","B8A","B11","B12");}
   elsif($tsensor eq "L30"){@bands = ("B04","B05","B06","B07");}
+
+
+  print OUT"try{\n";
   foreach $band (@bands){
     print OUT"
 filename=\"$HLSsource/$tsensor/$tyear/$tilepathstring/$im1/$im1.$band.tif\";
@@ -170,6 +173,11 @@ INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, temp, xsize, ysize, GDT_UInt16, 0,
 for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {if(qa[$i][y][x]==0){qa[$i][y][x]=temp[y][x];}}}
 ";
   }
+print OUT"
+} catch (\.\.\.){
+  for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {qa[$i][y][x]=255;}}
+}
+";
 }
 
 print OUT"

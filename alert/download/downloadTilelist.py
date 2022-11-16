@@ -36,7 +36,7 @@ if __name__=='__main__':
       end = start + fiveday
       granulesToDownload = sd.checkGranuleList(list(granuleDict.keys()))
       granDownloadDist = {granule: granuleDict[granule] for granule in granulesToDownload}
-      sd.download_parallel(granDownloadDist,150)
+      sd.download_parallel(granDownloadDist,25)
 
   elif mode =="END":
     granuleDict = {}
