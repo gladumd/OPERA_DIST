@@ -53,8 +53,8 @@ def runGranule(server,granule):
   elif mode == "ALL" or mode == "SMOKE":
     if rewrite == True:
       try:
-        os.remove(+outdir+"/"+DIST_ID+"_VEG-ANOM.tif")
-        os.remove(+outdir+"/"+DIST_ID+"_GEN_ANOM.tif")
+        os.remove(outdir+"/"+DIST_ID+"_VEG-ANOM.tif")
+        #os.remove(+outdir+"/"+DIST_ID+"_GEN_ANOM.tif")
       except:
         removed = True
     #create VEG_ANOM
@@ -153,10 +153,10 @@ if __name__=='__main__':
   rewrite=False
   if len(sys.argv) == 4:
     rewrite = sys.argv[3]
-    if rewrite == "True":
+    if rewrite == "REWRITE":
       rewrite = True
 
-  #print('rewrite', rewrite)
+  print('rewrite', rewrite)
 
   if os.path.exists("KILL_02_granule_manager") or os.path.exists("KILL_ALL"):
     print("KILL file exists. Delete and rerun.\n")
@@ -185,7 +185,7 @@ if __name__=='__main__':
 
   processLOG(["starting \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",now])
 
-  serverlist = [(17,80),(15,40),(16,40),(19,40)]#[(18,40),(14,40),(19,20)]#[(17,60),(15,15),(16,20)]
+  serverlist = [(17,65),(15,15),(16,20),(19,20),(18,20)]#[(18,40),(14,40),(19,20)]#[(17,60),(15,15),(16,20)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

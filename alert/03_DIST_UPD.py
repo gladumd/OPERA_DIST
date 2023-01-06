@@ -143,6 +143,8 @@ def runTile(server,Ttile,tempscenes):
       try:
         Errors=""
         errveg=""
+        with open("previousFile.txt",'a') as prevLog:
+          prevLog.write(previousSource+','+DIST_ID+"\n")
         response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03A_alertUpdateVEG "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
         errveg = response.stderr.decode().strip()
         
@@ -311,7 +313,7 @@ if __name__=='__main__':
   for tile in tiles:
     tileQueue.put(tile)
   
-  serverlist =  [(17,60),(15,50),(19,50),(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
+  serverlist =  [(17,60),(18,40),(19,40)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp
