@@ -76,7 +76,7 @@ def processLOG(argv):
 if __name__=='__main__':
   if len(sys.argv) == 2:
     tilefile=None#"../hls_tiles_disturbance_alerts.txt"
-    sendToDAAC = "True"
+    sendToDAAC = "False"
     if os.path.exists("MASTER_RUNNING"):
       print("MASTER already running (or died with an error). Delete MASTER_RUNNING and rerun. Quit MASTER.py "+str(datetime.datetime.now())+"\n")
       sys.exit()

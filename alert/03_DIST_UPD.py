@@ -40,7 +40,7 @@ def sortDates(listtosort):
 
 def runTile(server,Ttile,tempscenes):
   if os.path.exists("KILL_03_DIST_UPD") or os.path.exists("KILL_ALL"):
-    raise ValueError("process killed with KILL file")
+    raise ValueError("03_DIST_UPD.py shutdown with KILL file")
   tempscenes = tempscenes.split(',')
   #my $tile = substr($Ttile,1,5);
   tile = Ttile[1:]
@@ -70,7 +70,7 @@ def runTile(server,Ttile,tempscenes):
       NumPrev = len(tempfiles)
     if NumPrev >0:
       for file in tempfiles:
-        genfile = file; re.sub("VEG","GEN",genfile)
+        genfile = file[0:-20]+"GEN-DIST-STATUS.tif"
         if os.path.exists(genfile):
           folders = file.split('/')
           gran = folders[-2]
@@ -192,7 +192,7 @@ def runTile(server,Ttile,tempscenes):
                 else:
                   statusFlag = 106
                   sqliteCommand = "UPDATE fulltable SET processedTime = ?, statusFlag = ?, Errors = 'failed to send to LPDAAC' where HLS_ID = ?"
-              sqliteTuple = (ProductionDateTime,statusFlag, OUT_ID)
+              sqliteTuple = (ProductionDateTime,statusFlag, HLS_ID)
               updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
             else:
               statusFlag = 105
@@ -251,7 +251,7 @@ def processTileQueue(server,procID,queue,h):
         Nprocess +=1
     except ValueError as err:
       running = False
-      processLOG(["03_DIST_UPD.py shut down with KILL file"])
+      processLOG(["03_DIST_UPD.py "+str(err)])
     except:
       traceback.print_exc()
       errorLOG("ERROR: runTile("+server+","+tile+") process ID:"+procID+": "+str(sys.exc_info()))
@@ -313,7 +313,7 @@ if __name__=='__main__':
   for tile in tiles:
     tileQueue.put(tile)
   
-  serverlist =  [(17,60),(18,40),(19,40)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
+  serverlist =  [(17,60),(18,30),(15,30),(16,30)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

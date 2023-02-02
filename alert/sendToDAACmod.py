@@ -94,11 +94,11 @@ def sendNotification(OUT_ID,outdir,httppath):
         rpt.write(notiDict['collection']+","+notiDict['product']['dataVersion']+","+notiDict['product']['name']+","+notiDict['product']['files'][j]['name']+","+str(notiDict['product']['files'][j]['size'])+","+notiDict['submissionTime']+","+notiDict['product']['files'][j]['checksum']+"\n")
     
     response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+OUT_ID+".notification.json"],capture_output=True,shell=True)
-    print(OUT_ID, response.stdout.decode().strip().replace(" ", "").replace("\n", ""))
+    #print(OUT_ID, response.stdout.decode().strip().replace(" ", "").replace("\n", ""))
     if(response.stderr.decode().strip() == ""):
       return("ok")
     else:
-      print(response.stderr.decode().strip())
+      #print(response.stderr.decode().strip())
       return("fail")
 
   except:

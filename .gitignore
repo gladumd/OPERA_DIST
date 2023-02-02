@@ -152,5 +152,6 @@ alert/temp/*
 user.profile
 annual/temp/*
 annual/*.txt
+*.db
 
 alert/download/__pycache__/CMRsearchdownload.cpython-37.pyc
