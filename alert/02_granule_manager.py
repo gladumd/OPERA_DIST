@@ -75,7 +75,7 @@ def runGranule(server,granule):
       sqliteCommand = "UPDATE fulltable SET statusFlag = 4 where HLS_ID=?;"
       updateSqlite(DIST_ID,sqliteCommand,(HLS_ID,))
     else:
-      errorLOG([DIST_ID+"not all VEG-IND, VEG-ANOM, GEN-ANOM exist, failed to create."+Errors])
+      errorLOG(["gladapp"+server+": "+DIST_ID+"not all VEG-IND, VEG-ANOM, GEN-ANOM exist, failed to create."+Errors+" "+str(datetime.datetime.now())])
       sqliteCommand = "UPDATE fulltable SET Errors = 'VEG-IND/VEG-ANOM/GEN-ANOM failed', statusFlag = 104 where HLS_ID=?;"
       updateSqlite(DIST_ID,sqliteCommand,(HLS_ID,))
 
@@ -185,7 +185,7 @@ if __name__=='__main__':
 
   processLOG(["starting \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",now])
 
-  serverlist = [(17,65),(15,15),(16,20),(19,20),(18,20)]#[(18,40),(14,40),(19,20)]#[(17,60),(15,15),(16,20)]
+  serverlist = [(17,65),(15,20),(16,25),(18,20),(20,35)]#[(18,40),(14,40),(19,20)]#[(17,60),(15,15),(16,20)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp
