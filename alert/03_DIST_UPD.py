@@ -11,13 +11,14 @@ import multiprocessing
 import traceback
 import writeMetadata
 import sendToDAACmod
+import parameters
 
 currdir = os.getcwd()
-DISTversion = "v0"
-HLSsource = "/gpfs/glad3/HLS"
-outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"
-httpbase = "https://glad.umd.edu/projects/opera/DIST-ALERT"
-dbpath = "/gpfs/glad3/HLSDIST/System/database/"
+DISTversion = parameters.DISTversion #"v0"
+HLSsource = parameters.HLSsource #"/gpfs/glad3/HLS"
+outbase = parameters.outbase #"/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"
+httpbase = parameters.httpbase #"https://glad.umd.edu/projects/opera/DIST-ALERT"
+dbpath = parameters.dbpath #"/gpfs/glad3/HLSDIST/System/database/"
 imagelist = ["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","LAND-MASK"]
 
 
@@ -148,8 +149,10 @@ def runTile(server,Ttile,tempscenes):
         response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03A_alertUpdateVEG "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
         errveg = response.stderr.decode().strip()
         
+        #errgen =""
         response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03B_alertUpdateGEN "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
         errgen = response.stderr.decode().strip()
+        response = subprocess.run(["cp /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT/"+year+"/"+tilepathstring+"/"+DIST_ID+"/additional/HLSsourceFiles.txt "+outdir+"/additional/HLSsourceFiles.txt"],capture_output=True,shell=True)
         if errveg == "" and errgen == "":
           ###need to update this so that it send with the production time.
           #previousSource = outdir+"/"+DIST_ID
@@ -180,6 +183,7 @@ def runTile(server,Ttile,tempscenes):
             sqliteTuple = (DIST_ID,)
             updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
           else:
+            response = subprocess.run(["rm "+outdir+"/OPERA*"],capture_output=True,shell=True) ###REMOVE LATER
             (response,OUT_ID,ProductionDateTime) = writeMetadata.writeMetadata(DIST_ID,xmlfile,outdir,DISTversion)
             if response == "ok":
               previousSource = outdir+"/"+OUT_ID
@@ -313,7 +317,7 @@ if __name__=='__main__':
   for tile in tiles:
     tileQueue.put(tile)
   
-  serverlist =  [(17,60),(18,30),(15,30),(16,30)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
+  serverlist =  [(14,30),(16,30),(17,60)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

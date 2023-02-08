@@ -8,12 +8,14 @@ import sendToDAACmod
 import subprocess
 from contextlib import closing
 import multiprocessing
+import parameters
 
 currdir = os.getcwd()
-DISTversion = "v0"
-HLSsource = "/gpfs/glad3/HLS"
-outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"
-dbpath = "/gpfs/glad3/HLSDIST/System/database/"
+DISTversion = parameters.DISTversion
+HLSsource = parameters.HLSsource #"/gpfs/glad3/HLS"
+outbase = parameters.outbase #"/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"
+dbpath = parameters.dbpath #"/gpfs/glad3/HLSDIST/System/database/"
+httpbase = parameters.httpbase #"https://glad.umd.edu/projects/opera/DIST-ALERT"
 
 def runGranule(server,granule):
   (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= granule.split('.')
@@ -43,7 +45,7 @@ def runGranule(server,granule):
           if sProdTime > fProdTime:
             outIDdict[granule] = folders[-1][0:-20]
   OUT_ID = outIDdict[granule]
-  httppath = "https://glad.umd.edu/projects/opera/DIST-ALERT"+"/"+year+"/"+tilepathstring+"/"+DIST_ID
+  httppath = httpbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID
   response = sendToDAACmod.sendNotification(OUT_ID,outdir,httppath)
   #notification = outdir+"/"+OUT_ID+".notification.json"
   #if os.path.exists(notification):

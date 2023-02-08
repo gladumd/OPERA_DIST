@@ -2,7 +2,9 @@ import os
 import datetime
 from dateutil.relativedelta import relativedelta
 import sys
-source = "/gpfs/glad3/HLS"
+import parameters
+
+source = parameters.HLSsource #"/gpfs/glad3/HLS"
 
 bands = {}
 bands['S30'] = ['B04','B8A','B11','B12','Fmask']

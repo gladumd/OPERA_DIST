@@ -3,7 +3,9 @@ $outscene = $ARGV[1];
 $output = $ARGV[2];
 
 $HLSsource = "/gpfs/glad3/HLS";
-$outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT";
+@folders = split('/',$output);
+$depth = @folders;
+$outbase = join("/",@folders[0..($depth-7)]);
 $calWindow = 31; #number of days of moving window
 $Nyears = 3; #Nyears of baseline
 if(!-d "temp"){mkdir"temp";}

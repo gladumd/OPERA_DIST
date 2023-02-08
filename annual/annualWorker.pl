@@ -8,8 +8,8 @@ $yearname = $ARGV[3];
 if(!-d "temp"){mkdir"temp";}
 
 $HLSsource = "/gpfs/glad3/HLS";
-$outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ANN";
-$sourcebase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT";
+$outbase = "/gpfs/glad3/HLSDIST/VFModel/Drone/LP-DAAC/DIST-ANN";
+$sourcebase = "/gpfs/glad3/HLSDIST/VFModel/Drone/LP-DAAC/DIST-ALERT";
 $DISTversion="v0";
 $httpbase = "https://glad.umd.edu/projects/opera/DIST-ANN";
 
@@ -78,8 +78,8 @@ if($Ngranules >0){
     $Errors = "NA";
     #print"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py $ID $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors\n";
     system"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py $ID $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors";
-    #open(OUT,">>annualLOG.txt"); print OUT"$tile,$log"; close(OUT);
-    print"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
+    open(OUT,">>annualLOG.txt"); print OUT"$tile,$ID,success"; close(OUT);
+    #print"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
     #readpipe"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
   }else{open(OUT,">>errorLOG.txt"); print OUT"$tile,failed\n"; close(OUT);}
 }else{open(OUT,">>strataLOG.txt"); print OUT"$tile,NoID,no_granules\n"; close(OUT);}
@@ -189,6 +189,9 @@ print OUT"
 bool datesNeeded[Ngranules] = {0};
 datesNeeded[0]=1;
 
+ofstream sourcefiles;
+sourcefiles.open (\"$outdir/sourcegranules.txt\");
+
 i=0;
 ";
 foreach $granule (@images){
@@ -199,7 +202,11 @@ print OUT"
 filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-DIST-STATUS.tif\"; 
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vegstatus[i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
-i++;";
+i++;
+
+sourcefiles << \"$OUTID{$granule},$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\"<<endl;
+
+";
 }
 
 print OUT"

@@ -2,9 +2,10 @@ use threads; use threads::shared;
 $scene = $ARGV[0];
 $outscene = $ARGV[1];
 $output = $ARGV[2];
-$DISTversion = "v0";
+@folders = split('/',$output);
+$depth = @folders;
 
-$outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT";
+$outbase = join("/",@folders[0..($depth-7)]);#"/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT";
 $calWindow = 31; #number of days of moving window
 $Nyears = 3; #Nyears of baseline
 #$version = "v_Newtrain";

@@ -223,11 +223,12 @@ GDALDataset  *SGDAL;
 SGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); 
 sourceMetadata = SGDAL -> GetMetadata();
 
-papszMetadata = CSLSetNameValue( papszMetadata, "Update_Date", CSLFetchNameValue(sourceMetadata,("SENSING_TIME")));
-double percentupdated = (100.0 - stod(CSLFetchNameValue(sourceMetadata,("cloud_coverage")))/100 * stod(CSLFetchNameValue(sourceMetadata,("spatial_coverage"))));
-char s[6] = {0};
-snprintf(s, 6, "%lf", percentupdated);
-papszMetadata = CSLSetNameValue( papszMetadata, "Percent_Updated", s);
+///////NEED TO BRING BACK!!!!!!!!!!!/////////
+//papszMetadata = CSLSetNameValue( papszMetadata, "Update_Date", CSLFetchNameValue(sourceMetadata,("SENSING_TIME")));
+//double percentupdated = (100.0 - stod(CSLFetchNameValue(sourceMetadata,("cloud_coverage")))/100 * stod(CSLFetchNameValue(sourceMetadata,("spatial_coverage"))));
+//char s[6] = {0};
+//snprintf(s, 6, "%lf", percentupdated);
+//papszMetadata = CSLSetNameValue( papszMetadata, "Percent_Updated", s);
 
 filename = outpath + "/"+DIST_ID+"_VEG-DIST-STATUSTEMP.tif";
 currMetadata = CSLDuplicate(papszMetadata);

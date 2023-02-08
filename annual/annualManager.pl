@@ -8,12 +8,6 @@ $yearname = $ARGV[3];
 if($tilelist eq ""){die"mutst enter tilelist, startdate (YYYYJJJ), enddate, yearname: perl annual.pl tilelist.txt\n";}
 if(!-d "temp"){mkdir"temp";}
 
-$HLSsource = "/gpfs/glad3/HLS";
-$outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ANN";
-$sourcebase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT";
-$DISTversion="v0";
-$httpbase = "https://glad.umd.edu/projects/opera/DIST-ANN";
-
 $startyear = substr($startdate,0,4);
 $endyear = substr($enddate,0,4);
 
@@ -27,11 +21,12 @@ if(-e "errorLOG.txt"){
 }
 
 #push(@serverlist, "20,15");
+push(@serverlist, "15,40");
+push(@serverlist, "16,45");
+push(@serverlist, "18,10");
+push(@serverlist, "17,30");
+#push(@serverlist, "20,15");
 #push(@serverlist, "21,15");
-#push(@serverlist, "16,15");
-push(@serverlist, "18,15");
-push(@serverlist, "20,15");
-push(@serverlist, "21,15");
 
 my %h = ();
 my @list :shared;

@@ -6,13 +6,13 @@ import sys
 reportDate = today = (datetime.datetime.utcnow() + datetime.timedelta(days=-2)).strftime("%Y%m%d")
 
 def send():
-  reconciliationFile = "/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/reconciliation. json"
+  reconciliationFile = "/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/reconciliation.json"
 
   if os.path.exists("/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/sentToLP_" +reportDate+".rpt"):
     with open(reconciliationFile,'w') as noti:
-      noti.write("{\"report\": {\"uri\": \"https://glad.umd.edu/projects/opera/ ingestReports/sentToLP_" +reportDate+".rpt\"}}\n")
+      noti.write("{\"report\": {\"uri\": \"https://glad.umd.edu/projects/opera/ingestReports/sentToLP_" +reportDate+".rpt\"}}\n")
 
-    response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/  System/user.profile; aws sns  publish --region 'us-west-2' --topic-arn    arn:aws:sns:us-west-2:643705676985:lp-prod-reconciliation-notification   --message file://" +reconciliationFile],capture_output=True,shell=True)
+    response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --region 'us-west-2' --topic-arn arn:aws:sns:us-west-2:643705676985:lp-prod-reconciliation-notification --message file://" +reconciliationFile],capture_output=True,shell=True)
 
     if response.stderr.decode().strip() != "":
       with open("errorLOG.txt",'a') as ERR:

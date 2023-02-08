@@ -8,10 +8,12 @@ import sqlite3
 import os
 from contextlib import closing
 import subprocess
+import parameters
 
 currdir = os.getcwd()
-dbpath = "/gpfs/glad3/HLSDIST/System/database/"
+dbpath = parameters.dbpath#"/gpfs/glad3/HLSDIST/System/database/"
 imagelist = ["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","LAND-MASK"]
+HLSsource = parameters.HLSsource
 
 def xmlToDict(xmlfilename,ID):
   try:
@@ -22,7 +24,7 @@ def xmlToDict(xmlfilename,ID):
     (name,Sdatetime,sensor,Ttile,tDISTversion) = ID.split('_')
     tile = Ttile[1:]
     tilepathstring = tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]
-    xmlloc = "/gpfs/glad3/HLS/"+sensor+"/"+Sdatetime[0:4]+"/"+tilepathstring+"/HLS."+sensor+"."+Ttile+"."+Sdatetime+".v2.0/HLS."+sensor+"."+Ttile+"."+Sdatetime+".v2.0.cmr.xml"
+    xmlloc = HLSsource+"/"+sensor+"/"+Sdatetime[0:4]+"/"+tilepathstring+"/HLS."+sensor+"."+Ttile+"."+Sdatetime+".v2.0/HLS."+sensor+"."+Ttile+"."+Sdatetime+".v2.0.cmr.xml"
     httplink = "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLS"+sensor+".020/HLS."+sensor+"."+Ttile+"."+Sdatetime+".v2.0/HLS."+sensor+"."+Ttile+"."+Sdatetime+".v2.0.cmr.xml"
     wgetcommand = "wget --timeout=30 --output-document="+xmlloc+" "+httplink 
     report = subprocess.run([wgetcommand],capture_output=True,shell=True)

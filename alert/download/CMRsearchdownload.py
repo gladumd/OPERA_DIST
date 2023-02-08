@@ -29,18 +29,19 @@ import xmltodict
 from contextlib import closing
 from multiprocessing import Pool
 import traceback
+import parameters
 
 collections = ['C2021957657-LPCLOUD', 'C2021957295-LPCLOUD']
-satelliteList = ['LC08','LC09','S2A','S2B','S2']
-source = "/gpfs/glad3/HLS" #"/cephfs/glad4/HLS"
+satelliteList = parameters.satelliteList#['LC08','LC09','S2A','S2B','S2']
+source = parameters.HLSsource#"/gpfs/glad3/HLS" #"/cephfs/glad4/HLS"
 bands = {}
 bands['S30'] = ['B04','B8A','B11','B12','Fmask']
 bands['L30'] = ['B04','B05','B06','B07','Fmask']
 Nbands = {}
 Nbands['S30'] = 13
 Nbands['L30'] = 10
-DISTversion = "v0"
-dbpath = "/gpfs/glad3/HLSDIST/System/database/"
+DISTversion = parameters.DISTversion#"v0"
+dbpath = parameters.dbpath #"/gpfs/glad3/HLSDIST/System/database/"
 
 # CMR search to get all granules with all extra info
 def get_cmr_pages_urls(collections, datetime_range):

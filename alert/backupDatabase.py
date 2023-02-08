@@ -5,8 +5,9 @@ import sqlite3
 import time
 import sys
 import traceback
+import parameters
 
-dbpath = "/gpfs/glad3/HLSDIST/System/database/"
+dbpath = parameters.dbpath #"/gpfs/glad3/HLSDIST/System/database/"
 
 def checkDatabase(dbname):
   dbfile = dbpath+dbname

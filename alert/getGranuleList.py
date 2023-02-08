@@ -2,9 +2,9 @@ from contextlib import closing
 import sys
 import time
 import sqlite3
+import parameters
 
-
-dbpath = "/gpfs/glad3/HLSDIST/System/database/"
+dbpath = parameters.dbpath #"/gpfs/glad3/HLSDIST/System/database/"
 
 def granuleList(statusFlag,filename,startYJT=None, endYJT=None,tilefile=None):
   databaseChecked = False
@@ -14,7 +14,7 @@ def granuleList(statusFlag,filename,startYJT=None, endYJT=None,tilefile=None):
         with closing(connection.cursor()) as cursor:
           if startYJT != None:
             if statusFlag == "ALL":
-               cursor.execute("SELECT HLS_ID from fulltable WHERE sensingTime = ? and sensingTime < ?",(startYJT,endYJT)) 
+               cursor.execute("SELECT HLS_ID from fulltable WHERE sensingTime > ? and sensingTime < ?",(startYJT,endYJT)) 
             else:
               cursor.execute("SELECT HLS_ID from fulltable WHERE statusFlag = ? and sensingTime > ? and sensingTime < ?",(statusFlag,startYJT,endYJT)) # and processedTime < '2022-11-16T01:16:59.340745Z'
           else:
@@ -102,7 +102,7 @@ if __name__=='__main__':
     enddate = sys.argv[4]+"T999999"
     tilefile = sys.argv[5]
   else:
-    print("bad parameters. Enter: statusFlag outfilename tilelist(optional) startDate(YYYYJJJ) endDate(YYYYJJJ)")
+    print("bad parameters. Enter: statusFlag outfilename startDate(YYYYJJJ) endDate(YYYYJJJ) tilelist(optional)")
     sys.exit(1)
   
   granuleList(statusFlag,outfilename,startdate,enddate,tilefile)

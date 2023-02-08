@@ -8,12 +8,13 @@ import signal
 import subprocess
 from contextlib import closing
 import multiprocessing
+import parameters
 
 currdir = os.getcwd()
-DISTversion = "v0"
-HLSsource = "/gpfs/glad3/HLS"
-outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"
-dbpath = "/gpfs/glad3/HLSDIST/System/database/"
+DISTversion = parameters.DISTversion
+HLSsource = parameters.HLSsource #"/gpfs/glad3/HLS"
+outbase = parameters.outbase #"/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"
+dbpath = parameters.dbpath #"/gpfs/glad3/HLSDIST/System/database/"
 
 def runGranule(server,granule):
   if os.path.exists("KILL_02_granule_manager") or os.path.exists("KILL_ALL"):
@@ -28,7 +29,7 @@ def runGranule(server,granule):
 
   outdir = outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID
   if mode == "SMOKE":
-      outdir = "/gpfs/glad3/HLSDIST/System/smoke_test/new/"+DIST_ID
+      outdir = "../smoke_test/new/"+DIST_ID
   if not os.path.isdir(outdir+"/additional"):
       os.makedirs(outdir+"/additional")
 
@@ -64,7 +65,11 @@ def runGranule(server,granule):
 
     #create GEN_ANOM
     if not os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
-      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
+      if os.path.exists("/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-ANOM.tif"):
+        response = subprocess.run(["cp /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-ANOM.tif "+outdir+"/"+DIST_ID+"_GEN-ANOM.tif"],capture_output=True,shell=True)
+        response = subprocess.run(["cp /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"/additional/HLSsourceFiles.txt "+outdir+"/"+DIST_ID+"/additional/HLSsourceFiles.txt"],capture_output=True,shell=True)
+      else:
+        response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
       #Errors = Errors + str(response.stderr.decode())#.split('\n')[-1]
       #if os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
       #  os.remove("gen_anom_"+granule+".cpp")
@@ -185,7 +190,7 @@ if __name__=='__main__':
 
   processLOG(["starting \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",now])
 
-  serverlist = [(17,65),(15,20),(16,25),(18,20),(20,35)]#[(18,40),(14,40),(19,20)]#[(17,60),(15,15),(16,20)]
+  serverlist = [(14,40),(16,20),(17,70)]#[(18,40),(14,40),(19,20)]#[(17,60),(15,15),(16,20)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

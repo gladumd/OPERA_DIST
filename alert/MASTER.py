@@ -39,8 +39,9 @@ import sqlite3
 from contextlib import closing
 import time
 import os
+import parameters
 
-dbpath = "/gpfs/glad3/HLSDIST/System/database/"
+dbpath = parameters.dbpath #"/gpfs/glad3/HLSDIST/System/database/"
 
 def resetGranules(statusFlagIn,statusFlagOut,startYJT, endYJT):
   if statusFlagOut > statusFlagIn:
