@@ -34,7 +34,7 @@ if __name__=='__main__':
       print(len(granuleDict), "granules for tilelist")
       start = start + fiveday + oneday
       end = start + fiveday
-      granulesToDownload = sd.checkGranuleList(list(granuleDict.keys()))
+      granulesToDownload = list(granuleDict.keys())#sd.checkGranuleList(list(granuleDict.keys()))
       granDownloadDist = {granule: granuleDict[granule] for granule in granulesToDownload}
       sd.download_parallel(granDownloadDist,50)
 

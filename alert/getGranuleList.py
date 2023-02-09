@@ -10,11 +10,11 @@ def granuleList(statusFlag,filename,startYJT=None, endYJT=None,tilefile=None):
   databaseChecked = False
   while(databaseChecked == False):
     try:
-      with closing(sqlite3.connect(dbpath+"database.db")) as connection:
+      with closing(sqlite3.connect(dbpath+"database.db.bak")) as connection:
         with closing(connection.cursor()) as cursor:
           if startYJT != None:
             if statusFlag == "ALL":
-               cursor.execute("SELECT HLS_ID from fulltable WHERE sensingTime = ? and sensingTime < ?",(startYJT,endYJT)) 
+               cursor.execute("SELECT HLS_ID from fulltable WHERE sensingTime > ? and sensingTime < ?",(startYJT,endYJT)) 
             else:
               cursor.execute("SELECT HLS_ID from fulltable WHERE statusFlag = ? and sensingTime > ? and sensingTime < ?",(statusFlag,startYJT,endYJT)) # and processedTime < '2022-11-16T01:16:59.340745Z'
           else:
@@ -23,8 +23,8 @@ def granuleList(statusFlag,filename,startYJT=None, endYJT=None,tilefile=None):
             else:
               cursor.execute("SELECT HLS_ID from fulltable WHERE statusFlag = ?",(statusFlag,)) 
           selectedGrans = cursor.fetchall()
-          selectedGrans = [s for t in selectedGrans for s in t]
-          databaseChecked = True
+      selectedGrans = [s for t in selectedGrans for s in t]
+      databaseChecked = True
       if tilefile != None:
         selectedGrans = filterByTileList(selectedGrans,tilefile)
       selectedGrans.sort()

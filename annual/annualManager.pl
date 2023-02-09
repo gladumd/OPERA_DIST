@@ -52,11 +52,11 @@ my @tiles :shared;
 $Ntiles = @tiles;
 print"$Ntiles tiles\n";
 
-#@ClassThreads=();
-#for $line (@serverlist){
-#($server,$threads)=split(',',$line);
-#for($threadID=1;$threadID<=$threads;$threadID++){$sline=$server."_".$threadID; push @ClassThreads, threads->create(\&runTile, $sline);} }
-#foreach $thread (@ClassThreads)  {$thread->join();} @ClassThreads=();
+@ClassThreads=();
+for $line (@serverlist){
+($server,$threads)=split(',',$line);
+for($threadID=1;$threadID<=$threads;$threadID++){$sline=$server."_".$threadID; push @ClassThreads, threads->create(\&runTile, $sline);} }
+foreach $thread (@ClassThreads)  {$thread->join();} @ClassThreads=();
 
 &checkTiles();
 
@@ -113,6 +113,6 @@ sub runTile{($server,$threadID)=split('_',$sline);
   while ($tile = shift(@tiles)){
     #$Nleft = @tiles;
     #print"\r$tile $Nleft / $Ntiles left";
-    system"ssh gladapp$server \'cd $currdir; perl annualWorker2.pl $tile $startdate $enddate $yearname\'";
+    system"ssh gladapp$server \'cd $currdir; perl annualWorker.pl $tile $startdate $enddate $yearname\'";
   }
 }
