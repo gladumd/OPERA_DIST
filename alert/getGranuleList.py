@@ -10,7 +10,7 @@ def granuleList(statusFlag,filename,startYJT=None, endYJT=None,tilefile=None):
   databaseChecked = False
   while(databaseChecked == False):
     try:
-      with closing(sqlite3.connect(dbpath+"database.db.bak")) as connection:
+      with closing(sqlite3.connect(dbpath+"database.db")) as connection:
         with closing(connection.cursor()) as cursor:
           if startYJT != None:
             if statusFlag == "ALL":
