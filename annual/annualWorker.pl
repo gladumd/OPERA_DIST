@@ -32,14 +32,18 @@ foreach $year ($startyear..$endyear){
     ($name,$datetime,$sensor,$Ttile,$FDISTversion)= split('_',$s);
     my $date = substr($datetime,0,7);
     if($date>=$startdate and $date < $enddate){
-      $f =~ s/VEG/GEN/g;
-      if(-e "$f"){
+      $f =~ s/VEG-DIST/GEN-DIST/g;
+      my @layers = readpipe"ls $sourcebase/$year/$tilepathstring/$s/$id*.tif 2>/dev/null";
+      $countlayers = @layers;
+      if(-e "$f" and $countlayers==21){
         if(exists $OUTID{$s}){
           ($fOPERA,$fL3,$fDIST,$fTtile,$fsensingTime,$fProdTime,$fsatellite,$fres,$fDISTversion)=split('_',$OUTID{$s});
           ($sOPERA,$sL3,$sDIST,$sTtile,$ssensingTime,$sProdTime,$ssatellite,$sres,$sDISTversion)=split('_',$id);
-          if($sProdTime > $fProdTime){$OUTID{$s}=$id}
-        }else{$OUTID{$s}=$id;}
-        push(@granules, $s);
+          if($sProdTime > $fProdTime and $sProdTime>'20221104T000000Z'){$OUTID{$s}=$id}
+        }else{
+          ($sOPERA,$sL3,$sDIST,$sTtile,$ssensingTime,$sProdTime,$ssatellite,$sres,$sDISTversion)=split('_',$id);
+          if($sProdTime>'20230120T000000Z'){$OUTID{$s}=$id;push(@granules, $s);}
+        }
       }else{open(OUT,">>badinputsLOG.txt"); print OUT"missing $f\n";close(OUT);}
     }
   }
@@ -79,7 +83,7 @@ if($Ngranules >0){
     #print"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py $ID $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors\n";
     system"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py $ID $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors";
     #open(OUT,">>annualLOG.txt"); print OUT"$tile,$log"; close(OUT);
-    print"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
+    #print"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
     #readpipe"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
   }else{open(OUT,">>errorLOG.txt"); print OUT"$tile,failed\n"; close(OUT);}
 }else{open(OUT,">>strataLOG.txt"); print OUT"$tile,NoID,no_granules\n"; close(OUT);}
@@ -113,6 +117,13 @@ $zone = substr($tile,0,2);
 $yearlast = substr($datetime,0,4);
 $tilepathstring = $zone."/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($tile,4,1);
 $outdir = "$outbase/$tilepathstring/$yearname"; if(!-d $outdir){system"mkdir -p $outdir";}
+open(OUT,">$outdir/sourcegranules.txt");
+for $granule (@images){
+  ($name,$datetime,$sensor,$Ttile,$FDISTversion)= split('_',$granule);
+  $year = substr($datetime,0,4);
+  print OUT"$OUTID{$granule},$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\n";
+}
+close(OUT);
 system"cp $sourcebase/$yearlast/$tilepathstring/$last/$OUTID{$last}\_VEG-LAST-DATE.tif $outdir/${ID}_VEG-LAST-DATE.tif";
 $Ngranules = @images;
 #print("$Ngranules $tile $last\n");
@@ -194,12 +205,16 @@ i=0;
 foreach $granule (@images){
   ($name,$datetime,$sensor,$Ttile,$FDISTversion)= split('_',$granule);
 $year = substr($datetime,0,4);
-#$imagedate=$date{"$granule"};
+#$imagedate=$date{"$granule"}; ################ADD TRY BLOCK!!!!!!!################
 print OUT"
+try{
 filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-DIST-STATUS.tif\"; 
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vegstatus[i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
-i++;";
+i++;
+} catch (\.\.\.){
+  for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {vegstatus[i][y][x]=255;}}
+}";
 }
 
 print OUT"
@@ -535,10 +550,14 @@ foreach $granule (@images){
   ($name,$datetime,$sensor,$Ttile,$FDISTversion)= split('_',$granule);
 $year = substr($datetime,0,4);
 print OUT"
+try{
 filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_GEN-DIST-STATUS.tif\"; 
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, genstatus[i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
-i++;";
+i++;
+} catch (\.\.\.){
+  for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {genstatus[i][y][x]=255;}}
+}";
 }
 
 print OUT"
@@ -729,7 +748,7 @@ return 0;
 }";
 close (OUT);
 if($Ngranules>0){system("cd temp;g++ ANN_gen_$tile.cpp -o ANN_gen_$tile -lgdal -Wno-unused-result -std=gnu++11");}
-my $templog = readpipe"cd temp; ./ANN_gen_$tile $zone; rm ANN_gen_$tile; rm ANN_gen_$tile.cpp";
-chomp($templog);
-return($templog);
+my $temploggen = readpipe"cd temp; ./ANN_gen_$tile $zone; rm ANN_gen_$tile; rm ANN_gen_$tile.cpp";
+chomp($temploggen);
+return($temploggen);
 }

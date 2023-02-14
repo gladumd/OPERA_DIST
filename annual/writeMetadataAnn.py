@@ -23,7 +23,7 @@ def selectSourceFiles(alertsource, tile, startday ,endday):
     filelist = filelist + stream.read().splitlines()
 
   for file in filelist:
-    genfile = file; re.sub("VEG","GEN",genfile)
+    genfile = file; re.sub("VEG-DIST","GEN-DIST",genfile)
     if os.path.exists(genfile):
       folders = file.split('/')
       path = ('/').join(folders)[0:-20]
@@ -32,6 +32,16 @@ def selectSourceFiles(alertsource, tile, startday ,endday):
       fdate = fdatetime[0:7]
       if(fdate>=startday and fdate<=endday):
         selectedfiles[gran]={'file':file,'path':path}
+  return selectedfiles
+
+def sourceFiles(outdir):
+  selectedfiles = {}
+  
+  with open(outdir+"/sourcegranules.txt") as glist:
+    filelist = glist.readlines()
+    for file in filelist:
+      (DIST_ID, path) = file.strip().split(',')
+      selectedfiles[DIST_ID]={'file':file,'path':path}
   return selectedfiles
 
 def findAdditionalAttribute(atr,sourceDict,single=True):
@@ -223,7 +233,7 @@ def writeMetadata(ID,outdir,httppath,version,Errors,starttime,endtime,spatial_co
 if __name__ == "__main__":
   (ID,outdir,alertsource, tile, startday ,endday,spatial_coverage,httppath,DISTversion,Errors) = (sys.argv[1],sys.argv[2],  sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6],sys.argv[7],sys.argv[8],sys.argv[9],sys.argv[10])
   try:
-    gdict = selectSourceFiles(alertsource, tile, startday ,endday)
+    gdict = sourceFiles(outdir)#alertsource, tile, startday ,endday)
     [minstart,maxend,cs_code,cs_name,platforms] = allMetaCSV(gdict,outdir,ID)
     writeMetadata(ID,outdir,httppath,DISTversion,Errors,minstart,maxend,spatial_coverage,tile,cs_code,cs_name,platforms)
   except:

@@ -19,7 +19,7 @@ outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"
 httpbase = "https://glad.umd.edu/projects/opera/DIST-ALERT"
 dbpath = "/gpfs/glad3/HLSDIST/System/database/"
 imagelist = ["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","LAND-MASK"]
-
+startdate = '2023001T000000'
 
 def sortDates(listtosort):
   datetimeDict = {}
@@ -75,7 +75,7 @@ def runTile(server,Ttile,tempscenes):
           folders = file.split('/')
           gran = folders[-2]
           (tname,prevdatetime,tsensor,tTtile,tDISTversion) = gran.split('_')
-          if prevdatetime < firstdatetime:
+          if prevdatetime < firstdatetime and prevdatetime > startdate:
             (sOPERA,sL3,sDIST,sTtile,ssensingTime,sProdTime,ssatellite,sres,sDISTversion)=folders[-1][0:-20].split('_')
             if sProdTime > '20221103T000000Z':
               if not gran in outIDdict.keys():
@@ -102,7 +102,7 @@ def runTile(server,Ttile,tempscenes):
           if not response.stdout.decode().strip() == "":
             tempfiles = str(response.stdout.decode().strip()).split('\n')
             NumFiles = len(tempfiles)
-            if NumFiles == (len(imagelist)+2):
+            if NumFiles >= (len(imagelist)+2):
               notFound = False
           index -= 1
         if notFound:
@@ -156,8 +156,8 @@ def runTile(server,Ttile,tempscenes):
           Errors = ""
         else:
           Errors = errveg+" "+errgen
-          errorLOG(DIST_ID+Errors +"ERRORs")
-        sout = os.popen("ls "+outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID +"*.tif 2>/dev/null | wc -l");
+          errorLOG("gladapp"+server+": "+ DIST_ID+" "+Errors +"ERRORs")
+        sout = os.popen("ls "+outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID +"*.tif 2>/dev/null | wc -l")
         count = int(sout.read().strip())
         if not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-DIST-STATUS.tif") or not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-DIST-STATUS.tif") or count < 22:
           errorLOG(DIST_ID+"not all time-series layers made")
@@ -180,6 +180,7 @@ def runTile(server,Ttile,tempscenes):
             sqliteTuple = (DIST_ID,)
             updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
           else:
+            #response = subprocess.run(["rm "+outdir+"/OPERA*"],capture_output=True,shell=True) ###REMOVE LATER
             (response,OUT_ID,ProductionDateTime) = writeMetadata.writeMetadata(DIST_ID,xmlfile,outdir,DISTversion)
             if response == "ok":
               previousSource = outdir+"/"+OUT_ID
@@ -313,7 +314,7 @@ if __name__=='__main__':
   for tile in tiles:
     tileQueue.put(tile)
   
-  serverlist =  [(17,60),(18,30),(15,30),(16,30)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
+  serverlist =  [(17,65),(15,20),(16,20),(18,20),(20,20)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp
