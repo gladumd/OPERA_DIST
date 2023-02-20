@@ -196,7 +196,7 @@ def writeMetadata(ID,sourceXML,outdir,version):
     sourceFiles = open(outdir+"/additional/HLSsourceFiles.txt").read().split()
     if len(sourceFiles) == 0:
       sourceFiles = ["NA"]
-    outDict['AdditionalAttributes'][2]['Values']= open(outdir+"/additional/HLSsourceFiles.txt").read().split()
+    outDict['AdditionalAttributes'][2]['Values']= sourceFiles
     outDict['AdditionalAttributes'][3]['Name'] = 'ValidationLevel'
     outDict['AdditionalAttributes'][3]['Values'] = ["0"]
 
@@ -226,7 +226,7 @@ def writeMetadata(ID,sourceXML,outdir,version):
     with open("errorLOG.txt", 'a') as ERR:
       ERR.write(ID+" error in writing Metadata")
     traceback.print_exc()
-    return("fail",ID)
+    return("fail",ID,"NA")
 
 def updateSqlite(sqliteCommand,sqliteTuple):
   written = False
@@ -248,5 +248,5 @@ def updateSqlite(sqliteCommand,sqliteTuple):
       break
   
 if __name__ == "__main__":
-  writeMetadata(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4])
+  (status,ID,ProductionDateTime)=writeMetadata(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4])
  

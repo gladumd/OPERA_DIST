@@ -45,6 +45,7 @@ def runGranule(server,granule):
   OUT_ID = outIDdict[granule]
   httppath = "https://glad.umd.edu/projects/opera/DIST-ALERT"+"/"+year+"/"+tilepathstring+"/"+DIST_ID
   response = sendToDAACmod.sendNotification(OUT_ID,outdir,httppath)
+  print(response)
   #notification = outdir+"/"+OUT_ID+".notification.json"
   #if os.path.exists(notification):
   #  with open(notification,'r') as notiFile:
@@ -116,9 +117,9 @@ def processGranuleQueue(server,procID,queue):
     #  with open('processLOG.txt','a') as log:
     #    log.write("02_granule_manger.py shut down with KILL file")
     #  #processLOG(error.args[0])
-    #except Exception:
-    #  with open("errorLOG.txt",'a') as out:
-    #    out.write("ERROR: runGranule("+server+","+granule+") process ID:"+procID+": "+str(sys.exc_info())+"\n")
+    except Exception:
+      with open("errorLOG.txt",'a') as out:
+        out.write("ERROR: send granule ("+server+","+granule+") process ID:"+procID+": "+str(sys.exc_info())+"\n")
     #  sqliteCommand = "UPDATE fulltable SET statusFlag = ? where HLS_ID=?;"
     #  statusFlag = 106
     #  updateSqlite(granule,sqliteCommand,(statusFlag,granule,))
@@ -153,7 +154,7 @@ if __name__=='__main__':
 
   processLOG(["starting \"sendtoDAAC_master.py "+filelist+" ",Nscenes,"granules ",now])
 
-  serverlist = [(18,25)]
+  serverlist = [(18,15)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp
