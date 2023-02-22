@@ -17,21 +17,21 @@ $httpbase = "https://glad.umd.edu/projects/opera/DIST-ANN";
 $startyear = substr($startdate,0,4);
 $endyear = substr($enddate,0,4);
 
-#if(-e "annualLOG.txt"){
-#  if(-e "annualLOGold.txt"){system"cat annualLOG.txt >> annualLOGold.txt; rm annualLOG.txt";}
-#  else{system"mv annualLOG.txt annualLOGold.txt";}
-#}
-#if(-e "errorLOG.txt"){
-#  if(-e "errorLOGold.txt"){system"cat errorLOG.txt >> errorLOGold.txt;rm errorLOG.txt";}
-#  else{system"mv errorLOG.txt errorLOGold.txt";}
-#}
+if(-e "annualLOG.txt"){
+  if(-e "annualLOGold.txt"){system"cat annualLOG.txt >> annualLOGold.txt; rm annualLOG.txt";}
+  else{system"mv annualLOG.txt annualLOGold.txt";}
+}
+if(-e "errorLOG.txt"){
+  if(-e "errorLOGold.txt"){system"cat errorLOG.txt >> errorLOGold.txt;rm errorLOG.txt";}
+  else{system"mv errorLOG.txt errorLOGold.txt";}
+}
 
-push(@serverlist, "20,20");
-push(@serverlist, "21,20");
-push(@serverlist, "14,30");
-push(@serverlist, "15,30");
-push(@serverlist, "16,30");
-#push(@serverlist, "17,60");
+push(@serverlist, "20,10");
+push(@serverlist, "21,10");
+push(@serverlist, "14,10");
+push(@serverlist, "15,10");
+push(@serverlist, "16,10");
+push(@serverlist, "17,4");
 #push(@serverlist, "18,40");
 #push(@serverlist, "19,30");
 

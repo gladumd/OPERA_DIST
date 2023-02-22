@@ -70,6 +70,7 @@ if($Ngranules >0){
   $Ndates = $Ngranules;
   $lastDate = $currDate;
   $outdir = "$outbase/$tilepathstring/$yearname";
+  readpipe"rm $outdir/*";
   $httppath = "$httpbase/$tilepathstring/$yearname";
   #print("@images\n");
   $productionTime = strftime "%Y%jT%H%M%SZ", gmtime;
