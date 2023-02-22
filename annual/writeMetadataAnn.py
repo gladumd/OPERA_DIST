@@ -231,13 +231,13 @@ def writeMetadata(ID,outdir,httppath,version,Errors,starttime,endtime,spatial_co
     traceback.print_exc()
 
 if __name__ == "__main__":
-  (ID,outdir,alertsource, tile, startday ,endday,spatial_coverage,httppath,DISTversion,Errors) = (sys.argv[1],sys.argv[2],  sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6],sys.argv[7],sys.argv[8],sys.argv[9],sys.argv[10])
+  (ID,outdir,alertsource, tile, startday ,endday,spatial_coverage,httppath,DISTversion,Errors) = (sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6],sys.argv[7],sys.argv[8],sys.argv[9],sys.argv[10])
   try:
     gdict = sourceFiles(outdir)#alertsource, tile, startday ,endday)
     [minstart,maxend,cs_code,cs_name,platforms] = allMetaCSV(gdict,outdir,ID)
     writeMetadata(ID,outdir,httppath,DISTversion,Errors,minstart,maxend,spatial_coverage,tile,cs_code,cs_name,platforms)
   except:
     with open("errorLOG.txt", 'a') as ERR:
-      ERR.write(tile+","+ ID+",error in writing Metadata\n")
+      ERR.write(tile+","+ ID+",error in writing Metadata:"+str(sys.exc_info())+"\n")
     print(tile,ID)
     traceback.print_exc()

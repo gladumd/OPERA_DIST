@@ -86,7 +86,7 @@ def sendNotification(OUT_ID,outdir,httppath):
 
   except:
     with open("errorLOG.txt", 'a') as ERR:
-      ERR.write(OUT_ID+" error in sending to LPDAAC")
+      ERR.write(OUT_ID+" error in sending to LPDAAC\n")
     traceback.print_exc()
     return("fail")
 
@@ -96,5 +96,5 @@ if __name__ == "__main__":
   outdir = sys.argv[2]
   httppath = sys.argv[3]
   response = sendNotification(OUT_ID,outdir,httppath)
-  print(response, OUT_ID)
+  print(response)
 

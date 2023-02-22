@@ -70,7 +70,7 @@ def runTile(server,Ttile,tempscenes):
       NumPrev = len(tempfiles)
     if NumPrev >0:
       for file in tempfiles:
-        genfile = file[0:-20]+"GEN-DIST-STATUS.tif"
+        genfile = file[0:-20]+"_GEN-DIST-STATUS.tif"
         if os.path.exists(genfile):
           folders = file.split('/')
           gran = folders[-2]
@@ -187,7 +187,9 @@ def runTile(server,Ttile,tempscenes):
               statusFlag = 5
               sqliteCommand = "UPDATE fulltable SET processedTime = ?, statusFlag = ?, Errors = '' where HLS_ID = ?"
               if sendToDAAC:
-                response = sendToDAACmod.sendNotification(OUT_ID,outdir,httppath)
+                #response = sendToDAACmod.sendNotification(OUT_ID,outdir,httppath)
+                responsereturn = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";module load python/3.7/anaconda; python sendToDAACmod.py "+OUT_ID+" "+outdir+" "+httppath+"\'"],capture_output=True,shell=True)
+                response = responsereturn.stdout.decode().strip()
                 if response == "ok":
                   statusFlag = 6
                 else:
@@ -314,7 +316,7 @@ if __name__=='__main__':
   for tile in tiles:
     tileQueue.put(tile)
   
-  serverlist =  [(17,65),(15,20),(16,20),(18,20),(20,20)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
+  serverlist =  [(17,65),(15,10),(16,10),(19,10),(20,10)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

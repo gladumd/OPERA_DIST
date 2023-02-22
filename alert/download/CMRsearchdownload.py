@@ -112,7 +112,7 @@ def moveOldFiles(cutoffdate):
 #search CMR for last X days. Add new granules to database and return dictionary of urls to download.
 def searchCMR(startdate,enddate):
   #endstring = enddate.strftime("%Y-%m-%dT%H:%M:%SZ")
-  startYJT = startdate.strftime("%Y%jT000000")
+  startYJT = (startdate + datetime.timedelta(days=-1)).strftime("%Y%jT233000")
   startYMD = startdate.strftime("%Y-%m-%d")
   endYJT = enddate.strftime("%Y%jT999999")
   endYMD = enddate.strftime("%Y-%m-%d")
