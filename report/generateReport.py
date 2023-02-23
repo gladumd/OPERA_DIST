@@ -1,15 +1,19 @@
 #This is the script/ producing retrieval time report, production time report and data accounting report
 #Author: Zhen Song 08/16/2022
 #Update on 10/05/2022 due to updates on statusFlag 
+#Update on 02/02/2023 due to updates on reconciliation report between UMD and LP DAAC
 from email.errors import StartBoundaryNotFoundDefect
 from locale import Error
 import sqlite3
 from datetime import datetime
+import datetime as dt
 import sys
 from contextlib import closing
 import csv
 import pandas as pd
 import numpy as np
+import json
+import os, sys, math, csv, subprocess, shutil, glob
 
 #statusFlag: may need to rephrase according to JPL requirement
 #1    Data available #not used.
@@ -23,16 +27,80 @@ import numpy as np
 #105  Disturbance alert time-series fail
 #6    DIST product sent to LP DAAC
 
+#input args: database name and the report name
+#if len(sys. argv) !=3:
+#    print("Please input start time(YYYY-MM-DDTHH:MM:SSZ), end time(YYYY-MM-DDTHH:MM:SSZ) and database name!")
+#    sys.exit()
+
+#dateStart and dateEnd from sent and report.json files
+#dateStart = sys.argv[1]
+#dateEnd = sys.argv[2]
+#databaseStr = sys.argv[3]
+
+dateStr = sys.argv[1]
+#dateStr = '20230220'
+reportdir = '/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/'
+indir = '/gpfs/glad3/HLSDIST/System/report/'
+dbPath = '/gpfs/glad3/HLSDIST/database/database.db'
+#copy the database from /gpfs/glad3/HLSDIST/database/database.db
+databaseStr = indir + 'database.db'
+cmd = 'cp '+dbPath+' '+indir
+subprocess.call(cmd, shell=True)
+
+jsonFile = reportdir + 'report'+dateStr+'.json'
+
+#one granule has 22 individual files in the package
+f = open(jsonFile)
+dataJson = json.load(f)
+datatmp = dataJson[0]
+numSentLP = int(int(datatmp['OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0___0']['sent'])/22)
+numFailedLP = int(int(datatmp['OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0___0']['failed'])/22)
+numMissingLP = int(int(datatmp['OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0___0']['missing'])/22)
+numOtherLP = int(int(datatmp['OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0___0']['other'])/22)
+numDeliveredLP = numSentLP - numFailedLP - numMissingLP - numOtherLP
+
+sentFile = reportdir + 'sentToLP_'+dateStr+'.rpt'
+    
+with open(sentFile, "r") as f:
+    firstLine = f.readline()
+    for lastLine in f: 
+        pass
+
+l = firstLine.split(",")
+x = l[2].split("_")
+startTile = x[3]
+#convert month-day to doy
+startDate = x[4]
+startyear = int(startDate[0:4])
+startmonth = int(startDate[4:6])
+startday = int(startDate[6:8])
+doytemp = (dt.datetime(startyear,startmonth,startday)-dt.datetime(startyear,1,1)).days+1
+startDOY = startDate[0:4] +  f'{doytemp:03d}' + startDate[8:15]
+startFlag = x[6]
+startHLS_ID = 'HLS.'+startFlag[0:1]+'30.'+startTile+'.'+startDOY+'.v2.0'
+startDIST_ID = 'DIST-ALERT_'+startDOY+'_'+startFlag[0:1]+'30_'+startTile+'_v0'
+start = x[5]
+dateStart = start[0:4]+"-"+start[4:6]+"-"+start[6:8]+start[8:11]+":"+start[11:13]+":"+start[13:16]
+    
+l = lastLine.split(",")
+x = l[2].split("_")
+endTile = x[3]
+#convert month-day to doy
+endDate = x[4]
+endyear = int(endDate[0:4])
+endmonth = int(endDate[4:6])
+endday = int(endDate[6:8])
+doytemp = (dt.datetime(endyear,endmonth,endday)-dt.datetime(endyear,1,1)).days+1
+endDOY = endDate[0:4] + f'{doytemp:03d}' + endDate[8:15]
+endFlag = x[6]
+endHLS_ID = 'HLS.'+endFlag[0:1]+'30.'+endTile+'.'+endDOY+'.v2.0'
+endDIST_ID = 'DIST-ALERT_'+endDOY+'_'+endFlag[0:1]+'30_'+endTile+'_v0'
+end = x[5]
+dateEnd = end[0:4]+"-"+end[4:6]+"-"+end[6:8]+end[8:11]+":"+end[11:13]+":"+end[13:16]
+
 #dateStart = '2022-10-06T18:15:00Z'
 #dateEnd = '2022-10-08T20:31:00Z'
 #databaseStr = 'database_20221008T163100.db'
-if len(sys. argv) !=3:
-    print("Please input start time(YYYY-MM-DDTHH:MM:SSZ), end time(YYYY-MM-DDTHH:MM:SSZ) and database name!")
-    sys.exit()
-
-dateStart = sys.argv[1]
-dateEnd = sys.argv[2]
-databaseStr = sys.argv[3]
 
 dateStartStr = dateStart[0:4]+dateStart[5:7]+dateStart[8:13]+dateStart[14:16]+dateStart[17:20]
 dateEndStr = dateEnd[0:4]+dateEnd[5:7]+dateEnd[8:13]+dateEnd[14:16]+dateEnd[17:20]
@@ -44,12 +112,22 @@ except Error as e:
 
 cursor = conn.cursor()
 
+strCom = "SELECT processedTime from fulltable where HLS_ID LIKE ? AND DIST_ID LIKE ?"
+cursor.execute(strCom,(startHLS_ID,startDIST_ID,))
+rowstmp = cursor.fetchall()
+dateStart = str(rowstmp[0][0])
+
+strCom = "SELECT processedTime from fulltable where HLS_ID LIKE ? AND DIST_ID LIKE ?"
+cursor.execute(strCom,(endHLS_ID,endDIST_ID,))
+rowstmp = cursor.fetchall()
+dateEnd = str(rowstmp[0][0])
+
 #this needs to take in all statusFlags
-strCommand = "SELECT HLS_ID, DIST_ID, statusFlag, availableTime, downloadTime,processedTime,Errors FROM fulltable WHERE downloadTime >= ? AND downloadTime <= ?"
+strCommand = "SELECT HLS_ID, DIST_ID, statusFlag, availableTime, downloadTime,processedTime,Errors FROM fulltable WHERE processedTime >= ? AND processedTime <= ?"
 cursor.execute(strCommand,(dateStart,dateEnd,))
 rows = cursor.fetchall()
 
-strCommandStatus = "SELECT COUNT(*),statusFlag FROM fulltable WHERE downloadTime >= ? AND downloadTime <= ? group by statusFlag"
+strCommandStatus = "SELECT COUNT(*),statusFlag FROM fulltable WHERE processedTime >= ? AND processedTime <= ? group by statusFlag"
 cursor.execute(strCommandStatus,(dateStart,dateEnd,))
 statusRows = cursor.fetchall()
 
@@ -79,7 +157,7 @@ for status in statusRows:
     else:
         print("")
 
-strCommandHLSL30 = "SELECT COUNT(*),statusFlag FROM fulltable WHERE downloadTime >= ? AND downloadTime <= ? AND DIST_ID LIKE '%L30%' group by statusFlag"
+strCommandHLSL30 = "SELECT COUNT(*),statusFlag FROM fulltable WHERE processedTime >= ? AND processedTime <= ? AND DIST_ID LIKE '%L30%' group by statusFlag"
 cursor.execute(strCommandHLSL30,(dateStart,dateEnd,))
 numL30Avail = 0
 numL30Dl = 0
@@ -96,7 +174,7 @@ for row in rowsL30:
     else:
         numL30Fail = numL30Fail + num
 
-strCommandHLSS30 = "SELECT COUNT(*),statusFlag FROM fulltable WHERE downloadTime >= ? AND downloadTime <= ? AND DIST_ID LIKE '%S30%' group by statusFlag"
+strCommandHLSS30 = "SELECT COUNT(*),statusFlag FROM fulltable WHERE processedTime >= ? AND processedTime <= ? AND DIST_ID LIKE '%S30%' group by statusFlag"
 cursor.execute(strCommandHLSS30,(dateStart,dateEnd,))
 numS30Avail = 0
 numS30Dl = 0
@@ -116,18 +194,20 @@ for row in rowsS30:
 conn.close()
 
 #write the data accounting report
-outname_report_datacount = "OPERA_UMD_SDS_Activity_Report_"+dateStartStr+"_"+dateEndStr+".csv"
-
+outname_report_datacount = indir + "OPERA_UMD_SDS_Activity_Report_"+dateStartStr+"_"+dateEndStr+".csv"
+#time period needs to confirm and update with Amy, it's daily report
 row_dataaccounting_tile = "Title: OPERA UMD SDS Activity Summary Report"+"\n"+\
                           "Period of Performance: "+dateStart+"-"+dateEnd+"\n"+\
-                          "Time of Report:" + datetime.now().strftime("%m/%d/%YT%H:%M:%S") + "\n"
-
+                          "Time of Report:" + dt.datetime.now().strftime("%m/%d/%YT%H:%M:%S") + "\n"
+#incoming from LP DAAC needs to extract from sent.rpn and report.json
 with open(outname_report_datacount,'w') as out_csv_file_count:
     out_csv_file_count.write(row_dataaccounting_tile)
     out_csv_file_count.write("Summary of Workflows:"+str(numSubmitted)+" submitted "+\
-        str(numPassed)+" passed "+str(numFailed)+" failed "+str(numExe)+" executing"+"\n")
-    out_csv_file_count.write("Total Products Generated: "+str(numPassed)+" products" + "\n")
+        str(numPassed)+" produced "+str(numFailed)+" failed "+str(numExe)+" executing"+\
+        str(numSentLP)+" sent"+str(numDeliveredLP)+" delivered "+str(numFailedLP)+" delivery failed "+\
+        str(numMissingLP)+" delivery missing "+str(numOtherLP)+" other delivery errors"+"\n")
     out_csv_file_count.write("Total Incoming Data: "+str(numSubmitted)+" files" + "\n" + "\n")
+    out_csv_file_count.write("Total Products Generated: "+str(numPassed)+" products" + "\n")
     out_csv_file_count.write("Summary of Incoming Products from LP DAAC"+"," + \
         "#Product Available,#ProdcutDownloaded,#Product Download Fail \n")
     out_csv_file_count.write("L2_HLS_S30"+"," + \
@@ -135,15 +215,36 @@ with open(outname_report_datacount,'w') as out_csv_file_count:
     out_csv_file_count.write("L2_HLS_L30"+"," + \
                              str(numL30Avail)+","+str(numL30Dl)+","+str(numL30Fail)+"\n\n")
     out_csv_file_count.write("Summary of Outgoing Products to LP DAAC \n")
-    out_csv_file_count.write("ProductType,#Products Produced,#Products Sent,#Products Delivered,Products Failed\n")
-    out_csv_file_count.write("L3_DIST_HLS," + str(numPassed) + "," + str(numSent)+\
-        ","+"TBD by LP DAAC" + "," + str(numFailed)+"\n\n" )
+    out_csv_file_count.write("ProductType,#Products Sent,#Products Delivered,Products Failed,#Products Missing,#Products Other\n")
+    out_csv_file_count.write("L3_DIST_HLS,"  + str(numSent)+ ","+ str(numDeliveredLP) + ","+ str(numFailedLP) + \
+        "," + str(numMissingLP)+","+ str(numOtherLP)+"\n\n" )
     out_csv_file_count.write("Note: products count based on data delivery status \n"+\
-                            "Delivered: DELIVERED\nProduced: PRODUCED\nNotified: NOTIFIED\nFailed: ERROR_PRODUCED")
+                            "Sent: NOTIFIED\nDelivered: DELIVERED\nFailed: ERROR DELIVERY\nMissing: MISSING DELIVERY\nOther: OTHER DELIVERY ERRORS")
 
 out_csv_file_count.close()
 
-outname_report = "ProductStatus_"+dateStartStr+"_"+dateEndStr+".csv"
+#with open(outname_report_datacount,'w') as out_csv_file_count:
+#    out_csv_file_count.write(row_dataaccounting_tile)
+#    out_csv_file_count.write("Summary of Workflows:"+str(numSubmitted)+" submitted "+\
+#        str(numPassed)+" passed "+str(numFailed)+" failed "+str(numExe)+" executing"+"\n")
+#    out_csv_file_count.write("Total Products Generated: "+str(numPassed)+" products" + "\n")
+#    out_csv_file_count.write("Total Incoming Data: "+str(numSubmitted)+" files" + "\n" + "\n")
+#    out_csv_file_count.write("Summary of Incoming Products from LP DAAC"+"," + \
+#        "#Product Available,#ProdcutDownloaded,#Product Download Fail \n")
+#    out_csv_file_count.write("L2_HLS_S30"+"," + \
+#                             str(numS30Avail)+","+str(numS30Dl)+","+str(numS30Fail)+"\n")
+#    out_csv_file_count.write("L2_HLS_L30"+"," + \
+#                             str(numL30Avail)+","+str(numL30Dl)+","+str(numL30Fail)+"\n\n")
+#    out_csv_file_count.write("Summary of Outgoing Products to LP DAAC \n")
+#    out_csv_file_count.write("ProductType,#Products Produced,#Products Sent,#Products Delivered,Products Failed\n")
+#    out_csv_file_count.write("L3_DIST_HLS," + str(numPassed) + "," + str(numSent)+\
+#        ","+"TBD by LP DAAC" + "," + str(numFailed)+"\n\n" )
+#    out_csv_file_count.write("Note: products count based on data delivery status \n"+\
+#                            "Delivered: DELIVERED\nProduced: PRODUCED\nNotified: NOTIFIED\nFailed: ERROR_PRODUCED")
+
+#out_csv_file_count.close()
+
+outname_report = indir + "ProductStatus_"+dateStartStr+"_"+dateEndStr+".csv"
 col_names_report = ["HLS_ID","DIST_ID","statusFlag","availableTime","downloadTime","processedTime","Error","retrievalTime","productTime"]
 
 #output all the data
@@ -163,12 +264,12 @@ with open(outname_report,'w') as out_csv_file:
         wrow.append(row[5])
         wrow.append(row[6])
         if row[3] and statFlag>=1:
-            availTime = datetime.strptime(row[3][0:19],"%Y-%m-%dT%H:%M:%S")
+            availTime = dt.datetime.strptime(row[3][0:19],"%Y-%m-%dT%H:%M:%S")
         else:
             availTime = 'NA'
 
         if row[4] and statFlag>=2:
-            dlTime = datetime.strptime(row[4][0:19],"%Y-%m-%dT%H:%M:%S")
+            dlTime = dt.datetime.strptime(row[4][0:19],"%Y-%m-%dT%H:%M:%S")
         else:
             dlTime = 'NA'
 
@@ -178,7 +279,7 @@ with open(outname_report,'w') as out_csv_file:
             retriTime = float('NAN')
 
         if row[5] and (statFlag==5 or statFlag==6):
-            procdTime = datetime.strptime(row[5][0:19],"%Y-%m-%dT%H:%M:%S")  
+            procdTime = dt.datetime.strptime(row[5][0:19],"%Y-%m-%dT%H:%M:%S")  
             proTime = (procdTime - dlTime).total_seconds()/3600
         else:
             proTime = float('NAN')   
@@ -195,7 +296,7 @@ dfs = pd.read_csv(outname_report)
 #max,median,mean,min,P_90
 p_90 = str(np.nanpercentile(dfs['retrievalTime'],90))
 row_title_retrieval = "Title: OPERA Retrieval Time Summary \n"
-row_date_retrieval = datetime.now().strftime("%m/%d/%YT%H:%M:%S") + "\n"
+row_date_retrieval = dt.datetime.now().strftime("%m/%d/%YT%H:%M:%S") + "\n"
 row_timeperiod = "Period of Coverage:"+dateStart+"-"+dateEnd + "\n"
 row_notes = "Statistics for retrieval time(hrs):\n"
 row_stats = "Max retrieval time = " + str(dfs['retrievalTime'].max()) + "\n" + \
@@ -204,7 +305,7 @@ row_stats = "Max retrieval time = " + str(dfs['retrievalTime'].max()) + "\n" + \
     "Min retrieval time = "+ str(dfs['retrievalTime'].min()) + "\n" + \
     "90% Percentile retrieval time = "+ p_90 + "\n"
 
-outname_report_retrieval = "RetrievalTimeReport_"+dateStartStr+"_"+dateEndStr+".csv"
+outname_report_retrieval = indir + "RetrievalTimeReport_"+dateStartStr+"_"+dateEndStr+".csv"
 col_names_report_retrieval = ["OPERA Product Filename","PublicAvailableDateTime","ProductReceivedDateTime","RetrievalTime"]        
 
 with open(outname_report_retrieval,'w') as out_csv_file_retrieval:
@@ -232,7 +333,7 @@ out_csv_file_retrieval.close()
 #max,median,mean,min
 p_90 = str(np.nanpercentile(dfs['productTime'],90))
 row_title_product = "Title: OPERA Production Time Summary \n"
-row_date_product = datetime.now().strftime("%m/%d/%YT%H:%M:%S") + "\n"
+row_date_product = dt.datetime.now().strftime("%m/%d/%YT%H:%M:%S") + "\n"
 row_timeperiod = "Period of Coverage:"+dateStart+"-"+dateEnd + "\n"
 row_notes = "Statistics for production time (hrs):\n"
 row_stats = "Max production time = " + str(dfs['productTime'].max()) + "\n" + \
@@ -241,7 +342,7 @@ row_stats = "Max production time = " + str(dfs['productTime'].max()) + "\n" + \
     "Min production time = "+ str(dfs['productTime'].min()) + "\n" + \
         "90% Percentile production time = "+ p_90 + "\n"
 
-outname_report_product = "ProductionTimeReport_"+dateStartStr+"_"+dateEndStr+".csv"
+outname_report_product = indir + "ProductionTimeReport_"+dateStartStr+"_"+dateEndStr+".csv"
 col_names_report_product = ["OPERA Product Filename","InputReceivedDateTime","DAACAlertedDateTime","ProductionTime"]       
 
 with open(outname_report_product,'w') as out_csv_file_product:

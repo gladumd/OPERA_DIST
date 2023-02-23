@@ -34,7 +34,6 @@ def receive():
         ERR.write("Error in reconcilicationReport.py RECEIVE"+str(now)+response.stderr.decode())
     else:
       errors = extractErrors("/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/report"+reportDate+".json")
-      resend(errors)
 
 def extractErrors(reportfile):
   with open(reportfile) as file:
@@ -43,7 +42,7 @@ def extractErrors(reportfile):
   counts = results[0]["OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0___0"]
   with open("/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/DAILYSTATS.csv",'a') as DAILY:
     DAILY.write(reportDate+','+str(int(counts["sent"]/granfilecount))+','+str(int(counts["failed"]/granfilecount))+','+str(int(counts["missing"]/granfilecount))+','+str(int(counts["other"]/granfilecount))+','+str(int(counts["cksum_err"]/granfilecount))+"\n")
-  if counts["failed"]+counts["missing"]+counts["other"]+counts["cksum_err"] > 0:
+  if int(counts["failed"])+int(counts["missing"])+int(counts["other"])+int(counts["cksum_err"]) > 0:
     errors = {}
     for errfile in counts["report"].keys():
       errfile = counts["report"][errfile]
@@ -63,17 +62,20 @@ def extractErrors(reportfile):
             HLSdate = datetime.datetime.strptime(sensingTime, "%Y%m%dT%H%M%SZ").strftime("%Y%jT%H%M%S")
             HLS_ID = "HLS."+sensor[0]+"30."+tile+"."+HLSdate+".v2.0"
             out.write(HLS_ID+"\n")
-  return errors
+    resend(errors)
+    return errors
+  return "NA"
     
 def resend(errors):
   failcount =0
   successcount=0
   for flag in errors.keys():
-    if flag != "failed":
+      #if flag != "failed":
       for g in errors[flag]:
         OUT_ID=g
         (OPERA,L3,DIST,Ttile,sensingTime,ProductionDateTimeName,satellite,res,DISTversion) =  OUT_ID.split('_')
-        tilepathstring = Ttile[0:2]+"/"+Ttile[2:3]+"/"+Ttile[3:4]+"/"+Ttile[4:5]
+        tile = Ttile[1:]
+        tilepathstring = tile[0:2]+"/"+tile[2:3]+"/"+tile[3:4]+"/"+tile[4:5]
         year = sensingTime[0:4]
         jdate = datetime.datetime.strptime(sensingTime, "%Y%m%dT%H%M%SZ").strftime  ("%Y%jT%H%M%S")
         DIST_ID = "DIST-ALERT_"+jdate+"_"+satellite[0:1]+"30_"+Ttile+"_"+DISTversion
