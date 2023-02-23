@@ -13,6 +13,7 @@ import csv
 import pandas as pd
 import numpy as np
 import json
+import os, sys, math, csv, subprocess, shutil, glob
 
 #statusFlag: may need to rephrase according to JPL requirement
 #1    Data available #not used.
@@ -36,11 +37,17 @@ import json
 #dateEnd = sys.argv[2]
 #databaseStr = sys.argv[3]
 
-#dateStr = sys.argv[1]
-dateStr = '20230210'
-indir = '/gpfs/glad3/HLSDIST/SystemTesting/report/'
+dateStr = sys.argv[1]
+#dateStr = '20230220'
+reportdir = '/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/'
+indir = '/gpfs/glad3/HLSDIST/System/report/'
+dbPath = '/gpfs/glad3/HLSDIST/database/database.db'
+#copy the database from /gpfs/glad3/HLSDIST/database/database.db
 databaseStr = indir + 'database.db'
-jsonFile = indir + 'report'+dateStr+'.json'
+cmd = 'cp '+dbPath+' '+indir
+subprocess.call(cmd, shell=True)
+
+jsonFile = reportdir + 'report'+dateStr+'.json'
 
 #one granule has 22 individual files in the package
 f = open(jsonFile)
@@ -52,7 +59,7 @@ numMissingLP = int(int(datatmp['OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0___0']['mi
 numOtherLP = int(int(datatmp['OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0___0']['other'])/22)
 numDeliveredLP = numSentLP - numFailedLP - numMissingLP - numOtherLP
 
-sentFile = indir + 'sentToLP_'+dateStr+'.rpt'
+sentFile = reportdir + 'sentToLP_'+dateStr+'.rpt'
     
 with open(sentFile, "r") as f:
     firstLine = f.readline()
