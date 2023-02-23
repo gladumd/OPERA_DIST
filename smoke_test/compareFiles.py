@@ -8,15 +8,23 @@ filelistInt16 = ["VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-DUR","VEG-LAST-DATE",
 filelist = filelistByte + filelistInt16
 DISTversion = "v0"
 
-def compare(goldenID):
-  (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= goldenID.split('.')
+def compare(goldenDIST_ID):
+  (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= goldenDIST_ID.split('.')
   DIST_ID = "DIST-ALERT_"+Sdatetime+"_"+sensor+"_"+Ttile+"_"+DISTversion
-  goldenID = DIST_ID
+  goldenDIST_ID = DIST_ID
+  response = subprocess.run(["ls golden_"+goldenDIST_ID+"/OPERA*VEG-DIST-STATUS.tif"],capture_output=True,shell=True)
+  filepath = response.stdout.decode().strip()
+  folders = filepath.split('/')
+  goldenoutIDdict = folders[-1][0:-20]
+  response = subprocess.run(["ls new/"+goldenDIST_ID+"/OPERA*VEG-DIST-STATUS.tif"],capture_output=True,shell=True)
+  filepath = response.stdout.decode().strip()
+  folders = filepath.split('/')
+  newoutIDdict = folders[-1][0:-20]
   subprocess.run(["ssh gladapp17 \'cd "+currdir+";g++ compareByte.cpp -o compareByte -lgdal -Wno-unused-result -std=gnu++11\'"],shell=True)
   subprocess.run(["ssh gladapp17 \'cd "+currdir+";g++ compareInt16.cpp -o compareInt16 -lgdal -Wno-unused-result -std=gnu++11\'"],shell=True)
   for file in filelist:
-    goldpath = "golden_"+goldenID+"/"+goldenID+"_"+file+".tif"
-    systempath = "new/"+goldenID+"/"+goldenID+"_"+file+".tif"
+    goldpath = "golden_"+goldenDIST_ID+"/"+goldenoutIDdict+"_"+file+".tif"
+    systempath = "new/"+goldenDIST_ID+"/"+newoutIDdict+"_"+file+".tif"
     if not os.path.exists(goldpath):
       print(goldpath,"missing")
     elif not os.path.exists(systempath):
@@ -34,8 +42,8 @@ def compare(goldenID):
         subprocess.run(["ssh gladapp17 \'cd "+currdir+";./compareByte "+goldpath+" "+systempath+" "+file+"\'"],shell=True)
       else:
         subprocess.run(["ssh gladapp17 \'cd "+currdir+";./compareInt16 "+goldpath+" "+systempath+" "+file+"\'"],shell=True)
-  goldpath = "golden_"+goldenID+"/"+goldenID+".cmr.json"
-  systempath = "new/"+goldenID+"/"+goldenID+".cmr.json"
+  goldpath = "golden_"+goldenDIST_ID+"/"+goldenoutIDdict+".cmr.json"
+  systempath = "new/"+goldenDIST_ID+"/"+newoutIDdict+".cmr.json"
   if not os.path.exists(goldpath):
     print(goldpath,"missing")
   elif not os.path.exists(systempath):
@@ -48,7 +56,7 @@ def compare(goldenID):
     print("metadata not match")
   match =True
   for i in range(0,len(goldlines)):
-    if not "ProductionDateTime" in goldlines[i]:
+    if (not "ProductionDateTime" in goldlines[i]) and (not "      \"Date\":" in goldlines[i]) and (not "GranuleUR" in goldlines[i]):
       if goldlines[i] != oplines[i]:
         match = False
         print("metadata not match gold:",goldlines[i], "system: ",oplines[i])
@@ -68,13 +76,13 @@ def regenerateGolden(granule):
   #subprocess.run(["mv "+outdir+"/* "+outdir+"/prev"],shell=True)
   subprocess.run(["rm -r new/*"],shell=True)
   subprocess.run(["cd ../alert; python 02_granule_manager.py /gpfs/glad3/HLSDIST/System/smoke_test/smoke_granule.txt SMOKE"],shell=True)
-  subprocess.run(["cd ../alert; python 03_DIST_UPD.py /gpfs/glad3/HLSDIST/System/smoke_test/smoke_granule.txt SMOKE"],shell=True)
+  subprocess.run(["cd ../alert; python 03_DIST_UPD.py /gpfs/glad3/HLSDIST/System/smoke_test/smoke_granule.txt SMOKE False"],shell=True)
   #subprocess.run(["rm -r new/*"],shell=True)
 
 if __name__=='__main__':
   with open("smoke_granule.txt",'r') as txt:
-    goldenID = txt.read().strip()
-  regenerateGolden(goldenID)
-  compare(goldenID)
+    goldenDIST_ID = txt.read().strip()
+  #regenerateGolden(goldenDIST_ID)
+  compare(goldenDIST_ID)
 
-#goldenID = "DIST-ALERT_2022181T135721_S30_T21LYG_v0"
+#goldenDIST_ID = "DIST-ALERT_2022181T135721_S30_T21LYG_v0"

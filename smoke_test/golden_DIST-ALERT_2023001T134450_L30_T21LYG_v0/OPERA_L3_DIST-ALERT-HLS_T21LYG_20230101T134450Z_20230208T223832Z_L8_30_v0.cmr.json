@@ -1,0 +1,187 @@
+{
+  "MetadataSpecification": {
+    "URL": "https://cdn.earthdata.nasa.gov/umm/granule/v1.6.3",
+    "Name": "UMM-G",
+    "Version": "1.6.3"
+  },
+  "GranuleUR": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20230101T134450Z_20230208T223832Z_L8_30_v0",
+  "TemporalExtent": {
+    "RangeDateTime": {
+      "BeginningDateTime": "2023-01-01T13:44:50.814961Z",
+      "EndingDateTime": "2023-01-01T13:45:14.748361Z"
+    }
+  },
+  "ProviderDates": [
+    {
+      "Date": "2023-02-08T22:38:32.816661Z",
+      "Type": "Insert"
+    }
+  ],
+  "CollectionReference": {
+    "ShortName": "OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0",
+    "Version": "0"
+  },
+  "DataGranule": {
+    "DayNightFlag": "Day",
+    "ProductionDateTime": "2023-02-08T22:38:32.816661Z"
+  },
+  "Platforms": [
+    {
+      "ShortName": "LANDSAT-8",
+      "Instruments": [
+        {
+          "ShortName": "OLI"
+        }
+      ]
+    }
+  ],
+  "SpatialExtent": {
+    "HorizontalSpatialDomain": {
+      "Geometry": {
+        "GPolygons": [
+          {
+            "Boundary": {
+              "Points": [
+                {
+                  "Longitude": -55.15819755,
+                  "Latitude": -12.74603296
+                },
+                {
+                  "Longitude": -54.14757092,
+                  "Latitude": -12.73706439
+                },
+                {
+                  "Longitude": -54.15820349,
+                  "Latitude": -11.74535112
+                },
+                {
+                  "Longitude": -55.16451915,
+                  "Latitude": -11.75359781
+                },
+                {
+                  "Longitude": -55.15819755,
+                  "Latitude": -12.74603296
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "CloudCover": 68.0,
+  "AdditionalAttributes": [
+    {
+      "Name": "BaselineCalendarWindow",
+      "Values": [
+        "+/- 15 days"
+      ]
+    },
+    {
+      "Name": "BaselineYearWindow",
+      "Values": [
+        "3"
+      ]
+    },
+    {
+      "Name": "BaselineImageIds",
+      "Values": [
+        "HLS.S30.T21LYG.2021006T140051.v2.0",
+        "HLS.L30.T21LYG.2020354T133835.v2.0",
+        "HLS.S30.T21LYG.2021003T135111.v2.0",
+        "HLS.S30.T21LYG.2021001T140049.v2.0",
+        "HLS.S30.T21LYG.2020352T140051.v2.0",
+        "HLS.S30.T21LYG.2020354T135109.v2.0",
+        "HLS.S30.T21LYG.2020357T140049.v2.0",
+        "HLS.L30.T21LYG.2019358T134441.v2.0",
+        "HLS.L30.T21LYG.2019351T133856.v2.0",
+        "HLS.S30.T21LYG.2022006T140049.v2.0",
+        "HLS.L30.T21LYG.2021011T134501.v2.0",
+        "HLS.S30.T21LYG.2022003T135109.v2.0",
+        "HLS.L30.T21LYG.2022014T134439.v2.0",
+        "HLS.L30.T21LYG.2022015T133829.v2.0",
+        "HLS.S30.T21LYG.2021016T140051.v2.0",
+        "HLS.S30.T21LYG.2021011T140049.v2.0",
+        "HLS.S30.T21LYG.2021013T135111.v2.0",
+        "HLS.S30.T21LYG.2020364T135109.v2.0",
+        "HLS.S30.T21LYG.2022001T140051.v2.0",
+        "HLS.S30.T21LYG.2021008T135109.v2.0",
+        "HLS.S30.T21LYG.2021363T135111.v2.0",
+        "HLS.S30.T21LYG.2021361T140049.v2.0",
+        "HLS.L30.T21LYG.2020002T133851.v2.0",
+        "HLS.S30.T21LYG.2022013T135109.v2.0",
+        "HLS.S30.T21LYG.2022016T140049.v2.0",
+        "HLS.L30.T21LYG.2022006T134441.v2.0"
+      ]
+    },
+    {
+      "Name": "ValidationLevel",
+      "Values": [
+        "0"
+      ]
+    },
+    {
+      "Name": "HLSGranuleUR",
+      "Values": [
+        "HLS.L30.T21LYG.2023001T134450.v2.0"
+      ]
+    },
+    {
+      "Name": "SENSOR_PRODUCT_ID",
+      "Values": [
+        "LC08_L1TP_226068_20230101_20230101_02_RT",
+        "LC08_L1TP_226069_20230101_20230101_02_RT"
+      ]
+    },
+    {
+      "Name": "SPATIAL_COVERAGE",
+      "Values": [
+        "99"
+      ]
+    },
+    {
+      "Name": "MGRS_TILE_ID",
+      "Values": [
+        "21LYG"
+      ]
+    },
+    {
+      "Name": "HLS_PROCESSING_TIME",
+      "Values": [
+        "2023-01-03T19:39:40Z"
+      ]
+    },
+    {
+      "Name": "SENSING_TIME",
+      "Values": [
+        "2023-01-01T13:44:50.8149610Z",
+        "2023-01-01T13:45:14.7483610Z"
+      ]
+    },
+    {
+      "Name": "HORIZONTAL_CS_CODE",
+      "Values": [
+        "Null"
+      ]
+    },
+    {
+      "Name": "HORIZONTAL_CS_NAME",
+      "Values": [
+        "UTM, WGS84, UTM ZONE 21",
+        "UTM, WGS84, UTM ZONE 21"
+      ]
+    },
+    {
+      "Name": "ULX",
+      "Values": [
+        "699960.0"
+      ]
+    },
+    {
+      "Name": "ULY",
+      "Values": [
+        "-1299960.0"
+      ]
+    }
+  ]
+}
