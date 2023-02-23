@@ -155,3 +155,11 @@ annual/*.txt
 *.db
 
 alert/download/__pycache__/CMRsearchdownload.cpython-37.pyc
+mosaic/*.tif
+mosaic/*/*.tif
+mosaic/*.txt
+packages/*
+report/*.report
+report/*.json
+mosaic/zones/*.tif
+mosaic/zones/*.vrt
