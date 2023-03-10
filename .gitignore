@@ -161,5 +161,5 @@ mosaic/*.txt
 packages/*
 report/*.report
 report/*.json
-mosaic/zones/*.tif
-mosaic/zones/*.vrt
+mosaic/zones*/*.tif
+mosaic/zones*/*.vrt

@@ -20,13 +20,13 @@ if(-e "errorLOG.txt"){
   else{system"mv errorLOG.txt errorLOGold.txt";}
 }
 
+push(@serverlist, "19,20");
+push(@serverlist, "15,20");
+push(@serverlist, "16,25");
+push(@serverlist, "18,20");
+#push(@serverlist, "17,30");
 #push(@serverlist, "20,15");
-push(@serverlist, "15,40");
-push(@serverlist, "16,45");
-push(@serverlist, "18,10");
-push(@serverlist, "17,30");
-#push(@serverlist, "20,15");
-#push(@serverlist, "21,15");
+push(@serverlist, "21,15");
 
 my %h = ();
 my @list :shared;

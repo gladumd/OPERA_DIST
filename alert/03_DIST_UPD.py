@@ -149,10 +149,10 @@ def runTile(server,Ttile,tempscenes):
         response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03A_alertUpdateVEG "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
         errveg = response.stderr.decode().strip()
         
-        #errgen =""
-        response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03B_alertUpdateGEN "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
-        errgen = response.stderr.decode().strip()
-        response = subprocess.run(["cp /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT/"+year+"/"+tilepathstring+"/"+DIST_ID+"/additional/HLSsourceFiles.txt "+outdir+"/additional/HLSsourceFiles.txt"],capture_output=True,shell=True)
+        errgen =""
+        #response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03B_alertUpdateGEN "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
+        #errgen = response.stderr.decode().strip()
+        #response = subprocess.run(["cp /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT/"+year+"/"+tilepathstring+"/"+DIST_ID+"/additional/HLSsourceFiles.txt "+outdir+"/additional/HLSsourceFiles.txt"],capture_output=True,shell=True)
         if errveg == "" and errgen == "":
           ###need to update this so that it send with the production time.
           #previousSource = outdir+"/"+DIST_ID
@@ -183,7 +183,7 @@ def runTile(server,Ttile,tempscenes):
             sqliteTuple = (DIST_ID,)
             updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
           else:
-            response = subprocess.run(["rm "+outdir+"/OPERA*"],capture_output=True,shell=True) ###REMOVE LATER
+            #response = subprocess.run(["rm "+outdir+"/OPERA*"],capture_output=True,shell=True) ###REMOVE LATER
             (response,OUT_ID,ProductionDateTime) = writeMetadata.writeMetadata(DIST_ID,xmlfile,outdir,DISTversion)
             if response == "ok":
               previousSource = outdir+"/"+OUT_ID
@@ -317,7 +317,7 @@ if __name__=='__main__':
   for tile in tiles:
     tileQueue.put(tile)
   
-  serverlist =  [(14,30),(16,30),(17,60)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
+  serverlist =  [(17,5),(19,15),(15,16),(16,16),(20,15)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

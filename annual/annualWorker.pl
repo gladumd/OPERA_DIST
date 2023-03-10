@@ -38,7 +38,10 @@ foreach $year ($startyear..$endyear){
           ($fOPERA,$fL3,$fDIST,$fTtile,$fsensingTime,$fProdTime,$fsatellite,$fres,$fDISTversion)=split('_',$OUTID{$s});
           ($sOPERA,$sL3,$sDIST,$sTtile,$ssensingTime,$sProdTime,$ssatellite,$sres,$sDISTversion)=split('_',$id);
           if($sProdTime > $fProdTime){$OUTID{$s}=$id}
-        }else{$OUTID{$s}=$id;}
+        }else{
+          ($sOPERA,$sL3,$sDIST,$sTtile,$ssensingTime,$sProdTime,$ssatellite,$sres,$sDISTversion)=split('_',$id);
+          if($sProdTime > "20230307T000000Z"){$OUTID{$s}=$id}
+        }
         push(@granules, $s);
       }else{open(OUT,">>badinputsLOG.txt"); print OUT"missing $f\n";close(OUT);}
     }
