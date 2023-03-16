@@ -29,16 +29,15 @@ import os, sys, math, csv, subprocess, shutil, glob
 #6    DIST product sent to LP DAAC
 
 #input args: date of the daily report, format as '20230220'
-#dateStr = sys.argv[1]
-dateStr = '20230306'
+dateStr = sys.argv[1]
 reportdir = '/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/'
 indir = '/gpfs/glad3/HLSDIST/System/report/'
-dbPath = '/gpfs/glad3/HLSDIST/database/database.db'
+dbPath = '/gpfs/glad3/HLSDIST/System/database/database.db.bak'
 jsonFile = reportdir + 'report'+dateStr+'.json'
-#copy the database from /gpfs/glad3/HLSDIST/database/database.db
 databaseStr = indir + 'database.db'
 cmd = 'cp '+dbPath+' '+indir
 subprocess.call(cmd, shell=True)
+os.rename(indir + 'database.db.bak',databaseStr)
 
 #one granule has 22 individual files in the package
 f = open(jsonFile)
@@ -50,10 +49,7 @@ numMissingLP = int(int(datatmp['OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0___0']['mi
 numOtherLP = int(int(datatmp['OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0___0']['other'])/22)
 numDeliveredLP = numSentLP - numFailedLP - numMissingLP - numOtherLP
 
-#filelist sent to LP DAAC
-#first line and last line
-#delete the resending granules
-#first line: min processed time: update later
+#first line: min processed time
 #last line: max processed time
 sentFile = reportdir + 'sentToLP_'+dateStr+'.rpt'   
 with open(sentFile, "r") as f:
@@ -61,6 +57,9 @@ with open(sentFile, "r") as f:
     l = firstLine.split(",")
     x = l[2].split("_")
     tmp = x[5]
+    proDatetmp = tmp[0:8]
+    if proDatetmp != dateStr:
+        print("Please check the data!")
     proTimeStart = int(tmp[9:15])
     for lastLineTmp in f: 
         l = lastLineTmp.split(",")
@@ -107,6 +106,7 @@ dateEnd = end[0:4]+"-"+end[4:6]+"-"+end[6:8]+end[8:11]+":"+end[11:13]+":"+end[13
 
 dateStartStr = dateStart[0:4]+dateStart[5:7]+dateStart[8:13]+dateStart[14:16]+dateStart[17:20]
 dateEndStr = dateEnd[0:4]+dateEnd[5:7]+dateEnd[8:13]+dateEnd[14:16]+dateEnd[17:20]
+
 conn = None
 try:
     conn = sqlite3.connect(databaseStr)
