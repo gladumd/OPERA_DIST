@@ -164,3 +164,4 @@ report/*.json
 report/*.csv
 mosaic/zones*/*.tif
 mosaic/zones*/*.vrt
+mosaic/zones*/*.txt
