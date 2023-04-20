@@ -4,11 +4,12 @@ import sys
 import multiprocessing
 import traceback
 
-source = "/gpfs/glad3/HLSDIST/VFmetrics/newVF"#LP-DAAC/DIST-ANN"
-annName = "2022newVF"
+source = "/gpfs/glad3/HLSDIST/008_HLS_KNN_VF_Test/2022"#"/gpfs/glad3/HLSDIST/001_HLS_Metrics_UTM/2022"#VFmetrics/newVF"#LP-DAAC/DIST-ANN"
+annName = "2022metrics"
 outdir = "zonesSample"+annName
 os.makedirs(name=outdir,exist_ok=True)
-layerlist = ["VEG-IND-MAXABS","VEG-IND-MIN","VEG-IND-MEAN","VEG-IND-SMAX","VEG-IND-SMIN"]#"VEG-IND-SMAX",
+layerlist = ["max_NDVI_VF","smax_NDVI_VF","median_NDVI_VF","smin_NDVI_VF","min_NDVI_VF"]#["VEG-IND-MAXABS","VEG-IND-MIN","VEG-IND-MEAN","VEG-IND-SMAX","VEG-IND-SMIN"]#"VEG-IND-SMAX",
+#layerlist = ["max_NDVI","smax_NDVI","median_NDVI","smin_NDVI","min_NDVI"]#["VEG-IND-MAXABS","VEG-IND-MIN","VEG-IND-MEAN","VEG-IND-SMAX","VEG-IND-SMIN"]#"VEG-IND-SMAX",
 #["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-DUR","GEN-LAST-DATE"]
 # ["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","LAND-MASK"]
 
@@ -95,12 +96,12 @@ def mosaiczone(zone,layer):
   zone=str(zone).rjust(2, '0')
   #if os.path.exists(outdir+"/"+layer+"_"+zone+".tif"):
   #  os.remove(outdir+"/"+layer+"_"+zone+".tif")
-  if os.path.exists(source+"/"+zone):
-    if not os.path.exists(outdir+"/"+layer+"_"+zone+".tif"):
+  #if os.path.exists(source+"/"+zone):
+  if not os.path.exists(outdir+"/"+layer+"_"+zone+".tif"):
       #with open(outdir+"/inputfilelist"+zone+".txt",'w') as outfile:
       #  for file in filelist[zone]:
       #    outfile.write(file+"\n")
-      response = subprocess.run(["gdalbuildvrt "+outdir+"/"+layer+"_"+zone+".vrt "+source+"/"+zone+"/*/*/*/"+annName+"/OPERA*"+layer+".tif"],capture_output=True,shell=True)
+      response = subprocess.run(["gdalbuildvrt "+outdir+"/"+layer+"_"+zone+".vrt "+source+"/"+zone+"*/HLS.L30S30.2022.T"+zone+"*"+layer+".tif"],capture_output=True,shell=True)
       response = subprocess.run(["gdal_translate -co COMPRESS=LZW "+outdir+"/"+layer+"_"+zone+".vrt "+outdir+"/"+layer+"_"+zone+".tif"],capture_output=True,shell=True)
       #os.remove(outdir+"/inputfilelist"+zone+".txt")
       os.remove(outdir+"/"+layer+"_"+zone+".vrt")
@@ -129,7 +130,7 @@ if __name__=='__main__':
   #  filelist = sys.argv[1]
   #except:
   #  print("Must enter a tilelist file")
-  EEfolder = "projects/glad/HLSDIST/ANN_"+annName+"mean"
+  EEfolder = "projects/glad/HLSDIST/ANN_"+annName
   #emptyCollections(EEfolder,layerlist)
   #createCollections(EEfolder,layerlist)
   zonelist = [3,5,6,7,9,10,11,12,13,14,16,17,18,19,20,21,22,23,24,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,59]#"ALL"#range(18,29)#"ALL"#[11,12,14,15,16,17,18,19,20,21,22]#"ALL"#[14,15,16,17,18,37,38,39,40,41]#[10,13,19,20,21,34,46,48]

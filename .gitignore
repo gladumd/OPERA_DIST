@@ -162,6 +162,10 @@ packages/*
 report/*.report
 report/*.json
 report/*.csv
-mosaic/zones*/*.tif
-mosaic/zones*/*.vrt
-mosaic/zones*/*.txt
+mosaic/*/*.tif
+mosaic/*/*.vrt
+mosaic/*/*.txt
+mosaic/*/*/*.tif
+mosaic/*/*/*.vrt
+mosaic/*/*/*.txt
+mosaic/temp/*

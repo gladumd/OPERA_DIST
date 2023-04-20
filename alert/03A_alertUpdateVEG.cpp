@@ -56,7 +56,9 @@ uint8_t status[ysize][xsize];
 uint8_t max[ysize][xsize];
 short conf[ysize][xsize];
 short date[ysize][xsize];
+short lastAnomDate[ysize][xsize];
 uint8_t count[ysize][xsize];
+uint8_t nocount[ysize][xsize];
 uint8_t percent[ysize][xsize];
 short dur[ysize][xsize];
 short lastObs[ysize][xsize];
@@ -67,7 +69,9 @@ if(prevsource == "first"){
   memset(max, 255, sizeof(max[0][0]) * ysize * xsize);
   memset(conf, -1, sizeof(conf[0][0]) * ysize * xsize);
   memset(date, -1, sizeof(date[0][0]) * ysize * xsize);
+  memset(lastAnomDate, -1, sizeof(lastAnomDate[0][0]) * ysize * xsize);
   memset(count, 255, sizeof(count[0][0]) * ysize * xsize);
+  memset(nocount, 255, sizeof(nocount[0][0]) * ysize * xsize);
   memset(percent, 255, sizeof(percent[0][0]) * ysize * xsize);
   memset(dur, -1, sizeof(dur[0][0]) * ysize * xsize);
   memset(lastObs, -1, sizeof(lastObs[0][0]) * ysize * xsize);
@@ -91,9 +95,17 @@ if(prevsource == "first"){
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, date, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
   
+  filename = prevsource+"_VEG-LAST-ANOM-DATE"+version+".tif";
+  INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
+  INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, lastAnomDate, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
+  
   filename = prevsource+"_VEG-DIST-COUNT"+version+".tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, count, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+  
+  filename = prevsource+"_VEG-DIST-NOCOUNT"+version+".tif";
+  INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
+  INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, nocount, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
   
   filename = prevsource+"_VEG-DIST-PERC"+version+".tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
@@ -151,10 +163,13 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
       }
       
       dur[y][x] = currDate - date[y][x] + 1;
+      lastAnomDate[y][x] = currDate;
+      nocount[y][x]=0;
 
     }else{//no current anomaly but valid obs
       if(percent[y][x]>0 and percent[y][x]<=100){
         percent[y][x] = static_cast<int>((double)(count[y][x]*100)/(prevcount + prevnocount + 1));
+        nocount[y][x]++;
       }
       if(status[y][x]==255){//if was not data
         status[y][x]=0;
@@ -175,15 +190,7 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
       if(tempconf > 32000){conf[y][x]=32000;}else{conf[y][x]=static_cast<int>(tempconf);}
     }else{conf[y][x] = currAnom[y][x];}
     
-    if(max[y][x]>=50){
-      if(conf[y][x]>=400){status[y][x]=4;}//if(percent[y][x]>=75 and count[y][x]>=3){status[y][x]=4;}
-      else if(status[y][x]!=4){status[y][x]=3;}
-    }else if(max[y][x]>=10){
-      if(conf[y][x]>=400){status[y][x]=2;}//if(percent[y][x]>=75 and count[y][x]>=4){status[y][x]=2;}
-      else if(status[y][x]!=2){status[y][x]=1;}
-    }else{status[y][x]=0;}
-    
-    if(percent[y][x]<=33 and (status[y][x]==1 or status[y][x]==3)){
+    if((nocount[y][x]>=5 or ((currDate-lastAnomDate[y][x])>=90 and lastAnomDate[y][x] >0))  and status[y][x]>0){
       status[y][x]=0;
       percent[y][x]=0; 
       count[y][x]=0;
@@ -192,7 +199,26 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
       date[y][x]=0;
       dur[y][x]=0;
       histVF[y][x]=255;
-    }
+      lastAnomDate[y][x] = 0;
+      nocount[y][x] =0;
+    }else if(max[y][x]>=50){
+      if(conf[y][x]>=400){status[y][x]=4;}//if(percent[y][x]>=75 and count[y][x]>=3){status[y][x]=4;}
+      else if(status[y][x]!=4){status[y][x]=3;}
+    }else if(max[y][x]>=10){
+      if(conf[y][x]>=400){status[y][x]=2;}//if(percent[y][x]>=75 and count[y][x]>=4){status[y][x]=2;}
+      else if(status[y][x]!=2){status[y][x]=1;}
+    }else{status[y][x]=0;}
+    
+    //if(percent[y][x]<=33 and (status[y][x]==1 or status[y][x]==3)){
+    //  status[y][x]=0;
+    //  percent[y][x]=0; 
+    //  count[y][x]=0;
+    //  max[y][x]=0;
+    //  conf[y][x]=0;
+    //  date[y][x]=0;
+    //  dur[y][x]=0;
+    //  histVF[y][x]=255;
+    //}
     
   }
   
@@ -286,6 +312,20 @@ OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyPr
 OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
 
+filename = outpath + "/"+DIST_ID+"_VEG-LAST-ANOM-DATETEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", to_string(currDate).c_str());
+currMetadata = CSLSetNameValue( currMetadata, "Units", "days");
+OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Int16, papszOptions );
+OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription("Last_day_of_vegetation_disturbance");
+OUTBAND->SetNoDataValue(-1);
+OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, lastAnomDate, xsize, ysize, GDT_Int16, 0, 0 ); 
+OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
+GDALClose((GDALDatasetH)OUTGDAL);
+
 filename = outpath + "/"+DIST_ID+"_VEG-DIST-COUNTTEMP.tif";
 currMetadata = CSLDuplicate(papszMetadata);
 currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
@@ -296,6 +336,20 @@ OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND 
 OUTBAND->SetDescription("Count_of_observations_with_vegetation_loss");
 OUTBAND->SetNoDataValue(255);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, count, xsize, ysize, GDT_Byte, 0, 0 ); 
+OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
+OUTGDAL->SetMetadata(currMetadata,"");
+GDALClose((GDALDatasetH)OUTGDAL);
+
+filename = outpath + "/"+DIST_ID+"_VEG-DIST-NOCOUNTTEMP.tif";
+currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "254");
+currMetadata = CSLSetNameValue( currMetadata, "Units", "observations");
+OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Byte, papszOptions );
+OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
+OUTBAND->SetDescription("Count_of_observations_with_no_anom_since_last");
+OUTBAND->SetNoDataValue(255);
+OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, nocount, xsize, ysize, GDT_Byte, 0, 0 ); 
 OUTGDAL->BuildOverviews("NEAREST",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
 OUTGDAL->SetMetadata(currMetadata,"");
 GDALClose((GDALDatasetH)OUTGDAL);
@@ -358,9 +412,9 @@ GDALClose((GDALDatasetH)OUTGDAL);
 
 GDALClose(SGDAL);
 
-string outfiles[9] = {"VEG-DIST-STATUS","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-PERC","VEG-DIST-DUR","VEG-LAST-DATE","VEG-HIST"};
+string outfiles[11] = {"VEG-DIST-STATUS","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-LAST-ANOM-DATE","VEG-DIST-COUNT","VEG-DIST-NOCOUNT","VEG-DIST-PERC","VEG-DIST-DUR","VEG-LAST-DATE","VEG-HIST"};
 
-for(int i=0;i<9;i++){
+for(int i=0;i<11;i++){
   system(("gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q "+outpath+"/"+DIST_ID+"_"+outfiles[i]+"TEMP.tif "+outpath+"/"+DIST_ID+"_"+outfiles[i]+version+".tif").c_str());
   system(("rm "+outpath+"/"+DIST_ID+"_"+outfiles[i]+"TEMP.tif").c_str());
 }

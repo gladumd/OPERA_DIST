@@ -31,12 +31,13 @@ if __name__=='__main__':
       #granuleDict.update(sd.filterByTileList(url_dict,tilefile))
       if tilefile != "ALL":
         granuleDict = sd.filterByTileList(granuleDict,tilefile)
-      print(len(granuleDict), "granules for tilelist")
       start = start + fiveday + oneday
       end = start + fiveday
-      granulesToDownload = sd.checkGranuleList(list(granuleDict.keys()))
-      granDownloadDist = {granule: granuleDict[granule] for granule in granulesToDownload}
-      sd.download_parallel(granDownloadDist,50)
+      if len(granuleDict) > 0:
+        print(len(granuleDict), "granules for tilelist")
+        granulesToDownload = sd.checkGranuleList(list(granuleDict.keys()))
+        granDownloadDist = {granule: granuleDict[granule] for granule in granulesToDownload}
+        sd.download_parallel(granDownloadDist,25)
 
   elif mode =="END":
     granuleDict = {}
@@ -57,9 +58,10 @@ if __name__=='__main__':
       print(len(granuleDict), "granules for tilelist")
       start = start + fiveday + oneday
       end = start + fiveday
-    granulesToDownload = sd.checkGranuleList(list(granuleDict.keys()))
-    granDownloadDist = {granule: granuleDict[granule] for granule in granulesToDownload}
-    sd.download_parallel(granDownloadDist,150)
+    if len(granuleDict) > 0:
+      granulesToDownload = sd.checkGranuleList(list(granuleDict.keys()))
+      granDownloadDist = {granule: granuleDict[granule] for granule in granulesToDownload}
+      sd.download_parallel(granDownloadDist,150)
 
   else:
     print("must enter mode as DURING or END")

@@ -4,13 +4,13 @@ import sys
 import multiprocessing
 import traceback
 
-source = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"
+source = "/gpfs/glad3/HLSDIST/VFModel/Drone/LP-DAAC/DIST-ALERT"
 suffix = "Sample_newVF"
 outdir = "zones"+suffix
 os.makedirs(name=outdir,exist_ok=True)
 #layerlist = ["VEG-IND","VEG-ANOM","VEG-DIST-DATE","GEN-ANOM","GEN-DIST-DATE","VEG-DIST-STATUS","VEG-DIST-CONF","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-DIST-CONF","GEN-LAST-DATE"]
 #["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-DUR","GEN-LAST-DATE"]
-layerlist = ["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","LAND-MASK"]
+layerlist = ["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-HIST"]#,"VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","LAND-MASK"]
 
 def sortDates(listtosort):
   datetimeDict = {}
@@ -90,17 +90,18 @@ def mosaic(tilelist,startdate,layer,EEfolder):
 
 
 def mosaiczone(filelist,zone,layer):
-  with open(outdir+"/inputfilelist"+zone+".txt",'w') as outfile:
-    for file in filelist[zone]:
-      outfile.write(file+"\n")
-  if os.path.exists(outdir+"/"+layer+"_"+zone+".tif"):
-    os.remove(outdir+"/"+layer+"_"+zone+".tif")
-  response = subprocess.run(["gdalbuildvrt -input_file_list "+outdir+"/inputfilelist"+zone+".txt "+outdir+"/"+layer+"_"+zone+".vrt"],capture_output=True,shell=True)
-  response = subprocess.run(["gdal_translate -co COMPRESS=LZW "+outdir+"/"+layer+"_"+zone+".vrt "+outdir+"/"+layer+"_"+zone+".tif"],capture_output=True,shell=True)
+  #if os.path.exists(outdir+"/"+layer+"_"+zone+".tif"):
+  #  os.remove(outdir+"/"+layer+"_"+zone+".tif")
+  if not os.path.exists(outdir+"/"+layer+"_"+zone+".tif"):
+    with open(outdir+"/inputfilelist"+zone+".txt",'w') as outfile:
+      for file in filelist[zone]:
+        outfile.write(file+"\n")
+    response = subprocess.run(["gdalbuildvrt -input_file_list "+outdir+"/inputfilelist"+zone+".txt "+outdir+"/"+layer+"_"+zone+".vrt"],capture_output=True,shell=True)
+    response = subprocess.run(["gdal_translate -co COMPRESS=LZW "+outdir+"/"+layer+"_"+zone+".vrt "+outdir+"/"+layer+"_"+zone+".tif"],capture_output=True,shell=True)
+    os.remove(outdir+"/"+layer+"_"+zone+".vrt")
+    os.remove(outdir+"/inputfilelist"+zone+".txt")
   response = subprocess.run(["gsutil -m cp "+outdir+"/"+layer+"_"+zone+".tif gs://earthenginepartners-hansen-upload/globalUploads/HLSDIST/"+suffix+"/"+layer+"/"+zone+".tif"],capture_output=True, shell=True)
   subprocess.run(["ssh gladapp15 \'module load python/3.7/anaconda; source /gpfs/glad1/Amy/alarm/forest-alert3/fa-env/bin/activate; earthengine upload image --asset_id="+EEfolder+"/"+layer+"/"+zone+" --pyramiding_policy=sample gs://earthenginepartners-hansen-upload/globalUploads/HLSDIST/"+suffix+"/"+layer+"/"+zone+".tif\'"],capture_output=True,shell=True)
-  os.remove(outdir+"/"+layer+"_"+zone+".vrt")
-  os.remove(outdir+"/inputfilelist"+zone+".txt")
 
 def processGranuleQueue(filelist,layer,procID,queue):
   Nprocess = 0

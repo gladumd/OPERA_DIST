@@ -152,7 +152,7 @@ def runTile(server,Ttile,tempscenes):
         errgen =""
         #response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03B_alertUpdateGEN "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
         #errgen = response.stderr.decode().strip()
-        #response = subprocess.run(["cp /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT/"+year+"/"+tilepathstring+"/"+DIST_ID+"/additional/HLSsourceFiles.txt "+outdir+"/additional/HLSsourceFiles.txt"],capture_output=True,shell=True)
+        response = subprocess.run(["cp /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT/"+year+"/"+tilepathstring+"/"+DIST_ID+"/" + DIST_ID + "_GEN*.tif "+outdir],capture_output=True,shell=True)
         if errveg == "" and errgen == "":
           ###need to update this so that it send with the production time.
           #previousSource = outdir+"/"+DIST_ID
@@ -162,7 +162,7 @@ def runTile(server,Ttile,tempscenes):
           errorLOG(DIST_ID+Errors +"ERRORs")
         sout = os.popen("ls "+outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID +"*.tif 2>/dev/null | wc -l");
         count = int(sout.read().strip())
-        if not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-DIST-STATUS.tif") or not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-DIST-STATUS.tif") or count < 22:
+        if not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-DIST-STATUS.tif") or not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-DIST-STATUS.tif") or count < 22:
           errorLOG(DIST_ID+"not all time-series layers made")
           statusFlag=105
           sqliteCommand = "UPDATE fulltable SET statusFlag = ?, Errors = 'failed to create time-series layers' where HLS_ID = ?"
@@ -183,7 +183,7 @@ def runTile(server,Ttile,tempscenes):
             sqliteTuple = (DIST_ID,)
             updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
           else:
-            #response = subprocess.run(["rm "+outdir+"/OPERA*"],capture_output=True,shell=True) ###REMOVE LATER
+            response = subprocess.run(["rm "+outdir+"/OPERA*"],capture_output=True,shell=True) ###REMOVE LATER
             (response,OUT_ID,ProductionDateTime) = writeMetadata.writeMetadata(DIST_ID,xmlfile,outdir,DISTversion)
             if response == "ok":
               previousSource = outdir+"/"+OUT_ID
@@ -317,7 +317,7 @@ if __name__=='__main__':
   for tile in tiles:
     tileQueue.put(tile)
   
-  serverlist =  [(17,5),(19,15),(15,16),(16,16),(20,15)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
+  serverlist =  [(19,15),(21,28),(16,20),(15,13),(20,20)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp
