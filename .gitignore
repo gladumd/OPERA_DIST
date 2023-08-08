@@ -153,6 +153,9 @@ user.profile
 annual/temp/*
 annual/*.txt
 *.db
+*.db-shm
+*.db-wal
+
 
 alert/download/__pycache__/CMRsearchdownload.cpython-37.pyc
 mosaic/*.tif
@@ -169,3 +172,5 @@ mosaic/*/*/*.tif
 mosaic/*/*/*.vrt
 mosaic/*/*/*.txt
 mosaic/temp/*
+
+v1/temp/*
