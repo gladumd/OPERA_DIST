@@ -8,10 +8,10 @@ $yearname = $ARGV[3];
 if(!-d "temp"){mkdir"temp";}
 
 $HLSsource = "/gpfs/glad3/HLS";
-$outbase = "/gpfs/glad3/HLSDIST/VFModel/Drone/LP-DAAC/DIST-ANN";
-$sourcebase = "/gpfs/glad3/HLSDIST/VFModel/Drone/LP-DAAC/DIST-ALERT";
+$outbase = "/gpfs/glad3/HLSDIST/testing/TSmodels/230612/DIST-ANN";#TSmodels/1_shutdown5obs3months/DIST-ANN";#VFModel/Drone/LP-DAAC/DIST-ANN";
+$sourcebase = "/gpfs/glad3/HLSDIST/testing/TSmodels/230612";#LP-DAAC/DIST-ALERT";#TSmodels/1_shutdown5obs3months/";
 $DISTversion="v0";
-$httpbase = "https://glad.umd.edu/projects/opera/DIST-ANN";
+$httpbase = "NA";#https://glad.umd.edu/projects/opera/DIST-ANN";
 
 $startyear = substr($startdate,0,4);
 $endyear = substr($enddate,0,4);
@@ -37,10 +37,11 @@ foreach $year ($startyear..$endyear){
         if(exists $OUTID{$s}){
           ($fOPERA,$fL3,$fDIST,$fTtile,$fsensingTime,$fProdTime,$fsatellite,$fres,$fDISTversion)=split('_',$OUTID{$s});
           ($sOPERA,$sL3,$sDIST,$sTtile,$ssensingTime,$sProdTime,$ssatellite,$sres,$sDISTversion)=split('_',$id);
-          if($sProdTime > $fProdTime){$OUTID{$s}=$id}
+          if($sProdTime > $fProdTime){$OUTID{$s}=$id;}
         }else{
           ($sOPERA,$sL3,$sDIST,$sTtile,$ssensingTime,$sProdTime,$ssatellite,$sres,$sDISTversion)=split('_',$id);
-          if($sProdTime > "20230307T000000Z"){$OUTID{$s}=$id}
+          #if($sProdTime > "20230307T000000Z"){$OUTID{$s}=$id;}
+          $OUTID{$s}=$id;
         }
         push(@granules, $s);
       }else{open(OUT,">>badinputsLOG.txt"); print OUT"missing $f\n";close(OUT);}
@@ -453,7 +454,7 @@ return 0;
 }";
 close (OUT);
 if($Ngranules>0){system("cd temp;g++ ANN_veg_$tile.cpp -o ANN_veg_$tile -lgdal -Wno-unused-result -std=gnu++11");}
-my $templog = readpipe"cd temp; ./ANN_veg_$tile $zone; rm ANN_veg_$tile; rm ANN_veg_$tile.cpp";
+my $templog = readpipe"cd temp; ./ANN_veg_$tile $zone;";# rm ANN_veg_$tile; rm ANN_veg_$tile.cpp";
 chomp($templog);
 return($templog);
 }

@@ -5,9 +5,11 @@ import multiprocessing
 import traceback
 import datetime
 
+currdir = os.getcwd()
 source = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"
-outdir = "zones"
-layerlist = ["GEN-ANOM-MAX","GEN-DIST-DUR","GEN-LAST-DATE"]#"VEG-DIST-STATUS","VEG-ANOM","VEG-DIST-DATE","GEN-ANOM","GEN-DIST-DATE","VEG-IND","VEG-DIST-CONF","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-DIST-CONF","VEG-ANOM-MAX","VEG-DIST-DUR",
+outdir = currdir+"/zones"
+layerlist = ["VEG-DIST-STATUS","VEG-DIST-DATE","GEN-DIST-STATUS","GEN-DIST-DATE","VEG-IND","VEG-DIST-DUR","VEG-ANOM-MAX","GEN-DIST-DUR","GEN-ANOM-MAX","VEG-ANOM","GEN-ANOM","VEG-DIST-CONF","GEN-DIST-CONF","VEG-LAST-DATE","GEN-LAST-DATE"]
+pyramidtype = {"VEG-DIST-STATUS":'sample',"VEG-ANOM":'sample',"VEG-DIST-DATE":'sample',"GEN-ANOM":'sample',"GEN-DIST-DATE":'sample',"VEG-IND":'mean',"VEG-DIST-CONF":'sample',"VEG-LAST-DATE":'mode',"GEN-DIST-STATUS":'sample',"GEN-DIST-CONF":'sample',"VEG-ANOM-MAX":'sample',"VEG-DIST-DUR":'sample',"GEN-ANOM-MAX":'sample',"GEN-DIST-DUR":'sample',"GEN-LAST-DATE":'mode'}#"VEG-DIST-STATUS","VEG-ANOM","VEG-DIST-DATE","GEN-ANOM","GEN-DIST-DATE","VEG-IND","VEG-DIST-CONF","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-DIST-CONF","VEG-ANOM-MAX","VEG-DIST-DUR",
 #,"VEG-ANOM-MAX",
 #"VEG-IND",
 #["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-DUR","GEN-LAST-DATE"]
@@ -48,15 +50,19 @@ def emptyCollections(EEfolder,layerlist):
     subprocess.run(["ssh gladapp15 \'module load python/3.7/anaconda; source /gpfs/glad1/Amy/alarm/forest-alert3/fa-env/bin/activate; earthengine rm -r "+EEfolder+"/"+layer+"\'"],capture_output=True,shell=True)
 
 def mvCollections(EEsource,EEdest,layerlist,zonelist):
+  processLOG(["move from "+EEsource + " to "+ EEdest])
   with open("EEcommands.txt",'w') as EE:
     for layer in layerlist:
-      EE.write("earthengine rm "+EEdest+"/"+layer+";\n")
+      EE.write("earthengine rm -r "+EEdest+"/"+layer+";\n")
+      EE.write("earthengine create collection "+EEdest+"/"+layer+";\n")
       for z in zonelist:
         zone = str(z).zfill(2)
         EE.write("earthengine mv "+EEsource+"/"+layer+"/"+zone+" "+EEdest+"/"+layer+"/"+zone+";\n")
-  subprocess.run(["ssh gladapp15 \'module load python/3.7/anaconda; source /gpfs/glad1/Amy/alarm/forest-alert3/fa-env/bin/activate; bash EEcommands.txt\'"],capture_output=True,shell=True)
+  subprocess.run(["ssh gladapp15 \'module load python/3.7/anaconda; source /gpfs/glad1/Amy/alarm/forest-alert3/fa-env/bin/activate; cd "+currdir+"; bash EEcommands.txt\'"],capture_output=True,shell=True)
+  processLOG(["finished move"])
 
 def getFileList(tilelist,zonelist,startdate):
+  response = subprocess.run(["rm "+outdir+"/inputfilelist*_last.txt"],capture_output=True,shell=True)
   filelist = {}
   year = startdate[0:4]
   for tile in tilelist:
@@ -69,6 +75,7 @@ def getFileList(tilelist,zonelist,startdate):
       response = subprocess.run(["ls "+source+"/"+year+"/"+tilepathstring+"/*/DIST-ALERT*VEG-DIST-STATUS.tif"],capture_output=True,shell=True)
       if response.stdout.decode().strip() != "":
         grans = response.stdout.decode().strip().split("\n")
+        last = ""
         for g in grans:
           folders = g.split('/')
           DIST_ID = folders[-2]
@@ -76,6 +83,9 @@ def getFileList(tilelist,zonelist,startdate):
           if Fdatetime >= (startdate+"T000000"):
             #scenes.append(DIST_ID)
             filelist[zone].append(g)
+            last = g
+        with open(outdir+"/inputfilelist"+zone+"_last.txt",'a') as outfile:
+          outfile.write(last+"\n")
         #sortedScenes = sortDates(scenes)
         #last = sortedScenes[-1]
         #response = subprocess.run(["ls "+source+"/"+year+"/"+tilepathstring+"/"+last+"/DIST-ALERT*"+layer+".tif"],capture_output=True,shell=True)
@@ -97,7 +107,7 @@ def mosaic(zonelist,layer,EEfolder):
     zone = str(zone).zfill(2)
     myqueue.put(zone)
 
-  Nprocesses = 15
+  Nprocesses = 30
   processes = []
   for procID in range(1,Nprocesses+1):
     procID = str(procID)
@@ -117,7 +127,10 @@ def mosaiczone(zone,layer):
   if rewrite and os.path.exists(outdir+"/"+layer+"_"+zone+".tif"):
     os.remove(outdir+"/"+layer+"_"+zone+".tif")
   if not os.path.exists(outdir+"/"+layer+"_"+zone+".tif"):
-    response = subprocess.run(["sed \'s/VEG-DIST-STATUS/"+layer+"/\' "+outdir+"/inputfilelist"+zone+"_base.txt > "+outdir+"/inputfilelist"+zone+".txt"],capture_output=True,shell=True)
+    if layer in ['VEG-IND','VEG-ANOM','GEN-ANOM']:
+      response = subprocess.run(["sed \'s/VEG-DIST-STATUS/"+layer+"/\' "+outdir+"/inputfilelist"+zone+"_base.txt > "+outdir+"/inputfilelist"+zone+".txt"],capture_output=True,shell=True)
+    else:
+      response = subprocess.run(["sed \'s/VEG-DIST-STATUS/"+layer+"/\' "+outdir+"/inputfilelist"+zone+"_last.txt > "+outdir+"/inputfilelist"+zone+".txt"],capture_output=True,shell=True)
     response = subprocess.run(["gdalbuildvrt -input_file_list "+outdir+"/inputfilelist"+zone+".txt "+outdir+"/"+layer+"_"+zone+".vrt"],capture_output=True,shell=True)
     response = subprocess.run(["gdal_translate -co COMPRESS=LZW "+outdir+"/"+layer+"_"+zone+".vrt "+outdir+"/"+layer+"_"+zone+".tif"],capture_output=True,shell=True)
     #os.remove(outdir+"/inputfilelist"+zone+".txt")
@@ -126,9 +139,11 @@ def mosaiczone(zone,layer):
 def uploadzones(zones,layer,EEfolder):
   for zone in zones:
     zone = str(zone).zfill(2)
-    response = subprocess.run(["gsutil cp "+outdir+"/"+layer+"_"+zone+".tif gs://earthenginepartners-hansen-upload/globalUploads/HLSDIST/"+layer+"/"+zone+".tif"],capture_output=True, shell=True)
+    response = subprocess.run(["ssh gladapp15 \'gsutil cp "+outdir+"/"+layer+"_"+zone+".tif gs://earthenginepartners-hansen-upload/globalUploads/HLSDIST/"+layer+"/"+zone+".tif\'"],capture_output=True, shell=True)
+    print(layer+"_"+zone,response.stderr.decode())
     #print("ssh gladapp15 \'module load python/3.7/anaconda; source /gpfs/glad1/Amy/alarm/forest-alert3/fa-env/bin/activate; earthengine rm "+EEfolder+"/"+layer+"/"+zone+"; earthengine upload image --service_account_file=/gpfs/glad1/Amy/alarm/C2/forest-alert3/forest-alert-support-key.json --asset_id="+EEfolder+"/"+layer+"/"+zone+" --pyramiding_policy=sample gs://earthenginepartners-hansen-upload/globalUploads/HLSDIST/"+layer+"/"+zone+".tif \'")
-    subprocess.run(["ssh gladapp15 \'module load python/3.7/anaconda; source /gpfs/glad1/Amy/alarm/forest-alert3/fa-env/bin/activate; earthengine upload image --asset_id="+EEfolder+"/"+layer+"/"+zone+" --pyramiding_policy=sample gs://earthenginepartners-hansen-upload/globalUploads/HLSDIST/"+layer+"/"+zone+".tif \'"],capture_output=True,shell=True)
+    response = subprocess.run(["ssh gladapp15 \'module load python/3.7/anaconda; source /gpfs/glad1/Amy/alarm/forest-alert3/fa-env/bin/activate; earthengine upload image --asset_id="+EEfolder+"/"+layer+"/"+zone+" --pyramiding_policy="+pyramidtype[layer]+" gs://earthenginepartners-hansen-upload/globalUploads/HLSDIST/"+layer+"/"+zone+".tif \'"],capture_output=True,shell=True)
+    print(layer+"_"+zone,response.stderr.decode())
   
 
 def processGranuleQueue(layer,procID,queue):
@@ -151,12 +166,15 @@ def processLOG(argv):
 if __name__=='__main__':
   try:
     tilefile = sys.argv[1]
-    startdate = sys.argv[2]
+    #startdate = sys.argv[2]
   except:
     print("Must enter a tilelist file")
+    exit(1)
   if tilefile == "ALL":
     tilefile = "/gpfs/glad3/HLSDIST/System/hls_tiles_dist.txt"
-  EEfolder = "projects/glad/HLSDIST/backend2"
+  startdate = (datetime.datetime.now() + datetime.timedelta(days=-30)).strftime("%Y%j")
+  print("tiles: ",tilefile," ",startdate)
+  EEfolder = "projects/glad/HLSDIST/backend"
   emptyCollections(EEfolder,layerlist)
   createCollections(EEfolder,layerlist)
   rewrite = True
@@ -165,4 +183,4 @@ if __name__=='__main__':
   filelist = getFileList(tilelist,zonelist,startdate)
   for layer in layerlist:
     mosaic(zonelist,layer,EEfolder)
-  mvCollections(EEfolder,"projects/glad/HLSDIST/current",layerlist,zonelist)
+  #mvCollections(EEfolder,"projects/glad/HLSDIST/current",layerlist,zonelist)

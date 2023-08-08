@@ -11,6 +11,7 @@ import multiprocessing
 import parameters
 
 currdir = os.getcwd()
+softwareVersion = parameters.softwareVersion
 DISTversion = parameters.DISTversion
 HLSsource = parameters.HLSsource #"/gpfs/glad3/HLS"
 outbase = parameters.outbase #"/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"
@@ -18,7 +19,7 @@ dbpath = parameters.dbpath #"/gpfs/glad3/HLSDIST/System/database/"
 if not os.path.exists(outbase):
   os.mkdir(outbase)
     
-def runGranule(server,granule):
+def runGranule(server,granule,mode="ALL"):
   if os.path.exists("KILL_02_granule_manager") or os.path.exists("KILL_ALL"):
     raise ValueError("process killed with KILL file")
   (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= granule.split('.')
@@ -40,14 +41,18 @@ def runGranule(server,granule):
   
   #if rewrite == True:
   #  response = subprocess.run(["rm "+outdir+"/"+DIST_ID+"_VEG-IND.tif"],capture_output=True,shell=True)
-  response = subprocess.run(["cp /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_LAND-MASK.tif "+outdir+"/"+DIST_ID+"_LAND-MASK.tif"],capture_output=True,shell=True)
+  #response = subprocess.run(["cp /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_LAND-MASK.tif "+outdir+"/"+DIST_ID+"_LAND-MASK.tif"],capture_output=True,shell=True)
   if not os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif"):
-    if os.path.exists("/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-IND.tif"):
-      response = subprocess.run(["cp /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-IND.tif "+outdir+"/"+DIST_ID+"_VEG-IND.tif"],capture_output=True,shell=True)
-    else:
+    #DIST_IDv0=DIST_ID[0:-1]+'0'
+    #subprocess.run("mv /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_IDv0+ "_VEG-IND.tif"+ " /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+ "_VEG-IND.tif",capture_output=False,shell=True)
+    #subprocess.run("mv /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_IDv0+ "_LAND-MASK.tif"+ " /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+ "_LAND-MASK.tif",capture_output=False,shell=True)
+    #if os.path.exists("/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-IND.tif"):
+    #  response = subprocess.run(["cp /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-IND.tif "+outdir+"/"+DIST_ID+"_VEG-IND.tif"],capture_output=True,shell=True)
+    #  response = subprocess.run(["cp /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_LAND-MASK.tif "+outdir+"/"+DIST_ID+"_LAND-MASK.tif"],capture_output=True,shell=True)
+    #else:
     #  response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./02A_VF_QA_COG "+granule+" "+DIST_ID+" "+outdir+"\' &>>errorLOG.txt"],capture_output=True,shell=True)
     #Errors = Errors + str(response.stderr.decode()).split('\n')[-1]
-      Errors = outdir+"/"+DIST_ID+"_VEG-IND.tif not exist"
+    Errors = outdir+"/"+DIST_ID+"_VEG-IND.tif not exist"
 
   if mode == "VEG_IND":
     if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif"):
@@ -69,39 +74,31 @@ def runGranule(server,granule):
         removed = True
     #create VEG_ANOM
     if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") and not os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif"):#and !-e "$outdir/VEG_ANOM.tif"){
-      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02B_VEG_ANOM_COG_v2.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
+      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02B_VEG_ANOM_COG.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
       #Errors = Errors + str(response.stderr.decode())#.split('\n')[-1]
 
     #create GEN_ANOM
     if not os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
-      #if os.path.exists("/gpfs/glad3/HLSDIST/testing/drone_v230504/DIST-ALERT/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-ANOM.tif"):
-      #  response = subprocess.run(["cp /gpfs/glad3/HLSDIST/testing/drone_v230504/DIST-ALERT/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-ANOM.tif "+outdir+"/"+DIST_ID+"_GEN-ANOM.tif"],capture_output=True,shell=True)
-      #  response = subprocess.run(["cp /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"/additional/HLSsourceFiles.txt "+outdir+"/"+DIST_ID+"/additional/HLSsourceFiles.txt"],capture_output=True,shell=True)
-      #else:
-      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
+      #response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
+      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl updateGENANOM.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
       Errors = Errors + str(response.stderr.decode())#.split('\n')[-1]
-      if os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
-        os.remove("gen_anom_"+granule+".cpp")
-    #if not os.path.exists(outdir+"/additional/HLSsourceFiles.txt"):
-    #  if os.path.exists("/gpfs/glad3/HLSDIST/testing/drone_v230504/DIST-ALERT/"+year+"/"+tilepathstring+"/"+DIST_ID+"/additional/HLSsourceFiles.txt"):
-    #    response = subprocess.run(["cp /gpfs/glad3/HLSDIST/testing/drone_v230504/DIST-ALERT/"+year+"/"+tilepathstring+"/"+DIST_ID+"/additional/HLSsourceFiles.txt "+outdir+"/additional/HLSsourceFiles.txt"],capture_output=True,shell=True)
-      
+ 
     #test for success and update database
     if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") and os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif") and os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
-      sqliteCommand = "UPDATE fulltable SET statusFlag = 4 where HLS_ID=?;"
-      updateSqlite(DIST_ID,sqliteCommand,(HLS_ID,))
+      sqliteCommand = "UPDATE fulltable SET statusFlag = 4, softwareVersion = ? where HLS_ID=?;"
+      updateSqlite(DIST_ID,sqliteCommand,(softwareVersion,HLS_ID,))
     else:
       errorLOG(["gladapp"+server+": "+DIST_ID+"not all VEG-IND, VEG-ANOM, GEN-ANOM exist, failed to create."+Errors])
-      sqliteCommand = "UPDATE fulltable SET Errors = 'VEG-IND/VEG-ANOM/GEN-ANOM failed', statusFlag = 104 where HLS_ID=?;"
-      updateSqlite(DIST_ID,sqliteCommand,(HLS_ID,))
+      sqliteCommand = "UPDATE fulltable SET softwareVersion = ?, Errors = 'VEG-IND/VEG-ANOM/GEN-ANOM failed', statusFlag = 104 where HLS_ID=?;"
+      updateSqlite(DIST_ID,sqliteCommand,(softwareVersion,HLS_ID,))
 
 def updateSqlite(ID,sqliteCommand,sqliteTuple):
   written = False
-  if mode == "SMOKE":
-    written = True
+  #if mode == "SMOKE":
+  #  written = True
   while written == False:
     try:
-      with closing(sqlite3.connect(dbpath+"database.db")) as connection:
+      with closing(sqlite3.connect(dbpath)) as connection:
         with closing(connection.cursor()) as cursor:
           cursor.execute(sqliteCommand,sqliteTuple)
           cursor.execute("COMMIT;")
@@ -136,7 +133,7 @@ def processGranuleQueue(server,procID,queue):
     granule = queue.get().strip()
     try:
       if running:
-        runGranule(server,granule)
+        runGranule(server,granule,mode)
         Nprocess +=1
     except ValueError as err:
       running = False
@@ -160,6 +157,7 @@ def processGranuleQueue(server,procID,queue):
 #                                                                             #
 #                                                                             #
 ###############################################################################
+rewrite=False
 if __name__=='__main__':
   try:
     filelist = sys.argv[1]
@@ -167,7 +165,7 @@ if __name__=='__main__':
   except:
     sys.stderr.write("must enter filelist and mode ('VEG_IND' to only create VEG_IND images or 'ALL' to create VEG_IND, VEG_ANOM, GEN_ANOM): perl 02_scene_manager.pl filelist.txt mode")
 
-  rewrite=False
+  
   if len(sys.argv) == 4:
     rewrite = sys.argv[3]
     if rewrite == "REWRITE":
@@ -202,7 +200,7 @@ if __name__=='__main__':
 
   processLOG(["starting \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",now])
 
-  serverlist = [(14,10),(15,10),(20,0),(21,5)]#[(17,60),(15,15),(16,20)]
+  serverlist = [(14,15),(15,40),(17,50),(19,15),(16,40),(22,40),(23,120)]#[(17,60),(15,15),(16,20)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

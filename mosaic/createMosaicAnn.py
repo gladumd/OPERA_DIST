@@ -4,12 +4,12 @@ import sys
 import multiprocessing
 import traceback
 
-source = "/gpfs/glad3/HLSDIST/VFmetrics/newVF"#LP-DAAC/DIST-ANN"
-annName = "2022newVF"
-outdir = "zonesSample"+annName
+source = "/gpfs/glad3/HLSDIST/testing/SEP/DIST-ANN"#VFmetrics/newVF"#LP-DAAC/DIST-ANN"
+annName = "2022"
+outdir = "/gpfs/glad3/HLSDIST/testing/SEP/zonesANN"+annName
 os.makedirs(name=outdir,exist_ok=True)
-layerlist = ["VEG-IND-MAXABS","VEG-IND-MIN","VEG-IND-MEAN","VEG-IND-SMAX","VEG-IND-SMIN"]#"VEG-IND-SMAX",
-#["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-DUR","GEN-LAST-DATE"]
+#layerlist = ["VEG-IND-MAXABS","VEG-IND-MIN","VEG-IND-MEAN","VEG-IND-SMAX","VEG-IND-SMIN"]#"VEG-IND-SMAX",
+layerlist = ["VEG-DIST-STATUS","VEG-IND-MAX","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-HIST","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-DIST=COUNT","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-DUR","GEN-LAST-DATE"]
 # ["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","LAND-MASK"]
 
 def sortDates(listtosort):
@@ -42,6 +42,10 @@ def createCollections(EEfolder,layerlist):
   for layer in layerlist:
     subprocess.run(["ssh gladapp15 \'module load python/3.7/anaconda; source /gpfs/glad1/Amy/alarm/forest-alert3/fa-env/bin/activate; earthengine create collection "+EEfolder+"/"+layer+"\'"],capture_output=True,shell=True)
 
+def setPublicCollections(EEfolder,layerlist):
+  for layer in layerlist:    
+    subprocess.run(["ssh gladapp15 \'module load python/3.7/anaconda; source /gpfs/glad1/Amy/alarm/forest-alert3/fa-env/bin/activate; earthengine acl set public "+EEfolder+"/"+layer+"\'"],capture_output=True,shell=True)
+
 def emptyCollections(EEfolder,layerlist):
   for layer in layerlist:
     subprocess.run(["ssh gladapp15 \'module load python/3.7/anaconda; source /gpfs/glad1/Amy/alarm/forest-alert3/fa-env/bin/activate; earthengine rm -r "+EEfolder+"/"+layer+"\'"],capture_output=True,shell=True)
@@ -73,22 +77,22 @@ def mosaic(zonelist,annName,layer,EEfolder):
   #      filelist[zone].append(g)
     
   print(layer,"zones:",zonelist)#list(filelist.keys()))
-  myqueue = multiprocessing.Queue()
-  for zone in zonelist:#filelist.keys():
-    myqueue.put(zone)
+  #myqueue = multiprocessing.Queue()
+  #for zone in zonelist:#filelist.keys():
+  #  myqueue.put(zone)
 
-  Nprocesses = 20
-  processes = []
-  for procID in range(1,Nprocesses):
-    procID = str(procID)
-    proc = multiprocessing.Process(target=processGranuleQueue,args=(layer,procID,myqueue))
-    processes.append(proc)
-    proc.start()
+  #Nprocesses = 20
+  #processes = []
+  #for procID in range(1,Nprocesses):
+  #  procID = str(procID)
+  #  proc = multiprocessing.Process(target=processGranuleQueue,args=(layer,procID,myqueue))
+  #  processes.append(proc)
+  #  proc.start()
 
-  for p in processes:
-    p.join()
-  myqueue.close()
-  myqueue.join_thread()
+  #for p in processes:
+  #  p.join()
+  #myqueue.close()
+  #myqueue.join_thread()
   uploadzones(zonelist,layer)
 
 def mosaiczone(zone,layer):
@@ -101,6 +105,7 @@ def mosaiczone(zone,layer):
       #  for file in filelist[zone]:
       #    outfile.write(file+"\n")
       response = subprocess.run(["gdalbuildvrt "+outdir+"/"+layer+"_"+zone+".vrt "+source+"/"+zone+"/*/*/*/"+annName+"/OPERA*"+layer+".tif"],capture_output=True,shell=True)
+      print(response)
       response = subprocess.run(["gdal_translate -co COMPRESS=LZW "+outdir+"/"+layer+"_"+zone+".vrt "+outdir+"/"+layer+"_"+zone+".tif"],capture_output=True,shell=True)
       #os.remove(outdir+"/inputfilelist"+zone+".txt")
       os.remove(outdir+"/"+layer+"_"+zone+".vrt")
@@ -129,10 +134,11 @@ if __name__=='__main__':
   #  filelist = sys.argv[1]
   #except:
   #  print("Must enter a tilelist file")
-  EEfolder = "projects/glad/HLSDIST/ANN_"+annName+"mean"
+  EEfolder = "projects/glad/HLSDIST/SEP_ANN"
   #emptyCollections(EEfolder,layerlist)
   #createCollections(EEfolder,layerlist)
-  zonelist = [3,5,6,7,9,10,11,12,13,14,16,17,18,19,20,21,22,23,24,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,59]#"ALL"#range(18,29)#"ALL"#[11,12,14,15,16,17,18,19,20,21,22]#"ALL"#[14,15,16,17,18,37,38,39,40,41]#[10,13,19,20,21,34,46,48]
+  setPublicCollections(EEfolder,layerlist)
+  zonelist = [18,21,10,17,51,60]#[3,5,6,7,9,10,11,12,13,14,16,17,18,19,20,21,22,23,24,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,59]#"ALL"#range(18,29)#"ALL"#[11,12,14,15,16,17,18,19,20,21,22]#"ALL"#[14,15,16,17,18,37,38,39,40,41]#[10,13,19,20,21,34,46,48]
   #tilelist = tilesFromFile(filelist)
-  for layer in layerlist:
-    mosaic(zonelist,annName,layer,EEfolder)
+  #for layer in layerlist:
+  #  mosaic(zonelist,annName,layer,EEfolder)
