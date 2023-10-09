@@ -260,6 +260,7 @@ with open(outname_report,'w') as out_csv_file:
         wrow.append(fullcycleTime)
         csv_out.writerow(wrow)
 
+out_csv_file.close()
 #read all the data records
 dfs = pd.read_csv(outname_report)
 

@@ -48,7 +48,7 @@ def sendNotification(OUT_ID,outdir,httppath):
       notiDict['product']['files'][i]['size'] = os.path.getsize(outdir+"/"+OUT_ID+"_"+image+".tif")
       checksum = subprocess.run(["sha512sum "+outdir+"/"+OUT_ID+"_"+image+".tif"],capture_output=True,shell=True).stdout.decode().split()[0]
       notiDict['product']['files'][i]['checksum'] = checksum
-      notiDict['product']['files'][i]['checksumType'] = "sha512"
+      notiDict['product']['files'][i]['checksumType'] = "SHA512"
       i+=1
     notiDict['product']['files'][i] = {}
     notiDict['product']['files'][i]['type'] = "metadata"
@@ -57,7 +57,7 @@ def sendNotification(OUT_ID,outdir,httppath):
     notiDict['product']['files'][i]['size'] = os.path.getsize(outdir+"/"+OUT_ID+".cmr.json")
     checksum = subprocess.run(["sha512sum "+outdir+"/"+OUT_ID+".cmr.json"],capture_output=True,shell=True).stdout.decode().split()[0]
     notiDict['product']['files'][i]['checksum'] = checksum
-    notiDict['product']['files'][i]['checksumType'] = "sha512"
+    notiDict['product']['files'][i]['checksumType'] = "SHA512"
     #if os.path.exists(OUT_ID+"_VEG-DIST-STATUS.png"):
     i+=1
     notiDict['product']['files'][i] = {}
@@ -67,7 +67,7 @@ def sendNotification(OUT_ID,outdir,httppath):
     notiDict['product']['files'][i]['size'] = os.path.getsize(outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.png")
     checksum = subprocess.run(["sha512sum "+outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.png"],capture_output=True,shell=True).stdout.decode().split()[0]
     notiDict['product']['files'][i]['checksum'] = checksum
-    notiDict['product']['files'][i]['checksumType'] = "sha512"
+    notiDict['product']['files'][i]['checksumType'] = "SHA512"
 
     writeJSON(notiDict, outdir+"/"+OUT_ID+".notification.json")
 
@@ -77,6 +77,7 @@ def sendNotification(OUT_ID,outdir,httppath):
         rpt.write(notiDict['collection']+","+notiDict['product']['dataVersion']+","+notiDict['product']['name']+","+notiDict['product']['files'][j]['name']+","+str(notiDict['product']['files'][j]['size'])+","+notiDict['submissionTime']+","+notiDict['product']['files'][j]['checksum']+"\n")
     
     response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+OUT_ID+".notification.json"],capture_output=True,shell=True)
+    #response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDAAC-OPERA-UAT --message file://"+outdir+"/"+OUT_ID+".notification.json"],capture_output=True,shell=True)
     #print(OUT_ID, response.stdout.decode().strip().replace(" ", "").replace("\n", ""))
     if(response.stderr.decode().strip() == ""):
       return("ok")

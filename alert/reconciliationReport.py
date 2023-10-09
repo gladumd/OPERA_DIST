@@ -18,7 +18,6 @@ def send():
       noti.write("{\"report\": {\"uri\": \"https://glad.umd.edu/projects/opera/ingestReports/sentToLP_"+reportDate+".rpt\"}}\n")
 
     response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --region 'us-west-2' --topic-arn arn:aws:sns:us-west-2:643705676985:lp-prod-reconciliation-notification --message file://" +reconciliationFile],capture_output=True,shell=True)
-
     if response.stderr.decode().strip() != "":
       with open("errorLOG.txt",'a') as ERR:
         now = datetime.datetime.now()
@@ -98,6 +97,9 @@ def resend(errors):
   #  with open(reportDate+"_failed")
 
 if __name__=='__main__':
+  #reportDate = "20230301"
+  if len(sys.argv) == 3:
+    reportDate = sys.argv[2]
   if sys.argv[1] == "SEND":
     send()
   elif sys.argv[1] == "RECEIVE":

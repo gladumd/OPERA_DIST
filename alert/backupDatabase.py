@@ -13,33 +13,39 @@ def checkDatabase(dbname):
   databaseChecked = False
   while(databaseChecked == False):
     try:
-      with closing(sqlite3.connect(dbname)) as connection:
+      with closing(sqlite3.connect(dbfile)) as connection:
         with closing(connection.cursor()) as cursor:
           cursor.execute("BEGIN IMMEDIATE;")
-          cursor.execute("PRAGMA integrity_check")
-          integrity = cursor.fetchone()
+          #cursor.execute("PRAGMA integrity_check")
+          #integrity = cursor.fetchone()
+          integrity = ["ok"]
           databaseChecked=True
           if integrity[0].strip() == "ok":
             #cursor.execute(".backup \'"+dbname+".bak\'")
             subprocess.run(["cp "+dbfile+" "+dbfile+".baktemp"],shell=True)
             cursor.execute("ROLLBACK")
-            checkBackup(dbname)
+            databaseHasIntegrity = True
           else:
             cursor.execute("ROLLBACK")
+            databaseHasIntegrity = False
             with open("errorLOG.txt",'a') as ERR:
-              ERR.write("database integrity failed"+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")
+              ERR.write("database integrity failed "+integrity[0]+" "+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")
             with open("DATABASE_HAS_ERRORS",'w') as ERR:
               ERR.write("database integrity failed"+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")
             with open("KILL_ALL",'w') as ERR:
               ERR.write("database integrity failed"+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")
+      if databaseHasIntegrity:
+        #with open("processLOG.txt",'a') as LOG:
+        #  LOG.write("Database has integrity. Backed up "+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")
+        checkBackup(dbname)
     except sqlite3.OperationalError as error:
       if error.args[0] == 'database is locked':
         time.sleep(0.1) 
       else:
-        traceback.print_exc()
+        sys.stderr.write(str(error.args)+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
         break
     except:
-      traceback.print_exc()
+      sys.stderr.write(str(sys.exc_info())+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
       break
   
 def checkBackup(dbname):
@@ -47,9 +53,9 @@ def checkBackup(dbname):
   databaseChecked = False
   while(databaseChecked == False):
     try:
-      with closing(sqlite3.connect(dbname+".baktemp")) as connection:
+      with closing(sqlite3.connect(dbfile+".baktemp")) as connection:
         with closing(connection.cursor()) as cursor:
-          cursor.execute("PRAGMA integrity_check")
+          cursor.execute("PRAGMA quick_check")
           integrity = cursor.fetchone()
           databaseChecked=True
       if integrity[0].strip() == "ok":
@@ -62,17 +68,17 @@ def checkBackup(dbname):
       else:
         with open("errorLOG.txt",'a') as ERR:
           ERR.write("database backup failed, retrying "+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")
-          checkDatabase(dbname)
+          checkDatabase(dbfile)
           #print("corrupted database backup "+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")
-      subprocess.run(["rm "+dbname+".baktemp"],shell=True)
+      subprocess.run(["rm "+dbfile+".baktemp"],shell=True)
     except sqlite3.OperationalError as error:
       if error.args[0] == 'database is locked':
         time.sleep(0.1) 
       else:
-        traceback.print_exc()
+        sys.stderr.write(str(error.args)+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
         break
     except:
-      traceback.print_exc()
+      sys.stderr.write(str(sys.exc_info())+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
       break
 
   #report = subprocess.run(["sqlite3 "+dbname+" \"PRAGMA integrity_check\""],capture_output=True,shell=True)

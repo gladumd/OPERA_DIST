@@ -37,7 +37,7 @@ def runGranule(server,granule):
   
   if rewrite == True:
     response = subprocess.run(["rm "+outdir+"/"+DIST_ID+"_VEG-IND.tif"],capture_output=True,shell=True)
-  if not os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif"):
+  if not os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") or not os.path.exists(outdir+"/"+DIST_ID+"_LAND-MASK.tif"):
     response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./02A_VF_QA_COG "+granule+" "+DIST_ID+" "+outdir+"\' &>>errorLOG.txt"],capture_output=True,shell=True)
     Errors = Errors + str(response.stderr.decode()).split('\n')[-1]
 
@@ -187,7 +187,7 @@ if __name__=='__main__':
 
   processLOG(["starting \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",now])
 
-  serverlist = [(17,65),(15,10),(16,10),(19,10),(20,10)]#[(18,40),(14,40),(19,20)]#[(17,60),(15,15),(16,20)]
+  serverlist = [(17,55),(14,15),(15,15),(16,20),(19,10),(20,10),(21,15),(23,20)]#[(18,40),(14,40),(19,20)]#[(17,60),(15,15),(16,20)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

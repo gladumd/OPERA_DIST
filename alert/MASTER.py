@@ -84,11 +84,12 @@ if __name__=='__main__':
       with open("MASTER_RUNNING",'w') as OUT:
         OUT.write("started: "+str(datetime.datetime.now()))
     if sys.argv[1] == "cron":
-      startdate = (datetime.datetime.utcnow() + datetime.timedelta(days=-6)).strftime("%Y%jT000000")
+      startdate = (datetime.datetime.utcnow() + datetime.timedelta(days=-10)).strftime("%Y%jT000000")
       enddate = datetime.datetime.utcnow().strftime("%Y%jT999999")
       processLOG(["MASTER.py started for ",startdate,enddate, " at",datetime.datetime.now()])
-      getGran.granuleList(2,"02_granules.txt",startdate,enddate,tilefile)
-      subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
+      selCount = getGran.granuleList(2,"02_granules.txt",startdate,enddate,tilefile)
+      if selCount > 0:
+        subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
       selCount = getGran.granuleList(3,"02_granules.txt",startdate,enddate,tilefile)
       if selCount > 0:
         subprocess.run(["python 02_granule_manager.py 02_granules.txt ALL 1>>processLOG.txt 2>>errorLOG.txt"], shell=True)
@@ -100,7 +101,7 @@ if __name__=='__main__':
         #update 104 to 102
         if selCount > 0:
           processLOG(["setting",selCount,"granules to re download",datetime.datetime.now()])
-          #resetGranules(104,102,startdate, enddate)
+          resetGranules(104,102,startdate, enddate)
       getGran.granuleList(4,"03_granules.txt",startdate,enddate,tilefile)
       subprocess.run(["python 03_DIST_UPD.py 03_granules.txt UPDATE "+sendToDAAC+" 1>>processLOG.txt 2>>errorLOG.txt"],shell=True)
       selCount = getGran.granuleList(105,"03_granules.txt",startdate,enddate,tilefile)

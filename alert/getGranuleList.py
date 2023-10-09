@@ -102,7 +102,7 @@ if __name__=='__main__':
     enddate = sys.argv[4]+"T999999"
     tilefile = sys.argv[5]
   else:
-    print("bad parameters. Enter: statusFlag outfilename tilelist(optional) startDate(YYYYJJJ) endDate(YYYYJJJ)")
+    print("bad parameters. Enter: statusFlag outfilename startDate(YYYYJJJ) endDate(YYYYJJJ) tilelist(optional)")
     sys.exit(1)
   
   granuleList(statusFlag,outfilename,startdate,enddate,tilefile)
