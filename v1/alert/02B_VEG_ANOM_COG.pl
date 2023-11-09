@@ -115,8 +115,22 @@ INGDAL->GetGeoTransform(GeoTransform);
 uint8_t histVF[Nsensordates][ysize][xsize];
 uint8_t currVF[ysize][xsize];
 uint8_t temp[ysize][xsize];
+uint8_t histmin[ysize][xsize];
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, currVF, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
 ";
+if(-e "/gpfs/glad3/HLSDIST/VFmetrics/v1_2020_2022/$tilepathstring/$tile\_annualmin.tif"){
+  print OUT"
+  filename=\"/gpfs/glad3/HLSDIST/VFmetrics/v1_2020_2022/$tilepathstring/$tile\_annualmin.tif\";
+  INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); //if(INGDAL==NULL){throw \"Not Found\";} 
+  INBAND = INGDAL->GetRasterBand(1);//if(INBAND==NULL){throw \"Corrupted\";} 
+  CPLErr inresult = INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, histmin, xsize, ysize, GDT_Byte, 0, 0); //if(inresult != CE_None){throw \"bad band\";}
+  GDALClose(INGDAL);
+  ";
+}else{
+print OUT"
+cout<<\"no /gpfs/glad3/HLSDIST/VFmetrics/v1_2020_2022/$tilepathstring/$tile\_annualmin.tif\"<<endl;
+memset(histmin, 255, sizeof(histmin[0][0]) * ysize * xsize);";
+}
 
 for($i=0;$i<$Nsensordates;$i++){
 ($im1,$im2)=split(',',$selectedfiles[$i]);
@@ -124,6 +138,7 @@ $year = substr($im1,11,4);
 print OUT"
 try{
   filename=\"$VFsource/$year/$tilepathstring/$im1/$im1\_VEG-IND.tif\";
+  cout<<filename<<endl;
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); if(INGDAL==NULL){throw \"Not Found\";} 
   INBAND = INGDAL->GetRasterBand(1);if(INBAND==NULL){throw \"Corrupted\";} 
   CPLErr inresult = INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, histVF[$i], xsize, ysize, GDT_Byte, 0, 0); if(inresult != CE_None){throw \"bad band\";}
@@ -203,11 +218,24 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
         if(anomaly[y][x]>=50){countBigAnomaly++;}
       }else{anomaly[y][x] = 0;}
       countAreaCompared++;
-    }else if(currVF[y][x]>90){
+    }else if(histmin[y][x]>85 and histmin[y][x]!=255){
+      minbound = histmin[y][x];
+
+      if(count>0){
+        std::sort(vfarray,vfarray+Nsensordates);
+        min=vfarray[0];
+        if(min<histmin[y][x]){minbound=min;}
+      }
+      
+      if((minbound - currVF[y][x])>0){
+        anomaly[y][x] = minbound - currVF[y][x];
+        countAnomaly++;
+        if(anomaly[y][x]>=50){countBigAnomaly++;}
+      }else{anomaly[y][x] = 0;}
+    }else if(currVF[y][x]>90){//set anomaly to zero if currVF is >90 and no baseline
       anomaly[y][x] = 0;
     }else{
-      if(currVF[y][x]>90){anomaly[y][x]=0;}//set anomaly to zero if currVF is >90 and no baseline
-      else{anomaly[y][x]=255;}
+      anomaly[y][x]=255;
     }
   }else{
     anomaly[y][x]=255;

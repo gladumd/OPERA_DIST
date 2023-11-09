@@ -11,7 +11,7 @@ bands['S30'] = ['B04','B8A','B11','B12','Fmask']
 bands['L30'] = ['B04','B05','B06','B07','Fmask']
 
 
-def selectBaselineFiles(tile, doy, curryear, window=15, Nyears=2):
+def selectBaselineFiles(tile, doy, curryear, window=15, Nyears=3):
   doyStr = str(doy).rjust(3,'0')
   currday = datetime.datetime.strptime(str(curryear)+str(int(doy)).rjust(3,'0'),"%Y%j")
 

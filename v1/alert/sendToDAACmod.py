@@ -10,7 +10,7 @@ import parameters
 currdir = os.getcwd()
 collectionName = parameters.collectionName #"OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0"
 collectionVersion = parameters.collectionVersion#"0"
-imagelist = ["VEG-DIST-STATUS","VEG-DIST-STATUS_browse","VEG-IND","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","LAND-MASK"]   
+imagelist = ["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","DATA-MASK"]   
 
 def writeJSON(data_dict,outJSONname):
   json_data = json.dumps(data_dict,indent=2)
@@ -30,8 +30,9 @@ def sendNotification(OUT_ID,outdir,httppath):
     notiDict['product']['name'] = OUT_ID
     notiDict['product']['dataVersion'] = collectionVersion
     
-    makeBrowse(OUT_ID,outdir)
-   
+    #makeBrowse(OUT_ID,outdir)
+    response = subprocess.run(["ssh gladapp17 'gdal_translate -of GTiff -outsize 1024 0 -a_nodata 255 " + outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.tif "+ outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.png'"],capture_output=True,shell=True)
+
     notiDict['product']['files'] = [""]*(len(imagelist)+2)
 
     #if os.path.exists(OUT_ID+"_VEG-DIST-STATUS.png"):
@@ -72,18 +73,18 @@ def sendNotification(OUT_ID,outdir,httppath):
 
     writeJSON(notiDict, outdir+"/"+OUT_ID+".notification.json")
 
-    today = datetime.datetime.utcnow().strftime("%Y%m%d")
-    with open("/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/sentToLP_"+today+".rpt", 'a') as rpt:
-      for j in range(0,i+1):
-        rpt.write(notiDict['collection']+","+notiDict['product']['dataVersion']+","+notiDict['product']['name']+","+notiDict['product']['files'][j]['name']+","+str(notiDict['product']['files'][j]['size'])+","+notiDict['submissionTime']+","+notiDict['product']['files'][j]['checksum']+"\n")
-    
-    response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+OUT_ID+".notification.json"],capture_output=True,shell=True)
-    #print(OUT_ID, response.stdout.decode().strip().replace(" ", "").replace("\n", ""))
-    if(response.stderr.decode().strip() == ""):
-      return("ok")
-    else:
-      #print(response.stderr.decode().strip())
-      return("fail")
+    #today = datetime.datetime.utcnow().strftime("%Y%m%d")
+    #with open("/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/sentToLP_"+today+".rpt", 'a') as rpt:
+    #  for j in range(0,i+1):
+    #    rpt.write(notiDict['collection']+","+notiDict['product']['dataVersion']+","+notiDict['product']['name']+","+notiDict['product']['files'][j]['name']+","+str(notiDict['product']['files'][j]['size'])+","+notiDict['submissionTime']+","+notiDict['product']['files'][j]['checksum']+"\n")
+    #
+    #response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+OUT_ID+".notification.json"],capture_output=True,shell=True)
+    ##print(OUT_ID, response.stdout.decode().strip().replace(" ", "").replace("\n", ""))
+    #if(response.stderr.decode().strip() == ""):
+    #  return("ok")
+    #else:
+    #  #print(response.stderr.decode().strip())
+    #  return("fail")
 
   except:
     with open("errorLOG.txt", 'a') as ERR:

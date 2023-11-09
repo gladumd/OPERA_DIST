@@ -93,14 +93,21 @@ double GeoTransform[6];
 INGDAL->GetGeoTransform(GeoTransform);
 
 unsigned short hist[Nsensordates][Nbands][ysize][xsize];
-unsigned short qa[Nsensordates][ysize][xsize];
-unsigned short fmask[ysize][xsize];
+uint8_t qa[Nsensordates][ysize][xsize];
+uint8_t fmask[ysize][xsize];
+uint8_t coastmask[ysize][xsize];
 unsigned short curr[Nbands][ysize][xsize];
 unsigned short temp[ysize][xsize];
 //uint8_t land[ysize][xsize];
 
 INBAND = INGDAL->GetRasterBand(1);
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, curr[0], xsize, ysize, GDT_UInt16, 0, 0); 
+GDALClose(INGDAL);
+
+filename=\"/gpfs/glad3/HLSDIST/OceanMask/$zone/$tile\_ocean.tif\";
+INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); 
+INBAND = INGDAL->GetRasterBand(1);
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, coastmask, xsize, ysize, GDT_Byte, 0, 0); 
 GDALClose(INGDAL);
 ";
 $b = 1;
@@ -123,7 +130,7 @@ print OUT"
 filename=\"$HLSsource/$sensor/$year/$tilepathstring/$im1/$im1.Fmask.tif\";
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); 
 INBAND = INGDAL->GetRasterBand(1);
-INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, fmask, xsize, ysize, GDT_UInt16, 0, 0); 
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, fmask, xsize, ysize, GDT_Byte, 0, 0); 
 GDALClose(INGDAL);
 ";
 #if($im2 ne ""){
@@ -158,7 +165,7 @@ GDALClose(INGDAL);
 filename=\"$HLSsource/$tsensor/$tyear/$tilepathstring/$im1/$im1.Fmask.tif\";
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); 
 INBAND = INGDAL->GetRasterBand(1);
-INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, qa[$i], xsize, ysize, GDT_UInt16, 0, 0); 
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, qa[$i], xsize, ysize, GDT_Byte, 0, 0); 
 GDALClose(INGDAL);
 ";
     
@@ -212,7 +219,7 @@ double determinant;
 
 unsigned char cloud,cbuffer,shadow,ice,water,aerosol;
 
-for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
+for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {if(coastmask[y][x]<2){
   qf = fmask[y][x];
   cloud = (qf/2) % 2;
   cbuffer = (qf/4) % 2;
@@ -278,10 +285,11 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
         //cout<<mean<<endl;
         //cout<<endl;
         //}
-      }else{dist[y][x] = -3;}
-    }else{dist[y][x] = -2;}//else{countOUT[y][x] = count;}
+      }else{dist[y][x] = -1;}
+    }else{dist[y][x] = -1;}//else{countOUT[y][x] = count;}
     
   }else{dist[y][x] = -1;}
+}else{dist[y][x] = -1;}
 }}
 
 //export results

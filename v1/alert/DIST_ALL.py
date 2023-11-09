@@ -78,11 +78,12 @@ def runTile(server,Ttile,tempscenes):
       NumPrev = len(tempfiles)
     if NumPrev >0:
       for file in tempfiles:
-        genfile = file[0:-20]+"GEN-DIST-STATUS.tif"
+        genfile = file[0:-20]+"_GEN-DIST-STATUS.tif"
         if os.path.exists(genfile):
           folders = file.split('/')
           gran = folders[-2]
           (tname,prevdatetime,tsensor,tTtile,tDISTversion) = gran.split('_')
+          
           if prevdatetime < firstdatetime:
             (sOPERA,sL3,sDIST,sTtile,ssensingTime,sProdTime,ssatellite,sres,sDISTversion)=folders[-1][0:-20].split('_')
             if sProdTime > '20221103T000000Z':
@@ -156,8 +157,8 @@ def runTile(server,Ttile,tempscenes):
         errveg=""
         with open("previousFile.txt",'a') as prevLog:
           prevLog.write(previousSource+','+DIST_ID+"\n")
-        #response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03A_alertUpdateVEG "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
-        #errveg = response.stderr.decode().strip()
+        response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03A_alertUpdateVEG "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
+        errveg = response.stderr.decode().strip()
         errgen =""
         #if not os.path.exists(outdir+"/"+DIST_ID+"_GEN-DIST-STATUS.tif"):
         response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03B_alertUpdateGEN "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
@@ -197,6 +198,7 @@ def runTile(server,Ttile,tempscenes):
             (response,OUT_ID,ProductionDateTime) = writeMetadata.writeMetadata(DIST_ID,xmlfile,outdir,DISTversion,previousID)
             if response == "ok":
               previousSource = outdir+"/"+OUT_ID
+              previousID = OUT_ID
               statusFlag = 5
               sqliteCommand = "UPDATE fulltable SET processedTime = ?, statusFlag = ?, Errors = '', softwareVersion = ? where HLS_ID = ?"
               if sendToDAAC:
@@ -278,13 +280,13 @@ def main(filelist,tupdateMode,tsendToDAAC):
   updateMode = tupdateMode
   global sendToDAAC 
   sendToDAAC = tsendToDAAC
-  print(sendToDAAC)
+  
   if os.path.exists("KILL_DIST_ALL") or os.path.exists("KILL_ALL"):
     print("KILL file exists. Delete and rerun. 03_DIST_UPD.py"+str(datetime.datetime.now())+"\n")
     sys.exit()
-  elif os.path.exists("DIST_ALL_RUNNING") or os.path.exists("02_granule_manager_RUNNING"):
-    print("Process already running (or died with an error). Delete *_RUNNING to rerun. "+str(datetime.datetime.now())+"\n")
-    sys.exit()
+  #elif os.path.exists("DIST_ALL_RUNNING") or os.path.exists("02_granule_manager_RUNNING"):
+  #  print("Process already running (or died with an error). Delete *_RUNNING to rerun. "+str(datetime.datetime.now())+"\n")
+  #  sys.exit()
   else:
     with open("DIST_ALL_RUNNING",'w') as OUT:
       OUT.write("started: "+str(datetime.datetime.now()))
@@ -315,7 +317,7 @@ def main(filelist,tupdateMode,tsendToDAAC):
   for tile in tiles:
     tileQueue.put(tile)
   
-  serverlist =  [(23,130),(15,35),(19,0),(16,0),(21,0),(17,0)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
+  serverlist =  [(23,80),(21,15),(17,15),("01",40),("02",40),("03",40),("04",40)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

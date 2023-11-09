@@ -181,7 +181,7 @@ def writeMetadata(ID,sourceXML,outdir,version,prevgranule):
     outDict['GranuleUR'] = OUT_ID
     outDict['TemporalExtent'] = sourceDict['Granule']['Temporal']
     outDict['ProviderDates']=[{'Date':ProductionDateTime,'Type':'Insert'}]
-    outDict['CollectionReference'] = {"ShortName": "OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0",'Version':"0"}
+    outDict['CollectionReference'] = {"ShortName": parameters.collectionName,'Version':parameters.collectionVersion}
     outDict['DataGranule'] = {}
     outDict['DataGranule']['DayNightFlag'] = sourceDict['Granule']['DataGranule']['DayNightFlag'].capitalize()
     outDict['DataGranule']['ProductionDateTime'] = ProductionDateTime
@@ -206,7 +206,7 @@ def writeMetadata(ID,sourceXML,outdir,version,prevgranule):
       sourceFiles = ["NA"]
     outDict['AdditionalAttributes'][3]['Values']= open(outdir+"/additional/HLSsourceFiles.txt").read().split()
     outDict['AdditionalAttributes'][4]['Name'] = 'ValidationLevel'
-    outDict['AdditionalAttributes'][4]['Values'] = ["0"]
+    outDict['AdditionalAttributes'][4]['Values'] = ["1"]
 
     outDict['AdditionalAttributes'][5]['Name'] = 'HLSGranuleUR'
     outDict['AdditionalAttributes'][5]['Values'] = [sourceDict['Granule']['GranuleUR']]

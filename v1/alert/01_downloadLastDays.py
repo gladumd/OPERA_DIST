@@ -4,7 +4,7 @@ import datetime
 import os
 
 def processLOG(argv):
-  with open("../processLOG.txt",'a') as LOG:
+  with open("processLOG.txt",'a') as LOG:
     for arg in argv:
       LOG.write(str(arg)+" ")
     LOG.write('\n')

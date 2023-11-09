@@ -132,7 +132,7 @@ def mosaiczone(zone,layer):
     else:
       response = subprocess.run(["sed \'s/VEG-DIST-STATUS/"+layer+"/\' "+outdir+"/inputfilelist"+zone+"_last.txt > "+outdir+"/inputfilelist"+zone+".txt"],capture_output=True,shell=True)
     response = subprocess.run(["gdalbuildvrt -input_file_list "+outdir+"/inputfilelist"+zone+".txt "+outdir+"/"+layer+"_"+zone+".vrt"],capture_output=True,shell=True)
-    response = subprocess.run(["gdal_translate -co COMPRESS=LZW "+outdir+"/"+layer+"_"+zone+".vrt "+outdir+"/"+layer+"_"+zone+".tif"],capture_output=True,shell=True)
+    response = subprocess.run(["gdal_translate -co BIG-TIFF=IF_SAFER -co COMPRESS=LZW "+outdir+"/"+layer+"_"+zone+".vrt "+outdir+"/"+layer+"_"+zone+".tif"],capture_output=True,shell=True)
     #os.remove(outdir+"/inputfilelist"+zone+".txt")
     os.remove(outdir+"/"+layer+"_"+zone+".vrt")
     

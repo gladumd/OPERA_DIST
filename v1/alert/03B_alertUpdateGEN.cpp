@@ -25,6 +25,7 @@ string DIST_ID = argv[2];
 int currDate = atoi (argv[3]);
 string outpath = argv[4];
 int zone = atoi (argv[5]);
+string prevID;
 
 //parameters
 int lowthresh = 20;
@@ -61,6 +62,7 @@ short lastObs[ysize][xsize];
 short currAnomConf,lastAnomDate;
 
 if(prevsource == "first"){
+  prevID = prevsource;
   memset(status, 255, sizeof(status[0][0]) * ysize * xsize);
   memset(max, -1, sizeof(max[0][0]) * ysize * xsize);
   memset(conf, -1, sizeof(conf[0][0]) * ysize * xsize);
@@ -71,7 +73,7 @@ if(prevsource == "first"){
   memset(lastObs, -1, sizeof(lastObs[0][0]) * ysize * xsize);
  
 }else{
-  
+  prevID = prevsource.substr(prevsource.size() - 74);
   filename = prevsource+"_GEN-DIST-STATUS.tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, status, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
@@ -231,11 +233,12 @@ GDALDataset  *SGDAL;
 SGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); 
 sourceMetadata = SGDAL -> GetMetadata();
 
-//papszMetadata = CSLSetNameValue( papszMetadata, "Update_Date", CSLFetchNameValue(sourceMetadata,("SENSING_TIME")));
-//double percentupdated = (100.0 - stod(CSLFetchNameValue(sourceMetadata,("cloud_coverage")))/100 * stod(CSLFetchNameValue(sourceMetadata,("spatial_coverage"))));
-//char s[6] = {0};
-//snprintf(s, 6, "%lf", percentupdated);
-//papszMetadata = CSLSetNameValue( papszMetadata, "Percent_Updated", s);
+papszMetadata = CSLSetNameValue( papszMetadata, "Update_Date", CSLFetchNameValue(sourceMetadata,("SENSING_TIME")));
+double percentupdated = (100.0 - stod(CSLFetchNameValue(sourceMetadata,("cloud_coverage")))/100 * stod(CSLFetchNameValue(sourceMetadata,("spatial_coverage"))));
+char s[6] = {0};
+snprintf(s, 6, "%lf", percentupdated);
+papszMetadata = CSLSetNameValue( papszMetadata, "Percent_Updated", s);
+papszMetadata = CSLSetNameValue( papszMetadata, "Input_DIST-ALERT_granule", prevID.c_str());
 
 int colorarray[9][4]={
   {18,18,18,255},
@@ -258,8 +261,11 @@ for(int c = 0;c<9;c++){
 
 filename = outpath + "/"+DIST_ID+"_GEN-DIST-STATUSTEMP.tif";
 currMetadata = CSLDuplicate(papszMetadata);
-currMetadata = CSLSetNameValue( currMetadata, "flag_values", "0,1,2,3,4,255");
-currMetadata = CSLSetNameValue( currMetadata, "flag_meanings", "no_disturbance,provisional_low,confirmed_low,provisional_high,confirmed_high,no_data");
+currMetadata = CSLSetNameValue( currMetadata, "flag_values", "0,1,2,3,4,5,6,7,8,255");
+currMetadata = CSLSetNameValue( currMetadata, "flag_meanings", "no_disturbance,firstdetection_low,provisional_low,confirmed_low,firstdetection_high,provisional_>=high,confirmed_>=high,confirmed_low_finished,confirmed_high_finished,no_data");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "8");
+currMetadata = CSLSetNameValue( currMetadata, "Units", "unitless");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Byte, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetDescription("Generic_disturbance_status");

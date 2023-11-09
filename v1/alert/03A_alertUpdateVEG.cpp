@@ -20,12 +20,13 @@ int main(int argc, char* argv[])
 if (argc != 6){cout << "wrong argument" <<endl; exit (1);}
 //cout<<argv[1]<<','<<argv[2]<<','<<argv[3]<<','<<argv[4]<<','<<argv[5]<<','<<argv[6]<<','<<endl;
 string prevsource = argv[1];
-
 string DIST_ID = argv[2];
 int currDate = atoi (argv[3]);
 string outpath = argv[4];
 int zone = atoi (argv[5]);
 string version = "";//_p33_t10";
+
+string prevID;
 //parameters
 int lowthresh = 10;
 int highthresh = 50;
@@ -54,7 +55,7 @@ filename = outpath+"/"+DIST_ID+"_VEG-IND.tif";
 uint8_t currVF[ysize][xsize];
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, currVF, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
-cout<<"57"<<endl;
+
 //filename = outpath+"/"+DIST_ID+"_LAND-MASK.tif";
 //uint8_t land[ysize][xsize];
 //INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
@@ -70,8 +71,9 @@ uint8_t percent[ysize][xsize];
 short dur[ysize][xsize];
 short lastObs[ysize][xsize];
 uint8_t histVF[ysize][xsize];
-cout<<"73"<<endl;
+
 if(prevsource == "first"){
+  prevID = prevsource;
   memset(status, 255, sizeof(status[0][0]) * ysize * xsize);
   memset(max, 255, sizeof(max[0][0]) * ysize * xsize);
   memset(conf, -1, sizeof(conf[0][0]) * ysize * xsize);
@@ -85,7 +87,7 @@ if(prevsource == "first"){
   memset(histVF, 255, sizeof(histVF[0][0]) * ysize * xsize);
  
 }else{
-  
+  prevID = prevsource.substr(prevsource.size() - 74);
   filename = prevsource+"_VEG-DIST-STATUS"+version+".tif";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, status, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
@@ -130,11 +132,11 @@ if(prevsource == "first"){
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
   INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, histVF, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
 }
-cout<<"133"<<endl;
+
 double mean, prevmean, tempconf;
 int prevcount, prevnocount, nocount;
 enum Status {NODIST=0,FIRSTLO=1, PROVLO=2,CONFLO=3,FIRSTHI=4,PROVHI=5,CONFHI=6,CONFLOFIN=7,CONFHIFIN=8,NODATA=255};
-cout<<"137"<<endl;
+
 for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
   if(currAnom[y][x]<=100){//currAnom[y][x]<=100){
     //lastObs[y][x] = currDate;
@@ -207,7 +209,7 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
     nocount = (int)(lastObs[y][x]>lastAnomDate) + (int)(currAnom[y][x]<lowthresh);
     
     if(status[y][x]<=6 or status[y][x]==NODATA){
-      if((nocount==2 or ((currDate-lastAnomDate)>=nodaylimit and lastAnomDate >0)) or (dur[y][x]==1 and currAnom[y][x]<lowthresh)){
+      if((nocount==2 or ((currDate-lastAnomDate)>=nodaylimit and lastAnomDate >0)) or (count[y][x]==1 and currAnom[y][x]<lowthresh)){
         if(status[y][x] == CONFLO){
           status[y][x] = CONFLOFIN;
         }else if(status[y][x] == CONFHI){
@@ -236,7 +238,7 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
   }
   
 }}
-cout<<"looped"<<endl;
+
 //export results
 GDALDriver *OUTDRIVER;
 GDALDataset *OUTGDAL;
@@ -262,11 +264,12 @@ GDALDataset  *SGDAL;
 SGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); 
 sourceMetadata = SGDAL -> GetMetadata();
 
-//papszMetadata = CSLSetNameValue( papszMetadata, "Update_Date", CSLFetchNameValue(sourceMetadata,("SENSING_TIME")));
-//double percentupdated = (100.0 - stod(CSLFetchNameValue(sourceMetadata,("cloud_coverage")))/100 * stod(CSLFetchNameValue(sourceMetadata,("spatial_coverage"))));
-//char s[6] = {0};
-//snprintf(s, 6, "%lf", percentupdated);
-//papszMetadata = CSLSetNameValue( papszMetadata, "Percent_Updated", s);
+papszMetadata = CSLSetNameValue( papszMetadata, "Update_Date", CSLFetchNameValue(sourceMetadata,("SENSING_TIME")));
+double percentupdated = (100.0 - stod(CSLFetchNameValue(sourceMetadata,("cloud_coverage")))/100 * stod(CSLFetchNameValue(sourceMetadata,("spatial_coverage"))));
+char s[6] = {0};
+snprintf(s, 6, "%lf", percentupdated);
+papszMetadata = CSLSetNameValue( papszMetadata, "Percent_Updated", s);
+papszMetadata = CSLSetNameValue( papszMetadata, "Input_DIST-ALERT_granule", prevID.c_str());
 
 
 int colorarray[9][4]={
@@ -292,6 +295,8 @@ filename = outpath + "/"+DIST_ID+"_VEG-DIST-STATUSTEMP.tif";
 currMetadata = CSLDuplicate(papszMetadata);
 currMetadata = CSLSetNameValue( currMetadata, "flag_values", "0,1,2,3,4,5,6,7,8,255");
 currMetadata = CSLSetNameValue( currMetadata, "flag_meanings", "no_disturbance,firstdetection_<50%,provisional_<50%,confirmed_<50%,firstdetection_>=50%,provisional_>=50%,confirmed_>=50%,confirmed_<50%_finished,confirmed_>=50%_finished,no_data");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "8");
 currMetadata = CSLSetNameValue( currMetadata, "Units", "unitless");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Byte, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
@@ -390,8 +395,9 @@ GDALClose((GDALDatasetH)OUTGDAL);
 filename = outpath + "/"+DIST_ID+"_VEG-DIST-PERCTEMP.tif";
 currMetadata = CSLDuplicate(papszMetadata);
 currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
-currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "100");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "200");
 currMetadata = CSLSetNameValue( currMetadata, "Units", "percent");
+
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Byte, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetNoDataValue(255);
@@ -431,8 +437,10 @@ GDALClose((GDALDatasetH)OUTGDAL);
 
 filename = outpath + "/"+DIST_ID+"_VEG-HISTTEMP.tif";
 currMetadata = CSLDuplicate(papszMetadata);
+currMetadata = CSLSetNameValue( currMetadata, "flag_values", "200");
+currMetadata = CSLSetNameValue( currMetadata, "flag_meanings", "no_disturbance");
 currMetadata = CSLSetNameValue( currMetadata, "Valid_min", "0");
-currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "100");
+currMetadata = CSLSetNameValue( currMetadata, "Valid_max", "200");
 currMetadata = CSLSetNameValue( currMetadata, "Units", "percent");
 OUTGDAL = OUTDRIVER->Create(filename.c_str(), xsize, ysize, 1, GDT_Byte, papszOptions );
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);

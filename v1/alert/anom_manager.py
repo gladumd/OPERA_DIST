@@ -39,23 +39,18 @@ def runGranule(server,granule,mode="ALL"):
   if os.path.exists(HLSsource+"/"+sensor+"/"+year+"/"+tilepathstring+"/"+granule+"/"+granule+".cmr.xml"):
     subprocess.run(["cp "+HLSsource+"/"+sensor+"/"+year+"/"+tilepathstring+"/"+granule+"/"+granule+".cmr.xml "+outdir+"/additional/"+granule+".cmr.xml 2>>errorLOG.txt"],capture_output=True,shell=True)
   
-  #if rewrite == True:
-  #  response = subprocess.run(["rm "+outdir+"/"+DIST_ID+"_VEG-IND.tif"],capture_output=True,shell=True)
-  #response = subprocess.run(["cp /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_LAND-MASK.tif "+outdir+"/"+DIST_ID+"_LAND-MASK.tif"],capture_output=True,shell=True)
-  if not os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif"):
-    #DIST_IDv0=DIST_ID[0:-1]+'0'
-    #subprocess.run("mv /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_IDv0+ "_VEG-IND.tif"+ " /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+ "_VEG-IND.tif",capture_output=False,shell=True)
-    #subprocess.run("mv /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_IDv0+ "_LAND-MASK.tif"+ " /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+ "_LAND-MASK.tif",capture_output=False,shell=True)
-    #if os.path.exists("/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-IND.tif"):
-    #  response = subprocess.run(["cp /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-IND.tif "+outdir+"/"+DIST_ID+"_VEG-IND.tif"],capture_output=True,shell=True)
-    #  response = subprocess.run(["cp /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_LAND-MASK.tif "+outdir+"/"+DIST_ID+"_LAND-MASK.tif"],capture_output=True,shell=True)
-    #else:
-    #  response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./02A_VF_QA_COG "+granule+" "+DIST_ID+" "+outdir+"\' &>>errorLOG.txt"],capture_output=True,shell=True)
-    #Errors = Errors + str(response.stderr.decode()).split('\n')[-1]
-    Errors = outdir+"/"+DIST_ID+"_VEG-IND.tif not exist"
+  if rewrite == True:
+    #response = subprocess.run(["rm "+outdir+"/"+DIST_ID+"_GEN-ANOM.tif"],capture_output=True,shell=True)
+    #response = subprocess.run(["rm "+outdir+"/"+DIST_ID+"_VEG-IND.tif"],capture_output=True,shell=True)
+    response = subprocess.run(["rm "+outdir+"/"+DIST_ID+"_VEG-ANOM.tif"],capture_output=True,shell=True)
+  if not os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") or not os.path.exists(outdir+"/"+DIST_ID+"_DATA-MASK.tif"):
+    response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; module load python/3.7/anaconda; source /gpsf/glad3/HLSDIST/SystemTesting/dist-py-env2/bin/activate; python 02B.Veg_Ind.py "+granule+"\' &>>errorLOG.txt"],capture_output=True,shell=True)
+    Errors = Errors + str(response.stderr.decode()).split('\n')[-1]
+    if not os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif"):
+      Errors = Errors +": "+ outdir+"/"+DIST_ID+"_VEG-IND.tif not exist"
 
   if mode == "VEG_IND":
-    if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif"):
+    if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") and os.path.exists(outdir+"/"+DIST_ID+"_DATA-MASK.tif"):
       sqliteCommand = "UPDATE fulltable SET statusFlag = 3 where HLS_ID=?;"
       updateSqlite(DIST_ID,sqliteCommand,(HLS_ID,))
     else:
@@ -66,25 +61,19 @@ def runGranule(server,granule,mode="ALL"):
       updateSqlite(DIST_ID,sqliteCommand,(Errors,HLS_ID,))
   
   elif mode == "ALL" or mode == "SMOKE":
-    if rewrite == True:
-      try:
-        os.remove(outdir+"/"+DIST_ID+"_VEG-ANOM.tif")
-        #os.remove(+outdir+"/"+DIST_ID+"_GEN_ANOM.tif")
-      except:
-        removed = True
     #create VEG_ANOM
-    if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") and not os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif"):#and !-e "$outdir/VEG_ANOM.tif"){
+    if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") and not os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif"):
       response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02B_VEG_ANOM_COG.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
-      #Errors = Errors + str(response.stderr.decode())#.split('\n')[-1]
+      Errors = Errors + str(response.stderr.decode())#.split('\n')[-1]
 
     #create GEN_ANOM
     if not os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
+      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM_updateWater.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
       #response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
-      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl updateGENANOM.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
       Errors = Errors + str(response.stderr.decode())#.split('\n')[-1]
  
     #test for success and update database
-    if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") and os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif") and os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
+    if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") and os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif") and os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif") and os.path.exists(outdir+"/"+DIST_ID+"_DATA-MASK.tif"):
       sqliteCommand = "UPDATE fulltable SET statusFlag = 4, softwareVersion = ? where HLS_ID=?;"
       updateSqlite(DIST_ID,sqliteCommand,(softwareVersion,HLS_ID,))
     else:
@@ -173,19 +162,17 @@ if __name__=='__main__':
 
   print('rewrite', rewrite)
 
-  if os.path.exists("KILL_02_granule_manager") or os.path.exists("KILL_ALL"):
+  if os.path.exists("KILL_anom_manager") or os.path.exists("KILL_ALL"):
     print("KILL file exists. Delete and rerun.\n")
     sys.exit()
-  elif os.path.exists("02_granule_manager_RUNNING") or os.path.exists("03_DIST_UPD_RUNNING"):
-    print("Process already running (or died with an error) *_RUNNING exists. Quit 02_granule_manager.py\n")
+  elif os.path.exists("anom_manager_RUNNING") or os.path.exists("DIST_ALL_RUNNING"):
+    print("Process already running (or died with an error) *_RUNNING exists. Quit anom_manager.y\n")
     sys.exit()
   else:
-    with open("02_granule_manager_RUNNING",'a') as OUT:
+    with open("anom_manager_RUNNING",'a') as OUT:
       OUT.write("started: "+str(datetime.datetime.now())+" "+filelist+" "+mode)
 
   now = datetime.datetime.now()
-
-  subprocess.run(["ssh gladapp17 \'cd "+currdir+"; g++ 02A_VF_QA_COG.cpp -o 02A_VF_QA_COG -lgdal -std=gnu++11 -Wno-unused-result\'"],shell=True)
 
   myqueue = multiprocessing.Queue()
   granulelist = []
@@ -198,9 +185,9 @@ if __name__=='__main__':
   
   Nscenes = len(granulelist)
 
-  processLOG(["starting \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",now])
+  processLOG(["starting \"anom_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",now])
 
-  serverlist = [(14,15),(15,40),(17,50),(19,15),(16,40),(22,40),(23,120)]#[(17,60),(15,15),(16,20)]
+  serverlist = [(23,100),(21,15),(14,10),(15,15),(16,20),(19,20)]#[(17,60),(15,15),(16,20)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp
@@ -215,6 +202,6 @@ if __name__=='__main__':
     p.join()
   myqueue.close()
   myqueue.join_thread()
-  os.remove("02_granule_manager_RUNNING")
+  os.remove("anom_manager_RUNNING")
 
-  processLOG(["finished \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",datetime.datetime.now()])
+  processLOG(["finished \"anom_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",datetime.datetime.now()])

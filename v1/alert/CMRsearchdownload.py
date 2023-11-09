@@ -64,6 +64,25 @@ def get_cmr_pages_urls(collections, datetime_range):
   cmr_pages_urls = [f'{req.url}&page_num={x}'.replace('granules?', 'granules.json?') for x in list(range(1,n_pages+1))]
   return cmr_pages_urls
 
+# CMR search to get specifc granules with all extra info
+def get_cmr_pages_urls_granulelist(collections, granlist):
+  CMR_OPS = 'https://cmr.earthdata.nasa.gov/search'
+  provider = 'LPCLOUD'
+  url = f'{CMR_OPS}/{"granules"}'
+  cmr_pages_urls = []
+  for HLS_ID in granlist:
+    req = requests.get(url,
+                       params={
+                           'concept_id': collections,
+                           'granule_ur': HLS_ID,
+                       },
+                       headers={
+                           'Accept': 'application/json',
+                       }
+                      )
+    cmr_pages_urls.append(f'{req.url}'.replace('granules?', 'granules.json?'))
+  return cmr_pages_urls
+
 def get_tasks(session, cmr_pages_urls):
   tasks = []
   for l in cmr_pages_urls:
@@ -83,10 +102,21 @@ async def get_granules_url_dict(cmr_pages_urls):
       for g in res['feed']['entry']:
         urls_dict[g['title']] = []
         for l in g['links']:
-          if 'https' in l['href'] and ('.tif' in l['href'] or '.xml' in l['href'] or '.json' in l['href']): #image files and metadatafiles
+          if 'https' in l['href'] and ('.tif' in l['href'] or '.xml' in l['href'] or '.json' in l['href'] or '.jpg' in l['href']): #image files and metadatafiles
             urls_dict[g['title']].append(l['href'])
     #return([list(granules_lst),urls_dict])
     return(urls_dict)
+
+def searchCMRGranuleList(granlist):
+  try:
+    cmr_pg = get_cmr_pages_urls_granulelist(collections, granlist)
+    url_dict = asyncio.run(get_granules_url_dict(cmr_pg))
+    return url_dict
+  except:
+    traceback.print_exc()
+    with open("../errorLOG.txt", 'a') as log:
+      log.write("CMR error, unable to search "+str(datetime.datetime.now())+"\n")
+    return "CMR error"
 
 #search CMR for last X days. Add new granules to database and return dictionary of urls to download.
 def searchCMR(startdate,enddate):
@@ -218,7 +248,7 @@ def download_granule(links):
   return [HLS_ID,status]
 
 def processLOG(argv):
-  with open("../processLOG.txt",'a') as LOG:
+  with open("processLOG.txt",'a') as LOG:
     for arg in argv:
       LOG.write(str(arg)+" ")
     LOG.write('\n')
