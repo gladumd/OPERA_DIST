@@ -29,7 +29,12 @@ def granuleList(statusFlagList,filename,startYJT=None, endYJT=None,tilefile=None
             selectedGrans.extend([s for t in selectedGransT for s in t])
           databaseChecked = True
       if tilefile != None:
-        selectedGrans = filterByTileList(selectedGrans,tilefile)
+        if mode == "tiles":
+          selectedGrans = filterByTileList(selectedGrans,tilefile)
+        elif mode == "tilesdates":
+          selectedGrans = filterByTileList2(selectedGrans,tilefile)
+        elif mode == "granules":
+          selectedGrans = filterByGranuleList(selectedGrans,tilefile)
       selectedGrans.sort()
       #selectedGrans = sortDates(selectedGrans)
       with open(filename,"w") as filelist:
@@ -79,7 +84,34 @@ def filterByTileList2(granulelist,tilefile):
     tiles= {}
     for ln in lines:
       (tile,date) = ln.split(',')
-      tiles[tile[1:]]=date
+      if tile in tiles.keys():
+        if date < tiles[tile]:
+          tiles[tile]=date
+      else:
+        tiles[tile]=date
+      #print(tile[1:],date)
+
+  for g in granulelist:
+    (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= g.split('.')
+    tile = Ttile[1:]
+    if tile in tiles.keys():
+      if(Sdatetime >= tiles[tile]):
+        granulesout.append(g)
+  return(granulesout)
+
+def filterByGranuleList(granulelist,gfile):
+  granulesout = []
+  with open(gfile, 'r') as glist:
+    lines = glist.read().splitlines()
+    tiles= {}
+    for g in lines:
+      (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= g.split('.')
+      tile = Ttile[1:]
+      if tile in tiles.keys():
+        if Sdatetime < tiles[tile]:
+          tiles[tile]=Sdatetime
+      else:
+        tiles[tile]=Sdatetime
       #print(tile[1:],date)
 
   for g in granulelist:
@@ -104,8 +136,16 @@ if __name__=='__main__':
     startdate = sys.argv[3]+"T000000"
     enddate = sys.argv[4]+"T999999"
     tilefile = sys.argv[5]
+    mode = "tiles"
+  elif len(sys.argv) == 7:
+    statusFlagList = sys.argv[1]
+    outfilename = sys.argv[2]
+    startdate = sys.argv[3]+"T000000"
+    enddate = sys.argv[4]+"T999999"
+    tilefile = sys.argv[5]
+    mode = sys.argv[6]
   else:
-    print("bad parameters. Enter: statusFlag outfilename startDate(YYYYJJJ) endDate(YYYYJJJ) tilelist(optional)")
+    print("bad parameters. Enter: statusFlag outfilename startDate(YYYYJJJ) endDate(YYYYJJJ) tilelist(optional) tiles/tilesdates(optional)")
     sys.exit(1)
   
   granuleList(statusFlagList,outfilename,startdate,enddate,tilefile)

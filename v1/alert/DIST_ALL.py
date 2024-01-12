@@ -317,7 +317,7 @@ def main(filelist,tupdateMode,tsendToDAAC):
   for tile in tiles:
     tileQueue.put(tile)
   
-  serverlist =  [(23,80),(21,15),(17,15),("01",40),("02",40),("03",40),("04",40)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
+  serverlist =  [(23,80),("01",30),("02",30),("03",30),("04",30)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

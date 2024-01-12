@@ -28,7 +28,7 @@ int zone = atoi (argv[5]);
 string prevID;
 
 //parameters
-int lowthresh = 20;
+int lowthresh = 15;
 int highthresh = 50;
 int nodaylimit = 15;
 
@@ -194,11 +194,11 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
           dur[y][x]=0;
         }
       }else if(max[y][x]>=highthresh){
-        if(conf[y][x]>=1600){status[y][x]=CONFHI;}
+        if(conf[y][x]>=400){status[y][x]=CONFHI;}
         else if(dur[y][x]==1){status[y][x]=FIRSTHI;}
         else if(status[y][x]!=CONFHI){status[y][x]=PROVHI;}
       }else if(max[y][x]>=lowthresh){
-        if(conf[y][x]>=1600){status[y][x]=CONFLO;}
+        if(conf[y][x]>=400){status[y][x]=CONFLO;}
         else if(dur[y][x]==1){status[y][x]=FIRSTLO;}
         else if(status[y][x]!=CONFLO){status[y][x]=PROVLO;}
       }else{status[y][x]=NODIST;}

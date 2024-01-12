@@ -306,6 +306,8 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {if(hist[$i][$b][y][x]==0){hist[$
   }
 print OUT"
 } catch (\.\.\.){
+  cerr<<\"$im1 download; $outscene\"<<endl;
+  cerr<<\"$im2 download; $outscene\"<<endl;
   for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {qa[$i][y][x]=255;}}
 }
 ";

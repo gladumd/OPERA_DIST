@@ -116,10 +116,10 @@ def estimateVF(redfile,nirfile,sw1file,sw2file,fmaskfile,fileOceanMask,vfOutFile
         matMask = np.reshape(mask,(hlsncol,hlsnrow))
         if len(indexQALand) ==0:
 
-            outds = tifDriver.Create(vfOutFileVF, hlsncol, hlsnrow, 1, gdal.GDT_Byte,options = creation_Options)
-            #outds = tifDriver.Create(vfOutFileVF[0:-4]+"TEMP.tif", hlsncol, hlsnrow, 1, gdal.GDT_Byte,options = creation_Options)
+            #outds = tifDriver.Create(vfOutFileVF, hlsncol, hlsnrow, 1, gdal.GDT_Byte,options = creation_Options)
+            outds = tifDriver.Create(vfOutFileVF[0:-4]+"TEMP.tif", hlsncol, hlsnrow, 1, gdal.GDT_Byte,options = creation_Options)
             outds.GetRasterBand(1).WriteArray(matvfpred)
-            #outds.BuildOverviews("NEAREST",[2,4,8])
+            outds.BuildOverviews("NEAREST",[2,4,8])
             outds.GetRasterBand(1).SetNoDataValue(255)
             outds.GetRasterBand(1).SetDescription("Vegetation_percent")
             outds.SetGeoTransform(dsred.GetGeoTransform())
@@ -128,23 +128,22 @@ def estimateVF(redfile,nirfile,sw1file,sw2file,fmaskfile,fileOceanMask,vfOutFile
             #write the metadata
             outds.SetMetadata({'cloud_coverage':cloudCover,'HLS_SCENE_ID':sceneName,'SENSING_TIME':sensingTime,'SOURCE_PRODUCT_ID':sourceID,'SOURCE_SATELLITE':sourceSate,'spatial_coverage':spatialCover,'Units':'percent','Valid_max':'100','Valid_min':'0'})
             current_date_and_time = datetime.now()
-            #subprocess.run(["gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q "+vfOutFileVF[0:-4]+"TEMP.tif "+vfOutFileVF+" 2>>errorLOG.txt; rm "+vfOutFileVF[0:-4]+"TEMP.tif"],capture_output=True,shell=True)
 
             #print("Results saved...",current_date_and_time)
             outds = None
+            subprocess.run(["gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q "+vfOutFileVF[0:-4]+"TEMP.tif "+vfOutFileVF+" 2>>errorLOG.txt; rm "+vfOutFileVF[0:-4]+"TEMP.tif"],capture_output=True,shell=True)
 
             if len(indexQAWater)!=0:
                 mask[indexQAWater,:] = 2
             matMask = np.reshape(mask,(hlsncol,hlsnrow))
-            outds = tifDriver.Create(vfOutFileMask, hlsncol, hlsnrow, 1, gdal.GDT_Byte,options = creation_Options)
-            #outds = tifDriver.Create(vfOutFileMask[0:-4]+"TEMP.tif", hlsncol, hlsnrow, 1, gdal.GDT_Byte,options = creation_Options)
+            #outds = tifDriver.Create(vfOutFileMask, hlsncol, hlsnrow, 1, gdal.GDT_Byte,options = creation_Options)
+            outds = tifDriver.Create(vfOutFileMask[0:-4]+"TEMP.tif", hlsncol, hlsnrow, 1, gdal.GDT_Byte,options = creation_Options)
             outds.GetRasterBand(1).WriteArray(matMask)
-            #outds.BuildOverviews("NEAREST",[2,4,8])
+            outds.BuildOverviews("NEAREST",[2,4,8])
             outds.SetGeoTransform(dsred.GetGeoTransform())
             outds.SetProjection(dsred.GetProjectionRef())
             outds.GetRasterBand(1).SetDescription("Data_mask")
             outds.SetMetadata({'Valid_min':'0','Valid_max':'2','Units':'unitless','flag_values':'0,1,2','flag_meanings':'no_data_or_masked,land,water'})
-            #subprocess.run(["gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q "+vfOutFileMask[0:-4]+"TEMP.tif "+vfOutFileMask+" 2>>errorLOG.txt; rm "+vfOutFileMask[0:-4]+"TEMP.tif"],capture_output=True,shell=True)
 
             dsred = None
             dsnir = None
@@ -153,6 +152,7 @@ def estimateVF(redfile,nirfile,sw1file,sw2file,fmaskfile,fileOceanMask,vfOutFile
             dsqa = None
             outds = None
             dsOcean = None
+            subprocess.run(["gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q "+vfOutFileMask[0:-4]+"TEMP.tif "+vfOutFileMask+" 2>>errorLOG.txt; rm "+vfOutFileMask[0:-4]+"TEMP.tif"],capture_output=True,shell=True)
             return True
         else:
             dfhls = np.transpose(np.vstack([red,nir,sw1,sw2]))
@@ -179,17 +179,19 @@ def estimateVF(redfile,nirfile,sw1file,sw2file,fmaskfile,fileOceanMask,vfOutFile
             vfpred = np.round(vfpred)
             matvfpred = np.reshape(vfpred,(hlsncol,hlsnrow))     
             #write the VF-IND 
-            outds = tifDriver.Create(vfOutFileVF, hlsncol, hlsnrow, 1, gdal.GDT_Byte,options = creation_Options)
-            #outds = tifDriver.Create(vfOutFileVF[0:-4]+"TEMP.tif", hlsncol, hlsnrow, 1, gdal.GDT_Byte,options = creation_Options)
+            #outds = tifDriver.Create(vfOutFileVF, hlsncol, hlsnrow, 1, gdal.GDT_Byte,options = creation_Options)
+            outds = tifDriver.Create(vfOutFileVF[0:-4]+"TEMP.tif", hlsncol, hlsnrow, 1, gdal.GDT_Byte,options = creation_Options)
             outds.GetRasterBand(1).WriteArray(matvfpred)
-            #outds.BuildOverviews("NEAREST",[2,4,8])
+            outds.BuildOverviews("NEAREST",[2,4,8])
             outds.GetRasterBand(1).SetNoDataValue(255)
             outds.SetGeoTransform(dsred.GetGeoTransform())
             outds.SetProjection(dsred.GetProjectionRef())
             outds.GetRasterBand(1).SetDescription("Vegetation_percent")
             #write the metadata
             outds.SetMetadata({'cloud_coverage':cloudCover,'HLS_SCENE_ID':sceneName,'SENSING_TIME':sensingTime,'SOURCE_PRODUCT_ID':sourceID,'SOURCE_SATELLITE':sourceSate,'spatial_coverage':spatialCover,'Units':'percent','Valid_max':'100','Valid_min':'0'})
-            #subprocess.run(["gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q "+vfOutFileVF[0:-4]+"TEMP.tif "+vfOutFileVF+" 2>>errorLOG.txt; rm "+vfOutFileVF[0:-4]+"TEMP.tif"],capture_output=True,shell=True)
+            
+            outds = None
+            subprocess.run(["gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q "+vfOutFileVF[0:-4]+"TEMP.tif "+vfOutFileVF+" 2>>errorLOG.txt; rm "+vfOutFileVF[0:-4]+"TEMP.tif"],capture_output=True,shell=True)
 
             #print("Results saved...",current_date_and_time)
             #write the data-mask
@@ -198,15 +200,14 @@ def estimateVF(redfile,nirfile,sw1file,sw2file,fmaskfile,fileOceanMask,vfOutFile
             if len(indexQAWater)!=0:
                 mask[indexQAWater,:] = 2
             matMask = np.reshape(mask,(hlsncol,hlsnrow))
-            outds = tifDriver.Create(vfOutFileMask, hlsncol, hlsnrow, 1, gdal.GDT_Byte,options = creation_Options)
-            #outds = tifDriver.Create(vfOutFileMask[0:-4]+"TEMP.tif", hlsncol, hlsnrow, 1, gdal.GDT_Byte,options = creation_Options)
+            #outds = tifDriver.Create(vfOutFileMask, hlsncol, hlsnrow, 1, gdal.GDT_Byte,options = creation_Options)
+            outds = tifDriver.Create(vfOutFileMask[0:-4]+"TEMP.tif", hlsncol, hlsnrow, 1, gdal.GDT_Byte,options = creation_Options)
             outds.GetRasterBand(1).WriteArray(matMask)
-            #outds.BuildOverviews("NEAREST",[2,4,8])
+            outds.BuildOverviews("NEAREST",[2,4,8])
             outds.SetGeoTransform(dsred.GetGeoTransform())
             outds.SetProjection(dsred.GetProjectionRef())
             outds.GetRasterBand(1).SetDescription("Data_mask")
             outds.SetMetadata({'Valid_min':'0','Valid_max':'2','Units':'unitless','flag_values':'0,1,2','flag_meanings':'no_data_or_masked,land,water'})
-            #subprocess.run(["gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q "+vfOutFileMask[0:-4]+"TEMP.tif "+vfOutFileMask+" 2>>errorLOG.txt; rm "+vfOutFileMask[0:-4]+"TEMP.tif"],capture_output=True,shell=True)
             #print("Mask results saved...",current_date_and_time)
 
             dsred = None
@@ -216,6 +217,7 @@ def estimateVF(redfile,nirfile,sw1file,sw2file,fmaskfile,fileOceanMask,vfOutFile
             dsqa = None
             outds = None
             dsOcean = None
+            subprocess.run(["gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q "+vfOutFileMask[0:-4]+"TEMP.tif "+vfOutFileMask+" 2>>errorLOG.txt; rm "+vfOutFileMask[0:-4]+"TEMP.tif"],capture_output=True,shell=True)
             return True
 
 

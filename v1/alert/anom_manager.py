@@ -40,11 +40,11 @@ def runGranule(server,granule,mode="ALL"):
     subprocess.run(["cp "+HLSsource+"/"+sensor+"/"+year+"/"+tilepathstring+"/"+granule+"/"+granule+".cmr.xml "+outdir+"/additional/"+granule+".cmr.xml 2>>errorLOG.txt"],capture_output=True,shell=True)
   
   if rewrite == True:
-    #response = subprocess.run(["rm "+outdir+"/"+DIST_ID+"_GEN-ANOM.tif"],capture_output=True,shell=True)
-    #response = subprocess.run(["rm "+outdir+"/"+DIST_ID+"_VEG-IND.tif"],capture_output=True,shell=True)
+    response = subprocess.run(["rm "+outdir+"/"+DIST_ID+"_GEN-ANOM.tif"],capture_output=True,shell=True)
+    response = subprocess.run(["rm "+outdir+"/"+DIST_ID+"_VEG-IND.tif"],capture_output=True,shell=True)
     response = subprocess.run(["rm "+outdir+"/"+DIST_ID+"_VEG-ANOM.tif"],capture_output=True,shell=True)
   if not os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") or not os.path.exists(outdir+"/"+DIST_ID+"_DATA-MASK.tif"):
-    response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; module load python/3.7/anaconda; source /gpsf/glad3/HLSDIST/SystemTesting/dist-py-env2/bin/activate; python 02B.Veg_Ind.py "+granule+"\' &>>errorLOG.txt"],capture_output=True,shell=True)
+    response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; module unload gdal; module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/SystemTesting/dist-py-env2/bin/activate; python 02B.Veg_Ind.py "+granule+"\' &>>errorLOG.txt"],capture_output=True,shell=True)
     Errors = Errors + str(response.stderr.decode()).split('\n')[-1]
     if not os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif"):
       Errors = Errors +": "+ outdir+"/"+DIST_ID+"_VEG-IND.tif not exist"
@@ -170,7 +170,7 @@ if __name__=='__main__':
     sys.exit()
   else:
     with open("anom_manager_RUNNING",'a') as OUT:
-      OUT.write("started: "+str(datetime.datetime.now())+" "+filelist+" "+mode)
+      OUT.write("started: "+str(datetime.datetime.now())+" "+filelist+" "+mode+" "+str(rewrite))
 
   now = datetime.datetime.now()
 
@@ -187,7 +187,7 @@ if __name__=='__main__':
 
   processLOG(["starting \"anom_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",now])
 
-  serverlist = [(23,100),(21,15),(14,10),(15,15),(16,20),(19,20)]#[(17,60),(15,15),(16,20)]
+  serverlist = [(23,60),("01",30),("02",30),("03",30),("04",30),("05",30),("06",30)]#[(17,60),(15,15),(16,20)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp
