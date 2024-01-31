@@ -43,6 +43,10 @@ if __name__=='__main__':
         start = start + oneday
       #granuleDict = sd.filterByTileList(download_dict,'../../hls_tiles_dist.txt')
       sd.download_parallel(download_dict,150)
+      granulesToDownload = sd.checkGranuleList(list(download_dict.keys()))
+      if len(granulesToDownload) > 0:
+        granDownloadDist = {granule: download_dict[granule] for granule in granulesToDownload}
+        sd.download_parallel(granDownloadDist,150)
       os.remove("download_RUNNING")
     except:
       os.remove("download_RUNNING")

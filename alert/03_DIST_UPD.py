@@ -159,7 +159,7 @@ def runTile(server,Ttile,tempscenes):
           errorLOG("gladapp"+server+": "+ DIST_ID+" "+Errors +"ERRORs")
         sout = os.popen("ls "+outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID +"*.tif 2>/dev/null | wc -l")
         count = int(sout.read().strip())
-        if not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-DIST-STATUS.tif") or not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-DIST-STATUS.tif") or count < 22:
+        if not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-DIST-STATUS.tif") or not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-DIST-STATUS.tif") or count < 21:
           errorLOG(DIST_ID+"not all time-series layers made")
           statusFlag=105
           sqliteCommand = "UPDATE fulltable SET statusFlag = ?, Errors = 'failed to create time-series layers' where HLS_ID = ?"
@@ -316,7 +316,7 @@ if __name__=='__main__':
   for tile in tiles:
     tileQueue.put(tile)
   
-  serverlist =  [(17,65),(15,10),(16,10),(19,10),(20,10)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
+  serverlist =  [(17,50),(14,15),(15,15),(16,20),(19,10),(20,10),(21,15)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

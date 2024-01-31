@@ -153,5 +153,13 @@ user.profile
 annual/temp/*
 annual/*.txt
 *.db
+report/*.csv
 
-alert/download/__pycache__/CMRsearchdownload.cpython-37.pyc
+**/__pycache__/*
+report/backup
+alert/*pyc
+
+**LOG.txt
+**/temp/*
+**.pyc
+

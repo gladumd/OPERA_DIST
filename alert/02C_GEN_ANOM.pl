@@ -261,8 +261,8 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
         //cout<<mean<<endl;
         //cout<<endl;
         //}
-      }else{dist[y][x] = -3;}
-    }else{countOUT[y][x] = count;}
+      }else{dist[y][x] = -1;}
+    }else{dist[y][x] = -1;countOUT[y][x] = count;}
     
   }else{dist[y][x] = -1;}
 }}
