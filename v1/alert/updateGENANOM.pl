@@ -93,7 +93,7 @@ if($sensor eq "S30"){@bands = ("B04","B8A","B11","B12");}
 elsif($sensor eq "L30"){@bands = ("B04","B05","B06","B07");}
 
 print OUT"
-filename=\"$output/$outscene\_LAND-MASK.tif\";
+filename=\"$output/$outscene\_DATA-MASK.tif\";
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); 
 INBAND = INGDAL->GetRasterBand(1);
 ysize = INBAND->GetYSize();xsize = INBAND->GetXSize();

@@ -20,17 +20,17 @@ if(-e "errorLOG.txt"){
   else{system"mv errorLOG.txt errorLOGold.txt";}
 }
 
-push(@serverlist, "23,80");
-push(@serverlist, "01,40");
-push(@serverlist, "02,40");
-push(@serverlist, "03,40");
-push(@serverlist, "04,40");
-push(@serverlist, "05,40");
+push(@serverlist, "23,60");
+push(@serverlist, "01,35");
+push(@serverlist, "02,35");
+push(@serverlist, "03,35");
+push(@serverlist, "04,35");
+push(@serverlist, "05,35");
 #push(@serverlist, "16,20");
 #push(@serverlist, "18,20");
 #push(@serverlist, "17,30");
 #push(@serverlist, "20,15");
-push(@serverlist, "22,30");
+#push(@serverlist, "22,30");
 
 my %h = ();
 my @list :shared;
@@ -104,6 +104,7 @@ sub runTile{($server,$threadID)=split('_',$sline);
   while ($tile = shift(@tiles)){
     $Nleft = @tiles;
     print"\r$tile $Nleft / $Ntiles left";
-    system"ssh gladapp$server \'cd $currdir; perl annualWorker.pl $tile $startdate $enddate $yearname\'";#annualWorker.pl
+    #system"ssh gladapp$server \'cd $currdir; perl annualWorker.pl $tile $startdate $enddate $yearname\'";#annualWorker.pl
+    system"ssh gladapp$server \'cd $currdir; perl annualWorker_prov.pl $tile $startdate $enddate $yearname\'";#annualWorker.pl
   }
 }

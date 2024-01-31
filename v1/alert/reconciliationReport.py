@@ -8,7 +8,10 @@ import sendToDAACmod
 granfilecount = 22
 reportDate = (datetime.datetime.utcnow() + datetime.timedelta(days=-2)).strftime("%Y%m%d")
 outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"
-httpbase = "https://glad.umd.edu/projects/opera/DIST-ALERT"
+httpbase = "https://glad.umd.edu/projects/opera/DIST-ALERT_v1"
+
+lpuat = "arn:aws:sns:us-west-2:560130786230:lp-uat-reconciliation-notification"
+lpprod = "arn:aws:sns:us-west-2:643705676985:lp-prod-reconciliation-notification"
 
 def send():
   reconciliationFile = "/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/reconciliation.json"
@@ -17,7 +20,7 @@ def send():
     with open(reconciliationFile,'w') as noti:
       noti.write("{\"report\": {\"uri\": \"https://glad.umd.edu/projects/opera/ingestReports/sentToLP_"+reportDate+".rpt\"}}\n")
 
-    response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --region 'us-west-2' --topic-arn arn:aws:sns:us-west-2:643705676985:lp-prod-reconciliation-notification --message file://" +reconciliationFile],capture_output=True,shell=True)
+    response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --region 'us-west-2' --topic-arn "+lpuat+" --message file://" +reconciliationFile],capture_output=True,shell=True)
     if response.stderr.decode().strip() != "":
       with open("errorLOG.txt",'a') as ERR:
         now = datetime.datetime.now()

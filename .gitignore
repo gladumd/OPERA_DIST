@@ -172,5 +172,16 @@ mosaic/*/*/*.tif
 mosaic/*/*/*.vrt
 mosaic/*/*/*.txt
 mosaic/temp/*
+mosaic/*
+annual/temp/*
 
+v1/annual/temp/*
 v1/temp/*
+v1/alert/temp/*
+dist-py-env2/*
+v1aerosol/*
+v1sample/*
+v1cerrado/*
+*.txt
+*.csv
+*.pyc

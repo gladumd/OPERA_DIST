@@ -30,7 +30,7 @@ def sendNotification(OUT_ID,outdir,httppath):
     notiDict['product']['name'] = OUT_ID
     notiDict['product']['dataVersion'] = collectionVersion
     
-    #makeBrowse(OUT_ID,outdir)
+    makeBrowse(OUT_ID,outdir)
     response = subprocess.run(["ssh gladapp17 'gdal_translate -of GTiff -outsize 1024 0 -a_nodata 255 " + outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.tif "+ outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.png'"],capture_output=True,shell=True)
 
     notiDict['product']['files'] = [""]*(len(imagelist)+2)

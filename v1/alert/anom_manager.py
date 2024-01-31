@@ -68,8 +68,8 @@ def runGranule(server,granule,mode="ALL"):
 
     #create GEN_ANOM
     if not os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
-      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM_updateWater.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
-      #response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
+      #response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM_updateWater.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
+      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
       Errors = Errors + str(response.stderr.decode())#.split('\n')[-1]
  
     #test for success and update database
