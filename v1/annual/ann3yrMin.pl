@@ -259,7 +259,7 @@ char s[6] = {0};
 snprintf(s, 6, \"%lf\", percentData);
 papszMetadata = CSLSetNameValue( papszMetadata, \"Percent_data\", s);
 
-OUTGDAL = OUTDRIVER->Create( \"$output/VEG-IND-3YR-MINTEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
+OUTGDAL = OUTDRIVER->Create( \"$output/VEG-IND-3YR-MIN.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
 currMetadata = CSLDuplicate(papszMetadata);
 currMetadata = CSLSetNameValue( currMetadata, \"Valid_min\", \"0\");
 currMetadata = CSLSetNameValue( currMetadata, \"Valid_max\", \"100\");
@@ -273,8 +273,8 @@ OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 ";
 foreach $filename ("VEG-IND-3YR-MIN"){
 print OUT"
-system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $outdir/${filename}TEMP.tif $outdir/$ID\_${filename}.tif\");
-system(\"rm $outdir/${filename}TEMP.tif\");
+system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $output/${filename}.tif $output/$ID\_${filename}.tif\");
+//system(\"rm $output/${filename}.tif\");
 ";
 }
 print OUT"

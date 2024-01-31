@@ -20,12 +20,13 @@ if(-e "errorLOG.txt"){
   else{system"mv errorLOG.txt errorLOGold.txt";}
 }
 
-push(@serverlist, "23,60");
-push(@serverlist, "01,35");
-push(@serverlist, "02,35");
-push(@serverlist, "03,35");
-push(@serverlist, "04,35");
-push(@serverlist, "05,35");
+push(@serverlist, "23,30");
+push(@serverlist, "01,30");
+push(@serverlist, "02,30");
+push(@serverlist, "03,30");
+push(@serverlist, "04,30");
+push(@serverlist, "05,30");
+push(@serverlist, "06,30");
 #push(@serverlist, "16,20");
 #push(@serverlist, "18,20");
 #push(@serverlist, "17,30");
@@ -48,7 +49,7 @@ for $line (@serverlist){
 ($server,$threads)=split(',',$line);
 for($threadID=1;$threadID<=$threads;$threadID++){$sline=$server."_".$threadID; push @ClassThreads, threads->create(\&runTile, $sline);} }
 foreach $thread (@ClassThreads)  {$thread->join();} @ClassThreads=();
-
+print("\n");
 &checkTiles();
 
 sub checkTiles(){
@@ -104,7 +105,7 @@ sub runTile{($server,$threadID)=split('_',$sline);
   while ($tile = shift(@tiles)){
     $Nleft = @tiles;
     print"\r$tile $Nleft / $Ntiles left";
-    #system"ssh gladapp$server \'cd $currdir; perl annualWorker.pl $tile $startdate $enddate $yearname\'";#annualWorker.pl
-    system"ssh gladapp$server \'cd $currdir; perl annualWorker_prov.pl $tile $startdate $enddate $yearname\'";#annualWorker.pl
+    system"ssh gladapp$server \'cd $currdir; perl annualWorker.pl $tile $startdate $enddate $yearname\'";#annualWorker.pl
+    #system"ssh gladapp$server \'cd $currdir; perl annualWorker_prov.pl $tile $startdate $enddate $yearname\'";#annualWorker.pl
   }
 }
