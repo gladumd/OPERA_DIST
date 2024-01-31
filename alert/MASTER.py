@@ -84,7 +84,7 @@ if __name__=='__main__':
       with open("MASTER_RUNNING",'w') as OUT:
         OUT.write("started: "+str(datetime.datetime.now()))
     if sys.argv[1] == "cron":
-      startdate = (datetime.datetime.utcnow() + datetime.timedelta(days=-10)).strftime("%Y%jT000000")
+      startdate = (datetime.datetime.utcnow() + datetime.timedelta(days=-15)).strftime("%Y%jT000000")
       enddate = datetime.datetime.utcnow().strftime("%Y%jT999999")
       processLOG(["MASTER.py started for ",startdate,enddate, " at",datetime.datetime.now()])
       selCount = getGran.granuleList(2,"02_granules.txt",startdate,enddate,tilefile)

@@ -33,6 +33,7 @@ def makeBrowse(OUT_ID,outdir):
     if not os.path.exists(hiresFile):
       response = subprocess.run(["gdal_calc.py -A "+inputfile+" --outfile="+outdir+"/temp.tif --calc=\"A+(A==0)*255\" --quiet"],capture_output=True,shell=True)
       response = subprocess.run(["gdalbuildvrt "+outdir+"/temp.vrt "+outdir+"/temp.tif"],capture_output=True,shell=True)
+      #response = subprocess.run(["gdalbuildvrt "+outdir+"/temp.vrt "+inputfile],capture_output=True,shell=True)
       with open(outdir+"/temp.vrt",'r') as vrtin:
         lines = vrtin.readlines()
       with open(outdir+"/temp2.vrt",'w') as vrtout:
