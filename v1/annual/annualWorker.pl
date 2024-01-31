@@ -78,6 +78,9 @@ if($Ngranules >0){
   $ID = "OPERA_L3_DIST-ANN-HLS_${Ttile}_${yearname}_${productionTime}_30_${DISTversion}";
   
   #@images = @images[0..15];
+  $startdate3yr = $startdate - 2000;
+  #print"perl ann3yrMin.pl $tile $startdate3yr $enddate $sourcebase $outdir $ID";
+  $minlog = readpipe"perl ann3yrMin.pl $tile $startdate3yr $enddate $sourcebase $outdir $ID";
   $genlog = &genANN(@images);
   $veglog = &vegANN(@images);
   ($vegstatus,$spatial_coverage) = split(',',$veglog);
@@ -420,6 +423,28 @@ char s[6] = {0};
 snprintf(s, 6, \"%lf\", percentData);
 papszMetadata = CSLSetNameValue( papszMetadata, \"Percent_data\", s);
 
+int colorarray[11][4]={
+  {18,18,18,255},//0
+  {0,0,0,255},//first
+  {0,0,0,255},//prov
+  {222,224,67,255},//conf
+  {0,0,0,255},
+  {0,0,0,255},
+  {224,27,7,255},
+  {119,119,119,255},
+  {221,221,221,255},
+  {119,119,119,255},
+  {221,221,221,255}
+};
+
+GDALColorTable ct;
+GDALColorEntry color;
+for(int c = 0;c<11;c++){
+  color.c1 = colorarray[c][0];color.c2=colorarray[c][1];color.c3=colorarray[c][2];color.c4=colorarray[c][3];
+  ct.SetColorEntry(c,&color);
+}
+
+
 //export results
 OUTGDAL = OUTDRIVER->Create( \"$outdir/VEG-DIST-STATUSTEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
 currMetadata = CSLDuplicate(papszMetadata);
@@ -428,6 +453,7 @@ currMetadata = CSLSetNameValue( currMetadata, \"flag_meanings\", \"no_disturbanc
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetDescription(\"Vegetation_disturbance_status\");
 OUTBAND->SetNoDataValue(255);
+OUTBAND->SetColorTable(&ct);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, outvegstatus, xsize, ysize, GDT_Byte, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
 OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
@@ -790,6 +816,28 @@ char s[6] = {0};
 snprintf(s, 6, \"%lf\", percentData);
 papszMetadata = CSLSetNameValue( papszMetadata, \"Percent_data\", s);
 
+int colorarray[11][4]={
+  {18,18,18,255},//0
+  {0,0,0,255},//first
+  {0,0,0,255},//prov
+  {222,224,67,255},//conf
+  {0,0,0,255},
+  {0,0,0,255},
+  {224,27,7,255},
+  {119,119,119,255},
+  {221,221,221,255},
+  {119,119,119,255},
+  {221,221,221,255}
+};
+
+GDALColorTable ct;
+GDALColorEntry color;
+for(int c = 0;c<11;c++){
+  color.c1 = colorarray[c][0];color.c2=colorarray[c][1];color.c3=colorarray[c][2];color.c4=colorarray[c][3];
+  ct.SetColorEntry(c,&color);
+}
+
+
 //export results
 OUTGDAL = OUTDRIVER->Create( \"$outdir/GEN-DIST-STATUSTEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
 currMetadata = CSLDuplicate(papszMetadata);
@@ -799,6 +847,7 @@ currMetadata = CSLSetNameValue( currMetadata, \"Units\", \"unitless\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetDescription(\"Generic_disturbance_status\");
 OUTBAND->SetNoDataValue(255);
+OUTBAND->SetColorTable(&ct);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, outgenstatus, xsize, ysize, GDT_Byte, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
 OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
