@@ -20,13 +20,13 @@ if(-e "errorLOG.txt"){
   else{system"mv errorLOG.txt errorLOGold.txt";}
 }
 
-push(@serverlist, "23,30");
-push(@serverlist, "01,30");
-push(@serverlist, "02,30");
-push(@serverlist, "03,30");
-push(@serverlist, "04,30");
-push(@serverlist, "05,30");
-push(@serverlist, "06,30");
+push(@serverlist, "23,40");
+push(@serverlist, "01,40");
+push(@serverlist, "02,40");
+push(@serverlist, "03,40");
+push(@serverlist, "04,40");
+push(@serverlist, "05,40");
+push(@serverlist, "06,40");
 #push(@serverlist, "16,20");
 #push(@serverlist, "18,20");
 #push(@serverlist, "17,30");

@@ -139,7 +139,7 @@ def writeMetadata(ID,outdir,httppath,version,Errors,starttime,endtime,spatial_co
     outDict['GranuleUR'] = OUTID
     outDict['TemporalExtent'] = {"RangeDateTime": {"BeginningDateTime": starttime,"EndingDateTime":endtime}}
     outDict['ProviderDates']=[{'Date':ProductionDateTime,'Type':'Insert'}]
-    outDict['CollectionReference'] = {"ShortName": "OPERA_L3_DIST-ANN-HLS_PROVISIONAL_V0",'Version':"0"}
+    outDict['CollectionReference'] = {"ShortName": "OPERA_L3_DIST-ANN-HLS_VALIDATED_V0",'Version':"0"}
     outDict['DataGranule'] = {}
     outDict['DataGranule']['DayNightFlag'] = 'Day'
     outDict['DataGranule']['ProductionDateTime'] =ProductionDateTime

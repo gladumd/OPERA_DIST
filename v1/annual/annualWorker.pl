@@ -72,6 +72,8 @@ if($Ngranules >0){
   $Ndates = $Ngranules;
   $lastDate = $currDate;
   $outdir = "$outbase/$tilepathstring/$yearname";
+  
+  if(!-d $outdir){system"mkdir -p $outdir";}
   $httppath = "$httpbase/$tilepathstring/$yearname";
   #print("@images\n");
   $productionTime = strftime "%Y%jT%H%M%SZ", gmtime;
@@ -80,7 +82,9 @@ if($Ngranules >0){
   #@images = @images[0..15];
   $startdate3yr = $startdate - 2000;
   #print"perl ann3yrMin.pl $tile $startdate3yr $enddate $sourcebase $outdir $ID";
-  $minlog = readpipe"perl ann3yrMin.pl $tile $startdate3yr $enddate $sourcebase $outdir $ID";
+  $minlog = readpipe"perl ann3yrMin.pl $tile $startdate3yr $enddate $sourcebase $outdir";
+  system"rm $outdir/OPERA*";
+  system("gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $outdir/VEG-IND-3YR-MIN.tif $outdir/${ID}_VEG-IND-3YR-MIN.tif");
   $genlog = &genANN(@images);
   $veglog = &vegANN(@images);
   ($vegstatus,$spatial_coverage) = split(',',$veglog);
@@ -768,7 +772,7 @@ if(datesNeeded[i]){
 
   for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
     if(outgenconf[y][x] >= confidenceThreshold and index[y][x]==i){";
-    foreach $met(@uint8,@short){print OUT"
+    foreach $met("gencount","genanommax","gendur"){print OUT"
       out${met}[y][x] = ${met}[y][x];";
     }
     print OUT"
