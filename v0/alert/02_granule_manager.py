@@ -187,7 +187,7 @@ if __name__=='__main__':
 
   processLOG(["starting \"02_granule_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",now])
 
-  serverlist = [(17,55),(14,15),(15,15),(16,20),(19,10),(20,10),(21,15),(23,20)]#[(18,40),(14,40),(19,20)]#[(17,60),(15,15),(16,20)]
+  serverlist = [(17,75),(14,15),(15,15),(16,20),(19,10),(21,15),(23,40)]#[(18,40),(14,40),(19,20)]#[(17,60),(15,15),(16,20)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

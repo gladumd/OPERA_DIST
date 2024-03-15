@@ -4,13 +4,12 @@ $enddate = $ARGV[2];
 
 $source = $ARGV[3];
 $output = $ARGV[4];
-$ID = $ARGV[5];
 
 $HLSsource = "/gpfs/glad3/HLS";
 my $zone = substr($tile,0,2);
 my $tilepathstring = "$zone/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($tile,4,1);
 #my $output = "$outbase/$tilepathstring";
-if(!-e "$output/$ID\_VEG-IND-3YR-MIN.tif"){
+if(!-e "$output/VEG-IND-3YR-MIN.tif"){
 &compileTile($tile,$startdate,$enddate);
 
 }
@@ -94,14 +93,14 @@ print OUT"
 try{
 filename=\"$source/$year/$tilepathstring/$im2/$im2\_VEG-IND.tif\";
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-inresult = INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, temp, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
-if(inresult != CE_None){throw \"bad band\";}
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, temp, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+//if(inresult != CE_None){throw \"bad band\";}
 for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {if(vf[$i][y][x]==255){vf[$i][y][x]=temp[y][x];}}}
 
 filename=\"$HLSsource/$sensor/$year/$tilepathstring/$HLS_ID/$HLS_ID.Fmask.tif\";
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-inresult = INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, data[$i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
-if(inresult != CE_None){throw \"bad band\";}
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, data[$i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+//if(inresult != CE_None){throw \"bad band\";}
 for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {if(data[$i][y][x]==255){data[$i][y][x]=temp[y][x];}}}
 } catch (\.\.\.){
   myfile.open(\"corruptedfiles.txt\", ios::app);
@@ -119,16 +118,16 @@ $year = substr($im1,11,4);
 $HLS_ID = "HLS.$sensor.$Ttile.$datetime.v2.0";
 print OUT"
 try{
-//cout<<\"\"$tile,$HLS_ID,$im1\"\"<<endl;
+cout<<\"$tile,$HLS_ID,$im1\"<<endl;
 filename=\"$source/$year/$tilepathstring/$im1/$im1\_VEG-IND.tif\";
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-inresult = INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vf[$i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
-if(inresult != CE_None){throw \"bad band\";}
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vf[$i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+//if(inresult != CE_None){throw \"bad band\";}
 
 filename=\"$HLSsource/$sensor/$year/$tilepathstring/$HLS_ID/$HLS_ID.Fmask.tif\";
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-inresult = INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, data[$i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
-if(inresult != CE_None){throw \"bad band\";}
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, data[$i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+//if(inresult != CE_None){throw \"bad band\";}
 } catch (\.\.\.){
   myfile.open(\"corruptedfiles.txt\", ios::app);
   myfile<<\"$tile,$HLS_ID,$im1\"<<endl;
@@ -140,16 +139,17 @@ if($im2 ne ""){
 $HLS_ID = "HLS.$sensor.$Ttile.$datetime.v2.0";
 print OUT"
 try{
+  cout<<\"$tile,$HLS_ID,$im2\"<<endl;
   filename=\"$source/$year/$tilepathstring/$im2/$im2\_VEG-IND.tif\";
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-inresult = INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, temp, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
-if(inresult != CE_None){throw \"bad band\";}
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, temp, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+//if(inresult != CE_None){throw \"bad band\";}
 for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {if(vf[$i][y][x]==255){vf[$i][y][x]=temp[y][x];}}}
 
 filename=\"$HLSsource/$sensor/$year/$tilepathstring/$HLS_ID/$HLS_ID.Fmask.tif\";
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-inresult = INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, data[$i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
-if(inresult != CE_None){throw \"bad band\";}
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, data[$i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+//if(inresult != CE_None){throw \"bad band\";}
 for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {if(data[$i][y][x]==255){data[$i][y][x]=temp[y][x];}}}
 } catch (\.\.\.){
   myfile.open(\"corruptedfiles.txt\", ios::app);
@@ -259,7 +259,7 @@ char s[6] = {0};
 snprintf(s, 6, \"%lf\", percentData);
 papszMetadata = CSLSetNameValue( papszMetadata, \"Percent_data\", s);
 
-OUTGDAL = OUTDRIVER->Create( \"$output/VEG-IND-3YR-MIN.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
+OUTGDAL = OUTDRIVER->Create( \"$output/VEG-IND-3YR-MINTEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
 currMetadata = CSLDuplicate(papszMetadata);
 currMetadata = CSLSetNameValue( currMetadata, \"Valid_min\", \"0\");
 currMetadata = CSLSetNameValue( currMetadata, \"Valid_max\", \"100\");
@@ -273,8 +273,8 @@ OUTGDAL->SetMetadata(currMetadata,\"\");GDALClose((GDALDatasetH)OUTGDAL);
 ";
 foreach $filename ("VEG-IND-3YR-MIN"){
 print OUT"
-system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $output/${filename}.tif $output/$ID\_${filename}.tif\");
-//system(\"rm $output/${filename}.tif\");
+system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $output/${filename}TEMP.tif $output/${filename}.tif\");
+system(\"rm $output/${filename}TEMP.tif\");
 ";
 }
 print OUT"

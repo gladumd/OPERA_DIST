@@ -139,7 +139,7 @@ def writeMetadata(ID,outdir,httppath,version,Errors,starttime,endtime,spatial_co
     outDict['GranuleUR'] = OUTID
     outDict['TemporalExtent'] = {"RangeDateTime": {"BeginningDateTime": starttime,"EndingDateTime":endtime}}
     outDict['ProviderDates']=[{'Date':ProductionDateTime,'Type':'Insert'}]
-    outDict['CollectionReference'] = {"ShortName": "OPERA_L3_DIST-ANN-HLS_VALIDATED_V0",'Version':"0"}
+    outDict['CollectionReference'] = {"ShortName": "OPERA_L3_DIST-ANN-HLS_V1",'Version':"1"}
     outDict['DataGranule'] = {}
     outDict['DataGranule']['DayNightFlag'] = 'Day'
     outDict['DataGranule']['ProductionDateTime'] =ProductionDateTime
@@ -149,7 +149,7 @@ def writeMetadata(ID,outdir,httppath,version,Errors,starttime,endtime,spatial_co
     outDict['Platforms']=platforms
     outDict['AdditionalAttributes'] = [{},{},{},{},{},{},{}]
     outDict['AdditionalAttributes'][0]['Name'] = 'ValidationLevel'
-    outDict['AdditionalAttributes'][0]['Values'] = ["0"]
+    outDict['AdditionalAttributes'][0]['Values'] = ["1"]
     i=1
     outDict['AdditionalAttributes'][1]['Name'] = 'SPATIAL_COVERAGE'
     outDict['AdditionalAttributes'][1]['Values'] = [str(spatial_coverage)]
@@ -176,7 +176,7 @@ def writeMetadata(ID,outdir,httppath,version,Errors,starttime,endtime,spatial_co
     notiDict = {}
     notiDict['version'] = "1.4"
     notiDict['provider'] = "UMD_GLAD_OPERA"
-    notiDict['collection'] = 'OPERA_L3_DIST-ANN-HLS_VALIDATED_V1'
+    notiDict['collection'] = 'OPERA_L3_DIST-ANN-HLS_V1'
     notiDict['submissionTime'] = ProductionDateTime
     notiDict['identifier'] = OUTID
     notiDict['product'] = {}

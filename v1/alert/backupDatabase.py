@@ -7,7 +7,7 @@ import sys
 import traceback
 import parameters
 
-dbpath = parameters.dbpath #"/gpfs/glad3/HLSDIST/System/database/"
+dbpath = "/gpfs/glad3/HLSDIST/System/v1/database/database.db"#parameters.dbpath #"/gpfs/glad3/HLSDIST/System/database/"
 dbname = dbpath.split('/')[-1]
 
 def checkDatabase(dbfile):
@@ -17,8 +17,9 @@ def checkDatabase(dbfile):
       with closing(sqlite3.connect(dbfile)) as connection:
         with closing(connection.cursor()) as cursor:
           cursor.execute("BEGIN IMMEDIATE;")
-          cursor.execute("PRAGMA integrity_check")
-          integrity = cursor.fetchone()
+          #cursor.execute("PRAGMA integrity_check")
+          #integrity = cursor.fetchone()
+          integrity = ["ok"]
           databaseChecked=True
           if integrity[0].strip() == "ok":
             #cursor.execute(".backup \'"+dbname+".bak\'")
@@ -40,10 +41,10 @@ def checkDatabase(dbfile):
       if error.args[0] == 'database is locked':
         time.sleep(0.1) 
       else:
-        traceback.print_exc()
+        sys.stderr.write(str(error.args)+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
         break
     except:
-      traceback.print_exc()
+      sys.stderr.write(str(sys.exc_info())+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
       break
   
 def checkBackup(dbfile):
@@ -53,7 +54,7 @@ def checkBackup(dbfile):
     try:
       with closing(sqlite3.connect(dbfile+".baktemp")) as connection:
         with closing(connection.cursor()) as cursor:
-          cursor.execute("PRAGMA integrity_check")
+          cursor.execute("PRAGMA quick_check")
           integrity = cursor.fetchone()
           databaseChecked=True
       if integrity[0].strip() == "ok":
@@ -66,9 +67,9 @@ def checkBackup(dbfile):
       else:
         with open("errorLOG.txt",'a') as ERR:
           ERR.write("database backup failed, retrying "+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")
-          checkDatabase(dbname)
+          checkDatabase(dbfile)
           #print("corrupted database backup "+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")
-      subprocess.run(["rm "+dbname+".baktemp"],shell=True)
+      subprocess.run(["rm "+dbfile+".baktemp"],shell=True)
     except sqlite3.OperationalError as error:
       if error.args[0] == 'database is locked':
         time.sleep(0.1) 

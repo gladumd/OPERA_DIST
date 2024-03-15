@@ -18,7 +18,7 @@ def processLOG(argv):
 if __name__=='__main__':
   if len(sys.argv) == 1:
     enddate = datetime.datetime.utcnow()
-    startdate = (enddate + datetime.timedelta(days=-10)) #15 days may want to shrink
+    startdate = (enddate + datetime.timedelta(days=-15)) #15 days may want to shrink
   else:
     print("No parameters should be entered.")
 
@@ -42,7 +42,14 @@ if __name__=='__main__':
           sd.processLOG(["CMR error, unable to search.", datetime.datetime.now()])
         start = start + oneday
       #granuleDict = sd.filterByTileList(download_dict,'../../hls_tiles_dist.txt')
-      sd.download_parallel(download_dict,150)
+      if len(list(download_dict.keys())) > 0:
+        sd.download_parallel(download_dict,150)
+        granulesToDownload = sd.checkGranuleList(list(download_dict.keys()))
+        if len(granulesToDownload) > 0:
+          granDownloadDist = {granule: download_dict[granule] for granule in granulesToDownload}
+          sd.download_parallel(granDownloadDist,150)
+      else:
+        processLOG("0 granules to download")
       os.remove("download_RUNNING")
     except:
       os.remove("download_RUNNING")

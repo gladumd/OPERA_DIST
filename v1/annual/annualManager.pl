@@ -20,13 +20,13 @@ if(-e "errorLOG.txt"){
   else{system"mv errorLOG.txt errorLOGold.txt";}
 }
 
-push(@serverlist, "23,40");
-push(@serverlist, "01,40");
-push(@serverlist, "02,40");
-push(@serverlist, "03,40");
-push(@serverlist, "04,40");
-push(@serverlist, "05,40");
-push(@serverlist, "06,40");
+push(@serverlist, "23,1");
+push(@serverlist, "01,20");
+push(@serverlist, "02,20");
+push(@serverlist, "03,20");
+push(@serverlist, "04,20");
+push(@serverlist, "05,20");
+push(@serverlist, "06,20");
 #push(@serverlist, "16,20");
 #push(@serverlist, "18,20");
 #push(@serverlist, "17,30");
@@ -105,7 +105,21 @@ sub runTile{($server,$threadID)=split('_',$sline);
   while ($tile = shift(@tiles)){
     $Nleft = @tiles;
     print"\r$tile $Nleft / $Ntiles left";
-    system"ssh gladapp$server \'cd $currdir; perl annualWorker.pl $tile $startdate $enddate $yearname\'";#annualWorker.pl
-    #system"ssh gladapp$server \'cd $currdir; perl annualWorker_prov.pl $tile $startdate $enddate $yearname\'";#annualWorker.pl
+    my $zone = substr($tile,0,2);
+    my $tilepathstring = $zone."/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($tile,4,1);
+    #if(!-d "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ANN_v1/$tilepathstring/$yearname"){
+      #print"ls /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ANN_v1/$tilepathstring/$yearname/OPERA_*GEN-CONF-PREV.tif 2>/dev/null";
+    my @files = readpipe"ls /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ANN_v1/$tilepathstring/$yearname/OPERA_*GEN-CONF-PREV.tif 2>/dev/null";
+    $file = $files[0];
+    system"ssh gladapp$server \'cd $currdir; ./fix $zone $file\'";
+      #system"ssh gladapp$server \'cd $currdir; perl annualWorker.pl $tile $startdate $enddate $yearname\'";#annualWorker.pl
+      #system"ssh gladapp$server \'cd $currdir; perl annualWorker_prov.pl $tile $startdate $enddate $yearname\'";#annualWorker.pl
+    #} else {
+    #  @files = readpipe"ls /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ANN_v1/$tilepathstring/$yearname/OPERA*3YR*";
+    #  $c = @files;
+    #  if($c<1){
+    #    system"ssh gladapp$server \'cd $currdir; perl annualWorker.pl $tile $startdate $enddate $yearname\'";#annualWorker.pl
+    #  }
+    #}
   }
 }

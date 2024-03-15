@@ -11,7 +11,7 @@ $HLSsource = "/gpfs/glad3/HLS";
 $outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ANN_v1";#TSmodels/1_shutdown5obs3months/DIST-ANN";#VFModel/Drone/LP-DAAC/DIST-ANN";
 $sourcebase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1";#LP-DAAC/DIST-ALERT";#TSmodels/1_shutdown5obs3months/";
 $DISTversion="v1";
-$httpbase = "NA";#https://glad.umd.edu/projects/opera/DIST-ANN_v1";
+$httpbase = "https://glad.umd.edu/projects/opera/DIST-ANN_v1";
 
 $startyear = substr($startdate,0,4);
 $endyear = substr($enddate,0,4);
@@ -34,7 +34,7 @@ foreach $year ($startyear..$endyear){
     ($name,$datetime,$sensor,$Ttile,$FDISTversion)= split('_',$s);
     my $date = substr($datetime,0,7);
     if($date>=$startdate and $date < $enddate){
-      $f =~ s/VEG/GEN/g;
+      $f =~ s/VEG-/GEN-/g;
       if(-e "$f"){
         if(exists $OUTID{$s}){
           ($fOPERA,$fL3,$fDIST,$fTtile,$fsensingTime,$fProdTime,$fsatellite,$fres,$fDISTversion)=split('_',$OUTID{$s});
@@ -82,7 +82,10 @@ if($Ngranules >0){
   #@images = @images[0..15];
   $startdate3yr = $startdate - 2000;
   #print"perl ann3yrMin.pl $tile $startdate3yr $enddate $sourcebase $outdir $ID";
-  $minlog = readpipe"perl ann3yrMin.pl $tile $startdate3yr $enddate $sourcebase $outdir";
+  if(!-e "$outdir/VEG-IND-3YR-MIN.tif"){
+    $minlog = readpipe"perl ann3yrMin.pl $tile $startdate3yr $enddate $sourcebase $outdir";
+    open(OUT,">log3yr$tile.txt");print OUT"$minlog";close(OUT);
+  }
   system"rm $outdir/OPERA*";
   system("gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $outdir/VEG-IND-3YR-MIN.tif $outdir/${ID}_VEG-IND-3YR-MIN.tif");
   $genlog = &genANN(@images);
@@ -453,7 +456,7 @@ for(int c = 0;c<11;c++){
 OUTGDAL = OUTDRIVER->Create( \"$outdir/VEG-DIST-STATUSTEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
 currMetadata = CSLDuplicate(papszMetadata);
 currMetadata = CSLSetNameValue( currMetadata, \"flag_values\", \"0,3,6,7,8,9,10,255\");
-currMetadata = CSLSetNameValue( currMetadata, \"flag_meanings\", \"no_disturbance,confirmed_<50%_ongoing,confirmed_>=50%_ongoing,confirmed_<50%_completed,confirmed_>=50%_completed,confirmed_<50%_previous_year,confirmed_>=50%_previous_year,no_data\");
+currMetadata = CSLSetNameValue( currMetadata, \"flag_meanings\", \"no_disturbance,confirmed_<50%_ongoing,confirmed_>=50%_ongoing,confirmed_<50%_finished,confirmed_>=50%_finished,confirmed_<50%_previous_year,confirmed_>=50%_previous_year,no_data\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetDescription(\"Vegetation_disturbance_status\");
 OUTBAND->SetNoDataValue(255);
@@ -846,7 +849,7 @@ for(int c = 0;c<11;c++){
 OUTGDAL = OUTDRIVER->Create( \"$outdir/GEN-DIST-STATUSTEMP.tif\", xsize, ysize, 1, GDT_Byte, papszOptions );
 currMetadata = CSLDuplicate(papszMetadata);
 currMetadata = CSLSetNameValue( currMetadata, \"flag_values\", \"0,3,6,7,8,9,10,255\");
-currMetadata = CSLSetNameValue( currMetadata, \"flag_meanings\", \"no_disturbance,confirmed_low_ongoing,confirmed_high_ongoing,confirmed_low_completed,confirmed_high_completed,confirmed_low_previous_year,confirmed_high_previous_year,no_data\");
+currMetadata = CSLSetNameValue( currMetadata, \"flag_meanings\", \"no_disturbance,confirmed_low_ongoing,confirmed_high_ongoing,confirmed_low_finished,confirmed_high_finished,confirmed_low_previous_year,confirmed_high_previous_year,no_data\");
 currMetadata = CSLSetNameValue( currMetadata, \"Units\", \"unitless\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
 OUTBAND->SetDescription(\"Generic_disturbance_status\");
@@ -932,11 +935,11 @@ OUTGDAL = OUTDRIVER->Create( \"$outdir/GEN-CONF-PREVTEMP.tif\", xsize, ysize, 1,
 currMetadata = CSLDuplicate(papszMetadata);
 currMetadata = CSLSetNameValue( currMetadata, \"Valid_min\", \"0\");
 currMetadata = CSLSetNameValue( currMetadata, \"Valid_max\", \"2\");
-currMetadata = CSLSetNameValue( currMetadata, \"Units\", \"alerts\");
+currMetadata = CSLSetNameValue( currMetadata, \"Units\", \"unitless\");
 currMetadata = CSLSetNameValue( currMetadata, \"flag_values\", \"0,1,2,255\");
 currMetadata = CSLSetNameValue( currMetadata, \"flag_meanings\", \"no_disturbance,confirmed_low_previous_year,confirmed_high_previous_year,no_data\");
 OUTGDAL->SetGeoTransform(GeoTransform); OUTGDAL->SetProjection(OUTPRJ); OUTBAND = OUTGDAL->GetRasterBand(1);
-OUTBAND->SetDescription(\"Generic distubance alert from previous year confirmed in subsequent year\");
+OUTBAND->SetDescription(\"Generic disturbance alert from previous year confirmed in subsequent year\");
 OUTBAND->SetNoDataValue(255);
 OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, prevyear, xsize, ysize, GDT_Byte, 0, 0 ); 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );

@@ -26,14 +26,14 @@ if(-e "errorLOG.txt"){
   else{system"mv errorLOG.txt errorLOGold.txt";}
 }
 
-push(@serverlist, "20,10");
-push(@serverlist, "21,10");
-push(@serverlist, "14,10");
-push(@serverlist, "15,10");
-push(@serverlist, "16,10");
-push(@serverlist, "17,4");
+push(@serverlist, "20,20");
+push(@serverlist, "21,20");
+#push(@serverlist, "14,10");
+#push(@serverlist, "15,10");
+#push(@serverlist, "16,10");
+push(@serverlist, "17,50");
 #push(@serverlist, "18,40");
-#push(@serverlist, "19,30");
+push(@serverlist, "19,40");
 
 #push(@serverlist, "1,5");
 #push(@serverlist, "2,5");
@@ -113,6 +113,6 @@ sub runTile{($server,$threadID)=split('_',$sline);
   while ($tile = shift(@tiles)){
     #$Nleft = @tiles;
     #print"\r$tile $Nleft / $Ntiles left";
-    system"ssh gladapp$server \'cd $currdir; perl annualWorker.pl $tile $startdate $enddate $yearname\'";
+    system"ssh gladapp$server \'cd $currdir; perl VFmetrics.pl $tile $startdate $enddate $yearname\'";
   }
 }
