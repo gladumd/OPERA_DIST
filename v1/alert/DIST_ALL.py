@@ -41,8 +41,8 @@ def sortDates(listtosort):
   return sorted
 
 def runTile(server,Ttile,tempscenes):
-  if os.path.exists("KILL_03_DIST_UPD") or os.path.exists("KILL_ALL"):
-    raise ValueError("03_DIST_UPD.py shutdown with KILL file")
+  if os.path.exists("KILL_DIST_ALL") or os.path.exists("KILL_ALL"):
+    raise ValueError("DIST_ALL.py shutdown with KILL file")
   tempscenes = tempscenes.split(',')
   tile = Ttile[1:]
   zone = tile[0:2]
@@ -282,7 +282,7 @@ def main(filelist,tupdateMode,tsendToDAAC):
   sendToDAAC = tsendToDAAC
   
   if os.path.exists("KILL_DIST_ALL") or os.path.exists("KILL_ALL"):
-    print("KILL file exists. Delete and rerun. 03_DIST_UPD.py"+str(datetime.datetime.now())+"\n")
+    print("KILL file exists. Delete and rerun. DIST_ALL.py"+str(datetime.datetime.now())+"\n")
     sys.exit()
   #elif os.path.exists("DIST_ALL_RUNNING") or os.path.exists("02_granule_manager_RUNNING"):
   #  print("Process already running (or died with an error). Delete *_RUNNING to rerun. "+str(datetime.datetime.now())+"\n")
@@ -317,7 +317,8 @@ def main(filelist,tupdateMode,tsendToDAAC):
   for tile in tiles:
     tileQueue.put(tile)
   
-  serverlist =  [(23,80),("01",30),("02",30),("03",30),("04",30)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
+  #serverlist =  [("01",40),("02",40),("03",40),("04",40),("05",50),("06",60),(17,70)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
+  serverlist =  [(17,75),("01",40),("02",40),("03",40),("04",40)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

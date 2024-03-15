@@ -111,6 +111,7 @@ ENV/
 env.bak/
 venv.bak/
 dist-py-env/
+dist-py-env2/
 
 # Spyder project settings
 .spyderproject
@@ -134,24 +135,21 @@ dmypy.json
 .vscode/
 
 eigen-3.4.0/
-alert/database.db-journal
-alert/database.db
-alert/database.*
-alert/*.txt
-alert/download/*.txt
-alert/03A_alertUpdateVEG
-alert/03B_alertUpdateGEN
-alert/02A_VF_QA_COG
-database/*
-alert/gen_anom_HLS.[S,L]30*v2.0*
-alert/veg_anom_HLS.[S,L]30*v2.0*
-smoke_test/new/*
+**/alert/*.txt
+**/alert/download/*.txt
+**/alert/03A_alertUpdateVEG
+**/alert/03B_alertUpdateGEN
+**/alert/02A_VF_QA_COG
+**/database/*
+**/alert/gen_anom_HLS.[S,L]30*v2.0*
+**/alert/veg_anom_HLS.[S,L]30*v2.0*
+**/smoke_test/new/*
 **/KILL*
 **/RUNNING*
-alert/temp/*
+**/alert/temp/*
 user.profile
-annual/temp/*
-annual/*.txt
+**/annual/temp/*
+**/annual/*.txt
 *.db
 report/*.csv
 
@@ -162,4 +160,6 @@ alert/*pyc
 **LOG.txt
 **/temp/*
 **.pyc
+v1/alert/logs/*
+
 

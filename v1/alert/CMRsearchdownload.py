@@ -114,7 +114,7 @@ def searchCMRGranuleList(granlist):
     return url_dict
   except:
     traceback.print_exc()
-    with open("../errorLOG.txt", 'a') as log:
+    with open("errorLOG.txt", 'a') as log:
       log.write("CMR error, unable to search "+str(datetime.datetime.now())+"\n")
     return "CMR error"
 
@@ -132,7 +132,7 @@ def searchCMR(startdate,enddate):
     url_dict = asyncio.run(get_granules_url_dict(cmr_pg))
   except:
     traceback.print_exc()
-    with open("../errorLOG.txt", 'a') as log:
+    with open("errorLOG.txt", 'a') as log:
       log.write("CMR error, unable to search "+str(datetime.datetime.now())+"\n")
     return "CMR error"
   granules = url_dict.keys()
@@ -516,7 +516,7 @@ def checkSensor(xmlfilename,DIST_ID,sensor):
       satel ="S2"
     return satel
   except:
-    with open("../errorLOG.txt", 'a') as ERR:
+    with open("errorLOG.txt", 'a') as ERR:
       ERR.write(xmlfilename+" is empty\n")
     sqliteCommand = "UPDATE fulltable SET Errors = ?, statusFlag = ? where DIST_ID = ?"
     sqliteTuple = ("xml file is empty",102,DIST_ID)
@@ -536,7 +536,7 @@ def checkMetadata(xmlfilename,DIST_ID,sensor):
       satel ="S2"
     return (dict['Granule']['InsertTime'],satel)
   except:
-    with open("../errorLOG.txt", 'a') as ERR:
+    with open("errorLOG.txt", 'a') as ERR:
       ERR.write(xmlfilename+" is empty\n")
     #sqliteCommand = "UPDATE fulltable SET Errors = ?, statusFlag = ? where DIST_ID = ?"
     #sqliteTuple = ("xml file is empty",102,DIST_ID)
@@ -549,7 +549,7 @@ def getAvailableTime(xmlfilename,DIST_ID):
       dict = xmltodict.parse(xml_file.read())
     return dict['Granule']['InsertTime']
   except:
-    with open("../errorLOG.txt", 'a') as ERR:
+    with open("errorLOG.txt", 'a') as ERR:
       ERR.write(xmlfilename+" is empty\n")
     sqliteCommand = "UPDATE fulltable SET Errors = ?, statusFlag = ? where DIST_ID = ?"
     sqliteTuple = ("xml file is empty",102,DIST_ID)

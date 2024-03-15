@@ -70,14 +70,20 @@ def runGranule(server,granule):
     statusFlag = 6
   else:
     statusFlag = 106
-  sqliteCommand = "UPDATE fulltable SET statusFlag = ? where DIST_ID=?;"
-  updateSqlite(DIST_ID,sqliteCommand,(statusFlag,DIST_ID))
+  with open("sentGranulesStatus.txt",'a') as OUT:
+    OUT.write("UPDATE fulltable SET statusFlag = "+str(statusFlag)+" where HLS_ID=\'"+granule+"\';\n")
+  if statusFlag == 106:
+    with open("failedSendGranules.txt",'a') as OUT:
+      OUT.write("UPDATE fulltable SET statusFlag = "+str(statusFlag)+" where HLS_ID=\'"+granule+"\';\n")
+  
+  #sqliteCommand = "UPDATE fulltable SET statusFlag = ? where DIST_ID=?;"
+  #updateSqlite(DIST_ID,sqliteCommand,(statusFlag,DIST_ID))
 
 def updateSqlite(ID,sqliteCommand,sqliteTuple):
   written = False
   while written == False:
     try:
-      with closing(sqlite3.connect(dbpath+"database.db")) as connection:
+      with closing(sqlite3.connect(dbpath)) as connection:
         with closing(connection.cursor()) as cursor:
           cursor.execute(sqliteCommand,sqliteTuple)
           cursor.execute("COMMIT;")
@@ -152,15 +158,15 @@ if __name__=='__main__':
       myqueue.put(g)
   
   Nscenes = len(granulelist)
-
+  print("starting \"sendtoDAAC_master.py "+filelist+" ",Nscenes,"granules ",now)
   processLOG(["starting \"sendtoDAAC_master.py "+filelist+" ",Nscenes,"granules ",now])
 
-  serverlist = [(18,25)]
+  serverlist = [("17",8)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp
     server = str(server)
-    for procID in range(1,Nprocesses):
+    for procID in range(0,Nprocesses):
       procID = str(procID)
       proc = multiprocessing.Process(target=processGranuleQueue,args=(server,procID,myqueue))
       processes.append(proc)
@@ -171,4 +177,5 @@ if __name__=='__main__':
   myqueue.close()
   myqueue.join_thread()
 
+  print("finished \"sendtoDAAC_master.py "+filelist+" ",Nscenes,"granules ",datetime.datetime.now())
   processLOG(["finished \"sendtoDAAC_master.py "+filelist+" ",Nscenes,"granules ",datetime.datetime.now()])

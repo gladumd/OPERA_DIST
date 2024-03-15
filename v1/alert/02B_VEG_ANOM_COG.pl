@@ -35,7 +35,7 @@ sub runScene(){
     &compileTileDOY($scene,$tile,$doy,$year);
     if(!-d "$output/additional"){system"mkdir -p $output/additional";}
     if(-e "temp/veg_anom_$scene"){
-      system"cd temp;./veg_anom_$scene; rm veg_anom_$scene; rm veg_anom_$scene.cpp";
+      system"cd temp;./veg_anom_$scene;rm veg_anom_$scene; rm veg_anom_$scene.cpp";
     }else{die"failed to compile temp/veg_anom_$scene\n"}
   }
 }
@@ -118,9 +118,21 @@ uint8_t temp[ysize][xsize];
 uint8_t histmin[ysize][xsize];
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, currVF, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
 ";
-if(-e "/gpfs/glad3/HLSDIST/VFmetrics/v1_2020_2022/$tilepathstring/$tile\_annualmin.tif"){
+$prevyear = $year-1;
+@annualmin = readpipe"ls /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ANN_v1/$tilepathstring/$prevyear/OPERA*VEG-IND-3YR-MIN.tif";
+$filecount = @annualmin;
+if ($filecount > 0){$minfile = $annualmin[-1];chomp($minfile);}
+else {
+  $prevyear = $prevyear-1;
+  @annualmin = readpipe"ls /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ANN_v1/$tilepathstring/$prevyear/OPERA*VEG-IND-3YR-MIN.tif";
+  $filecount = @annualmin;
+  if ($filecount > 0){$minfile = $annualmin[-1];chomp($minfile);}
+  else{$minfile = "NA";}
+}
+
+if(-e "$minfile"){
   print OUT"
-  filename=\"/gpfs/glad3/HLSDIST/VFmetrics/v1_2020_2022/$tilepathstring/$tile\_annualmin.tif\";
+  filename=\"$minfile\";
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); //if(INGDAL==NULL){throw \"Not Found\";} 
   INBAND = INGDAL->GetRasterBand(1);//if(INBAND==NULL){throw \"Corrupted\";} 
   CPLErr inresult = INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, histmin, xsize, ysize, GDT_Byte, 0, 0); //if(inresult != CE_None){throw \"bad band\";}
@@ -128,7 +140,7 @@ if(-e "/gpfs/glad3/HLSDIST/VFmetrics/v1_2020_2022/$tilepathstring/$tile\_annualm
   ";
 }else{
 print OUT"
-cout<<\"no /gpfs/glad3/HLSDIST/VFmetrics/v1_2020_2022/$tilepathstring/$tile\_annualmin.tif\"<<endl;
+cout<<\"no $minfile\"<<endl;
 memset(histmin, 255, sizeof(histmin[0][0]) * ysize * xsize);";
 }
 
@@ -138,7 +150,7 @@ $year = substr($im1,11,4);
 print OUT"
 try{
   filename=\"$VFsource/$year/$tilepathstring/$im1/$im1\_VEG-IND.tif\";
-  cout<<filename<<endl;
+  //cout<<filename<<endl;
   INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); if(INGDAL==NULL){throw \"Not Found\";} 
   INBAND = INGDAL->GetRasterBand(1);if(INBAND==NULL){throw \"Corrupted\";} 
   CPLErr inresult = INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, histVF[$i], xsize, ysize, GDT_Byte, 0, 0); if(inresult != CE_None){throw \"bad band\";}
