@@ -5,6 +5,8 @@ $enddate = $ARGV[2];
 $source = $ARGV[3];
 $output = $ARGV[4];
 
+system"mkdir -p $output";
+
 $HLSsource = "/gpfs/glad3/HLS";
 my $zone = substr($tile,0,2);
 my $tilepathstring = "$zone/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($tile,4,1);

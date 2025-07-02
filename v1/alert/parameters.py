@@ -10,8 +10,8 @@ satelliteList = ['LC08','LC09','S2A','S2B','S2']
 Ndays = 31
 Nyears = 3
 if outbase == "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT":
-  httpbase = "https://glad.umd.edu/projects/opera/DIST-ALERT"
+  httpbase = "https://gladxfer.umd.edu/projects/opera/DIST-ALERT"
 elif outbase == "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1":
-  httpbase = "https://glad.umd.edu/projects/opera/DIST-ALERT_v1"
+  httpbase = "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1"
 else:
   httpbase = "NA"

@@ -14,12 +14,12 @@ def selectSourceFiles(alertsource, tile, startday ,endday):
   startyear = startday[0:4]
   endyear = endday[0:4]
   if startyear == endyear:#prev=curryear-yr;
-    stream = os.popen("ls "+alertsource+"/"+str(startyear)+"/"+tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/DIST-ALERT*/*VEG-DIST-STATUS.tif 2>/dev/null")
+    stream = os.popen("ls "+alertsource+"/"+str(startyear)+"/"+tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/DIST-ALERT*/OPERA*VEG-DIST-STATUS.tif 2>/dev/null")
     filelist = stream.read().splitlines()
   else:
-    stream = os.popen("ls "+alertsource+"/"+str(startyear)+"/"+tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/DIST-ALERT*/*VEG-DIST-STATUS.tif 2>/dev/null")
+    stream = os.popen("ls "+alertsource+"/"+str(startyear)+"/"+tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/DIST-ALERT*/OPERA*VEG-DIST-STATUS.tif 2>/dev/null")
     filelist = stream.read().splitlines()
-    stream = os.popen("ls "+alertsource+"/"+str(endyear)+"/"+tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/DIST-ALERT*/*VEG-DIST-STATUS.tif 2>/dev/null")
+    stream = os.popen("ls "+alertsource+"/"+str(endyear)+"/"+tile[0:2]+"/"+tile[2]+"/"+tile[3]+"/"+tile[4]+"/DIST-ALERT*/OPERA*VEG-DIST-STATUS.tif 2>/dev/null")
     filelist = filelist + stream.read().splitlines()
 
   for file in filelist:
@@ -172,19 +172,29 @@ def writeMetadata(ID,outdir,httppath,version,Errors,starttime,endtime,spatial_co
         ERR.write(tile+","+ ID+","+Errors+"\n")
     
     writeJSON(outDict, outdir+"/"+ID+".cmr.json")
+  except:
+    with open("errorLOG.txt", 'a') as ERR:
+      ERR.write(tile+","+ ID+",error in writing Metadata\n")
+    traceback.print_exc()
 
+def writeNotification(ID,outdir,httppath,version):
+  try:
+    OUTID=ID
     notiDict = {}
     notiDict['version'] = "1.4"
     notiDict['provider'] = "UMD_GLAD_OPERA"
     notiDict['collection'] = 'OPERA_L3_DIST-ANN-HLS_V1'
-    notiDict['submissionTime'] = ProductionDateTime
+    notiDict['submissionTime'] = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     notiDict['identifier'] = OUTID
     notiDict['product'] = {}
     notiDict['product']['name'] = OUTID
     notiDict['product']['dataVersion'] = version
-    notiDict['product']['files'] = [""]*(len(imagelist)+2)
+    notiDict['product']['files'] = [""]*(len(imagelist)+3)
     i=0
-    
+
+    if not os.path.exists(outdir+"/"+OUTID+"_VEG-DIST-STATUS.png"):
+      response = subprocess.run(["ssh gladapp17 'gdal_translate -of GTiff -outsize 1024 0 -a_nodata 255 " + outdir+"/"+OUTID+"_VEG-DIST-STATUS.tif "+ outdir+"/"+OUTID+"_VEG-DIST-STATUS.png'"],capture_output=True,shell=True)
+
     for image in imagelist:
       #imagefile = re.sub("-","_",image)
       notiDict['product']['files'][i] = {}
@@ -213,11 +223,20 @@ def writeMetadata(ID,outdir,httppath,version,Errors,starttime,endtime,spatial_co
     checksum = subprocess.run(["sha512sum "+outdir+"/"+ID+"_sourcemetadata.csv"],capture_output=True,shell=True).stdout.decode().split()[0]
     notiDict['product']['files'][i]['checksum'] = checksum
     notiDict['product']['files'][i]['checksumType'] = "sha512"
+    i+=1
+    notiDict['product']['files'][i] = {}
+    notiDict['product']['files'][i]['type'] = "browse"
+    notiDict['product']['files'][i]['uri'] = httppath+"/"+OUTID+"_VEG-DIST-STATUS.png"
+    notiDict['product']['files'][i]['name'] = OUTID+"_VEG-DIST-STATUS.png"
+    notiDict['product']['files'][i]['size'] = os.path.getsize(outdir+"/"+OUTID+"_VEG-DIST-STATUS.png")
+    checksum = subprocess.run(["sha512sum "+outdir+"/"+OUTID+"_VEG-DIST-STATUS.png"],capture_output=True,shell=True).stdout.decode().split()[0]
+    notiDict['product']['files'][i]['checksum'] = checksum
+    notiDict['product']['files'][i]['checksumType'] = "sha512"
 
     writeJSON(notiDict, outdir+"/"+ID+".notification.json")
   except:
     with open("errorLOG.txt", 'a') as ERR:
-      ERR.write(tile+","+ ID+",error in writing Metadata\n")
+      ERR.write(tile+","+ ID+",error in writing Notification\n")
     traceback.print_exc()
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ DISTversion = parameters.DISTversion
 HLSsource = parameters.HLSsource #"/gpfs/glad3/HLS"
 outbase = parameters.outbase #"/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"
 dbpath = parameters.dbpath #"/gpfs/glad3/HLSDIST/System/database/"
-httpbase = parameters.httpbase #"https://glad.umd.edu/projects/opera/DIST-ALERT"
+httpbase = "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1"#parameters.httpbase
 
 def runGranule(server,granule):
   (HLS,sensor,Ttile,Sdatetime,majorV,minorV)= granule.split('.')
@@ -46,7 +46,9 @@ def runGranule(server,granule):
             outIDdict[granule] = folders[-1][0:-20]
   OUT_ID = outIDdict[granule]
   httppath = httpbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID
-  response = sendToDAACmod.sendNotification(OUT_ID,outdir,httppath)
+  #print(httppath)
+  response = sendToDAACmod.sendNotification(OUT_ID,outdir,httppath,"backward")
+  time.sleep(1)
   #notification = outdir+"/"+OUT_ID+".notification.json"
   #if os.path.exists(notification):
   #  with open(notification,'r') as notiFile:
@@ -161,7 +163,7 @@ if __name__=='__main__':
   print("starting \"sendtoDAAC_master.py "+filelist+" ",Nscenes,"granules ",now)
   processLOG(["starting \"sendtoDAAC_master.py "+filelist+" ",Nscenes,"granules ",now])
 
-  serverlist = [("17",8)]
+  serverlist = [("17",1)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

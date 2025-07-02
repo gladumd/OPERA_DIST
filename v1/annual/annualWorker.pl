@@ -5,6 +5,7 @@ $tile = $ARGV[0];
 $startdate = $ARGV[1];
 $enddate = $ARGV[2];
 $yearname = $ARGV[3];
+$sendToDAAC = 1; #1 equals true, 0 equals false. ##############################FALSE RIGHT NOW!!!!!!! RESET!!!!!!!!
 if(!-d "temp"){mkdir"temp";}
 
 $HLSsource = "/gpfs/glad3/HLS";
@@ -17,6 +18,7 @@ $startyear = substr($startdate,0,4);
 $endyear = substr($enddate,0,4);
 $startdoy = readpipe("python dayDiff.py 2021001 $startdate");
 chomp($startdoy);
+$prevyear = $startyear-1;
 
 my $zone = substr($tile,0,2);
 my $tilepathstring = $zone."/".substr($tile,2,1)."/".substr($tile,3,1)."/".substr($tile,4,1);
@@ -34,15 +36,17 @@ foreach $year ($startyear..$endyear){
     ($name,$datetime,$sensor,$Ttile,$FDISTversion)= split('_',$s);
     my $date = substr($datetime,0,7);
     if($date>=$startdate and $date < $enddate){
-      $f =~ s/VEG-/GEN-/g;
-      if(-e "$f"){
+      #$f =~ s/VEG-/GEN-/g;
+      my @tf = readpipe"ls $sourcebase/$year/$tilepathstring/*/$id*";
+      $tcount = @tf;
+      #if(-e "$f"){
+      if ($tcount >=23){
         if(exists $OUTID{$s}){
           ($fOPERA,$fL3,$fDIST,$fTtile,$fsensingTime,$fProdTime,$fsatellite,$fres,$fDISTversion)=split('_',$OUTID{$s});
           ($sOPERA,$sL3,$sDIST,$sTtile,$ssensingTime,$sProdTime,$ssatellite,$sres,$sDISTversion)=split('_',$id);
           if($sProdTime > $fProdTime){$OUTID{$s}=$id;}
         }else{
           ($sOPERA,$sL3,$sDIST,$sTtile,$ssensingTime,$sProdTime,$ssatellite,$sres,$sDISTversion)=split('_',$id);
-          #if($sProdTime > "20230307T000000Z"){$OUTID{$s}=$id;}
           $OUTID{$s}=$id;
         }
         push(@granules, $s);
@@ -63,8 +67,6 @@ if($Ngranules >0){
     #print"$granule $currsize / $Ngranules\n";
     ($name,$datetime,$sensor,$Ttile,$FDISTversion)= split('_',$granule);
     $year = substr($datetime,0,4);$doy = substr($datetime,4,3);
-    #system"python ../dayDiff.py 2021001 $year$doy\n";
-    #$command = "python dayDiff.py 2021001 $year$doy";
     $currDate = readpipe("python dayDiff.py 2021001 $year$doy"); chomp($currDate);
     $date{"$granule"}="$currDate";
     $useddates{$currDate}=1;
@@ -74,9 +76,10 @@ if($Ngranules >0){
   $outdir = "$outbase/$tilepathstring/$yearname";
   
   if(!-d $outdir){system"mkdir -p $outdir";}
+
   $httppath = "$httpbase/$tilepathstring/$yearname";
   #print("@images\n");
-  $productionTime = strftime "%Y%jT%H%M%SZ", gmtime;
+  $productionTime = strftime "%Y%m%dT%H%M%SZ", gmtime;
   $ID = "OPERA_L3_DIST-ANN-HLS_${Ttile}_${yearname}_${productionTime}_30_${DISTversion}";
   
   #@images = @images[0..15];
@@ -86,21 +89,29 @@ if($Ngranules >0){
     $minlog = readpipe"perl ann3yrMin.pl $tile $startdate3yr $enddate $sourcebase $outdir";
     open(OUT,">log3yr$tile.txt");print OUT"$minlog";close(OUT);
   }
-  system"rm $outdir/OPERA*";
+  #system"rm $outdir/OPERA*";
   system("gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q $outdir/VEG-IND-3YR-MIN.tif $outdir/${ID}_VEG-IND-3YR-MIN.tif");
-  $genlog = &genANN(@images);
-  $veglog = &vegANN(@images);
+  my $veglog = vegANN(@images);
+  my $genlog = genANN(@images);
   ($vegstatus,$spatial_coverage) = split(',',$veglog);
-  #print"$genlog\n";
+  #print"$tile, $vegstatus,$spatial_coverage, $genlog\n";
   if($vegstatus == "ok" and $genlog =="ok"){
     $Errors = "NA";
-    #print"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py $ID $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors\n";
     system"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python writeMetadataAnn.py $ID $outdir $sourcebase $tile $startdate $enddate $spatial_coverage $httppath $DISTversion $Errors";
-    open(OUT,">>annualLOG.txt"); print OUT"$tile,$ID,success\n"; close(OUT);
-    #print"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
-    #readpipe"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
-  }else{open(OUT,">>errorLOG.txt"); print OUT"$tile,failed\n"; close(OUT);}
-}else{open(OUT,">>strataLOG.txt"); print OUT"$tile,NoID,no_granules\n"; close(OUT);}
+    my @granulefiles = readpipe"ls $outdir/${ID}*.tif 2>/dev/null";
+    $filecount = @granulefiles;
+    if($filecount eq 21){
+      open(OUT,">>annualLOG.txt"); print OUT"$tile,$ID,success\n"; close(OUT);
+      if($sendToDAAC){
+        #readpipe"module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://$outdir/$ID.notification.json";
+        system"module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/System/dist-py-env/bin/activate; python sendToDAACmod.py $ID $outdir $httppath";
+        open(OUT,">>sentLOG.txt");print OUT"$ID\n";close(OUT);
+      }else{
+        open(OUT,">>didnotsendLOG.txt");print OUT"$tile,$ID\n";close(OUT);
+      }
+    }else{open(OUT,">>errorLOG.txt"); print OUT"$tile,failed\n"; close(OUT);}
+  }else{open(OUT,">>errorLOG.txt"); print OUT"$tile,failed,$vegstatus,$genlog\n"; close(OUT);}
+}
 
 
 sub sortDates(){
@@ -123,6 +134,11 @@ sub sortDates(){
 
 
 sub vegANN(){
+@old = readpipe"ls $sourcebase/$prevyear/$tilepathstring/*/OPERA*VEG-DIST-STATUS.tif 2>/dev/null";
+$prevyearStatus = pop(@old);chomp($prevyearStatus);#print("$sourcebase/$prevyear/$tilepathstring/OPERA*VEG-DIST-STATUS.tif 2>/dev/null");
+@old = readpipe"ls $sourcebase/$prevyear/$tilepathstring/*/OPERA*VEG-DIST-DATE.tif 2>/dev/null";
+$prevyearDate = pop(@old);chomp($prevyearDate);
+
 @images = @_;
 $first = $images[0];
 ($name,$datetime,$sensor,$Ttile,$FDISTversion)= split('_',$first);
@@ -167,6 +183,7 @@ int zone = atoi (argv[1]);
 string tilename=\"$tile\";
 string filename;
 int confidenceThreshold = 400;
+ofstream myfile;
 
 //GDAL
 GDALAllRegister();
@@ -196,8 +213,8 @@ uint8_t vegind[Ngranules][ysize][xsize];memset(vegind, 0, sizeof(vegind[0][0][0]
 uint8_t outvegmax[ysize][xsize];memset(outvegmax, 0, sizeof(outvegmax[0][0]) * ysize * xsize);
 ";
 
-@uint8 = ("veghist","veganommax","vegcount","vegstatus");
-@short = ("vegdate","vegdur","vegconf");
+@uint8 = ("veghist","veganommax","vegcount","vegstatus","prevstatus");
+@short = ("vegdate","vegdur","vegconf","prevdate");
 foreach $met (@uint8){
   print OUT"uint8_t ${met}[ysize][xsize];memset(${met}, 255, sizeof(${met}[0][0]) * ysize * xsize);\n";
   print OUT"uint8_t out${met}[ysize][xsize];memset(out${met}, 255, sizeof(out${met}[0][0]) * Ngranules * ysize * xsize);\n";
@@ -217,9 +234,23 @@ sourcefiles.open (\"$outdir/sourcegranules.txt\");
 i=0;
 bool inevent[ysize][xsize];memset(inevent, 0, sizeof(inevent[0][0]) * ysize * xsize);
 bool ongoing[ysize][xsize];memset(ongoing, 0, sizeof(ongoing[0][0]) * ysize * xsize);
+bool confprev[ysize][xsize];memset(confprev, 0, sizeof(confprev[0][0]) * ysize * xsize);
 
 int printx = 1759;
 int printy = 178;
+
+filename= \"$prevyearStatus\"; 
+INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, prevstatus, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+
+filename= \"$prevyearDate\"; 
+INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, prevdate, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
+
+for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++){
+  if(prevstatus[y][x]<=2 or prevstatus[y][x]==4 or prevstatus[y][x]==5){prevdate[y][x]=0;}
+}}
+
 ";
 
 foreach $granule (@images){
@@ -227,6 +258,7 @@ foreach $granule (@images){
 $year = substr($datetime,0,4);
 #$imagedate=$date{"$granule"};
 print OUT"
+try{
 filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-DIST-CONF.tif\"; 
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vegconf, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
@@ -242,7 +274,10 @@ INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vegdate, xsize, ysize, GDT_Int16, 
 sourcefiles << \"$OUTID{$granule},$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\"<<endl;
 
 for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++){
-    if(vegconf[y][x] > outvegconf[y][x]){
+  if(prevdate[y][x]>0 and vegdate[y][x]==prevdate[y][x]){outvegconf[y][x]=0;}
+  else{
+    if(outvegconf[y][x]==-1 and vegconf[y][x]>=0){outvegconf[y][x]=0;}
+    if(vegconf[y][x] > outvegconf[y][x] and vegstatus[y][x]<7){
       index[y][x]==i;
       outvegconf[y][x] = vegconf[y][x];
       outvegdate[y][x] = vegdate[y][x];
@@ -256,7 +291,7 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++){
       index[y][x]=i;
       ongoing[y][x] = true;
     }
-    //if(x==printx and y==printy){cout<<\"$granule,\"<<(int)vegstatus[y][x]<<','<<inevent[y][x]<<','<<(int)countevents[y][x]<<endl;}
+
     if((vegstatus[y][x]==3 or vegstatus[y][x]==6) and !inevent[y][x]){
       inevent[y][x]=true;
       if(countevents[y][x]==255){countevents[y][x]=1;}
@@ -265,9 +300,14 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++){
       inevent[y][x]=false;
       ongoing[y][x] = false;
     }
-    //if(x==printx and y==printy){cout<<i<<','<<\"$granule,\"<<(int)vegstatus[y][x]<<','<<(int)outvegconf[y][x]<<','<<inevent[y][x]<<','<<(int)countevents[y][x]<<endl;}
+  }
 }}
 i++;
+} catch(\.\.\.){
+  myfile.open(\"corruptedfiles.txt\", ios::app);
+  myfile<<\"$tile,$granule/$OUTID{$granule}\"<<endl;
+  myfile.close();
+}
 ";
 }
 
@@ -339,30 +379,39 @@ $year = substr($datetime,0,4);
 #$imagedate=$date{"$granule"};
 print OUT"
 if(datesNeeded[i]){
-  filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-HIST.tif\"; 
-  INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-  INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, veghist, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
-  
-  filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-ANOM-MAX.tif\"; 
-  INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-  INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, veganommax, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+  try{
+    //cout<<\"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\"<<endl;
+    sourcefiles << \"$OUTID{$granule},$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\"<<endl;
+    filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-HIST.tif\"; 
+    INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
+    INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, veghist, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
 
-  filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-DIST-COUNT.tif\"; 
-  INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-  INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vegcount, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+    filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-ANOM-MAX.tif\"; 
+    INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
+    INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, veganommax, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
 
-  filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-DIST-DUR.tif\"; 
-  INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-  INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vegdur, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
+    filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-DIST-COUNT.tif\"; 
+    INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
+    INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vegcount, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
 
-  for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
-    if(outvegconf[y][x] >= confidenceThreshold and index[y][x]==i){";
-    foreach $met("veghist","veganommax","vegcount","vegdur"){print OUT"
-      out${met}[y][x] = ${met}[y][x];";
-    }
-    print OUT"
-    }
-  }}  
+    filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-DIST-DUR.tif\"; 
+    INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
+    INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vegdur, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
+
+    for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
+      if(outvegconf[y][x] >= confidenceThreshold and index[y][x]==i){";
+      foreach $met("veghist","veganommax","vegcount","vegdur"){print OUT"
+        out${met}[y][x] = ${met}[y][x];";
+      }
+      print OUT"
+      }
+    }}  
+  } catch(\.\.\.){
+    //cout<<\"$tile,$granule/$OUTID{$granule}\"<<endl;
+    myfile.open(\"corruptedfiles.txt\", ios::app);
+    myfile<<\"$tile,$granule/$OUTID{$granule}\"<<endl;
+    myfile.close();
+  }
 }
 i++;";
 }
@@ -375,10 +424,20 @@ foreach $granule (@images){
 $year = substr($datetime,0,4);
 #$imagedate=$date{"$granule"};
 print OUT"
+try{
 //imagedate[i]=$imagedate;
+//cout<<\"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-IND.tif\"<<endl;
 filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_VEG-IND.tif\"; 
-INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
-INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vegind[i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+GDALDataset *INDS = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); 
+if (INDS == nullptr) {throw std::runtime_error(CPLGetLastErrorMsg());}
+INBAND = INDS->GetRasterBand(1);
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, vegind[i], xsize, ysize, GDT_Byte, 0, 0); GDALClose(INDS);
+} catch(\.\.\.){
+    //cout<<\"$tile,$granule/$OUTID{$granule}\"<<endl;
+    myfile.open(\"corruptedfiles.txt\", ios::app);
+    myfile<<\"$tile,$granule/$OUTID{$granule}\_VEG-IND.tif\"<<endl;
+    myfile.close();
+  }
 i++;";
 }
 print OUT"
@@ -440,8 +499,8 @@ int colorarray[11][4]={
   {224,27,7,255},
   {119,119,119,255},
   {221,221,221,255},
-  {119,119,119,255},
-  {221,221,221,255}
+  {51,51,51,255},
+  {68,68,68,255}
 };
 
 GDALColorTable ct;
@@ -586,14 +645,22 @@ cout<<\"ok\"<<','<<(double)percentData;
 return 0;
 }";
 close (OUT);
-if($Ngranules>0){system("cd temp;g++ ANN_veg_$tile.cpp -o ANN_veg_$tile -lgdal -Wno-unused-result -std=gnu++11");}
+if($Ngranules>0){system("cd temp;g++ ANN_veg_$tile.cpp -o ANN_veg_$tile -lgdal -Wno-unused-result -std=gnu++11");
 my $templog = readpipe"cd temp; ./ANN_veg_$tile $zone; rm ANN_veg_$tile; rm ANN_veg_$tile.cpp";
-chomp($templog);
-return($templog);
+#print"templog: $templog\n";
+#chomp($templog);
+}#else{$templog = "ok,NA";}
+#print"$tile,$Ngranules,$templog\n";
+#return $templog ;
 }
 
 
 sub genANN(){
+@old = readpipe"ls $sourcebase/$prevyear/$tilepathstring/*/OPERA*GEN-DIST-STATUS.tif 2>/dev/null";
+$prevyearStatus = pop(@old);chomp($prevyearStatus);
+@old = readpipe"ls $sourcebase/$prevyear/$tilepathstring/*/OPERA*GEN-DIST-DATE.tif 2>/dev/null";
+$prevyearDate = pop(@old);chomp($prevyearDate);
+
 @images = @_;
 $first = $images[0];
 ($name,$datetime,$sensor,$Ttile,$FDISTversion)= split('_',$first);
@@ -636,6 +703,7 @@ int zone = atoi (argv[1]);
 string tilename=\"$tile\";
 string filename;
 int confidenceThreshold = 400;
+ofstream myfile;
 
 //GDAL
 GDALAllRegister();
@@ -659,8 +727,8 @@ uint8_t countevents[ysize][xsize];memset(countevents, 255, sizeof(countevents[0]
 uint8_t prevyear[ysize][xsize];memset(prevyear, 255, sizeof(prevyear[0][0]) * ysize * xsize);
 ";
 
-@uint8 = ("gencount","genstatus");
-@short = ("genconf","genanommax","gendate","gendur");
+@uint8 = ("gencount","genstatus","prevstatus");
+@short = ("genconf","genanommax","gendate","gendur","prevdate");
 foreach $met (@uint8){
   print OUT"uint8_t ${met}[ysize][xsize];memset(${met}, 0, sizeof(${met}[0][0]) * ysize * xsize);\n";
   print OUT"uint8_t out${met}[ysize][xsize];memset(out${met}, 0, sizeof(out${met}[0][0]) * ysize * xsize);\n";
@@ -680,11 +748,25 @@ bool ongoing[ysize][xsize];memset(ongoing, 0, sizeof(ongoing[0][0]) * ysize * xs
 
 int printx = 3193;
 int printy = 1205;
+
+filename= \"$prevyearStatus\"; 
+INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, prevstatus, xsize, ysize, GDT_Byte, 0, 0); GDALClose(INGDAL);
+
+filename= \"$prevyearDate\"; 
+INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
+INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, prevdate, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
+
+for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++){
+  if(prevstatus[y][x]<=2 or prevstatus[y][x]==4 or prevstatus[y][x]==5){prevdate[y][x]=0;}
+}}
+
 ";
 foreach $granule (@images){
   ($name,$datetime,$sensor,$Ttile,$FDISTversion)= split('_',$granule);
 $year = substr($datetime,0,4);
 print OUT"
+try{
 filename= \"$sourcebase/$year/$tilepathstring/$granule/$OUTID{$granule}\_GEN-DIST-CONF.tif\"; 
 INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = INGDAL->GetRasterBand(1);
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, genconf, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
@@ -698,7 +780,10 @@ INGDAL = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly ); INBAND = ING
 INBAND->RasterIO(GF_Read, 0, 0, xsize, ysize, gendate, xsize, ysize, GDT_Int16, 0, 0); GDALClose(INGDAL);
 
 for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++){
-    if(genconf[y][x] > outgenconf[y][x]){
+  if(prevdate[y][x]>0 and gendate[y][x]==prevdate[y][x]){outgenconf[y][x]=0;}
+  else{
+    if(outgenconf[y][x]==-1 and genconf[y][x]>=0){outgenconf[y][x]=0;}
+    if(genconf[y][x] > outgenconf[y][x] and genstatus[y][x]<7){
       index[y][x]==i;
       outgenconf[y][x] = genconf[y][x];
       outgendate[y][x] = gendate[y][x];
@@ -721,8 +806,14 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++){
       ongoing[y][x] = false;
     }
     //if(x==printx and y==printy){cout<<i<<','<<\"$granule,\"<<(int)genstatus[y][x]<<','<<(int)outgenconf[y][x]<<','<<inevent[y][x]<<','<<(int)countevents[y][x]<<endl;}
+  }
 }}
 i++;
+} catch(\.\.\.){
+  myfile.open(\"corruptedfiles.txt\", ios::app);
+  myfile<<\"$tile,$granule/$OUTID{$granule}\"<<endl;
+  myfile.close();
+}
 ";
 }
 
@@ -956,8 +1047,10 @@ cout<<\"ok\";
 return 0;
 }";
 close (OUT);
-if($Ngranules>0){system("cd temp;g++ ANN_gen_$tile.cpp -o ANN_gen_$tile -lgdal -Wno-unused-result -std=gnu++11");}
+if($Ngranules>0){system("cd temp;g++ ANN_gen_$tile.cpp -o ANN_gen_$tile -lgdal -Wno-unused-result -std=gnu++11");
 my $templog = readpipe"cd temp; ./ANN_gen_$tile $zone; rm ANN_gen_$tile; rm ANN_gen_$tile.cpp";
-chomp($templog);
-return($templog);
+#chomp($templog);
+}
+#else{$templog = "ok";}
+#return($templog);
 }

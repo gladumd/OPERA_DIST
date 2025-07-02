@@ -112,6 +112,8 @@ env.bak/
 venv.bak/
 dist-py-env/
 dist-py-env2/
+dist-py-env3/
+dist-py-env4/
 
 # Spyder project settings
 .spyderproject
@@ -161,5 +163,6 @@ alert/*pyc
 **/temp/*
 **.pyc
 v1/alert/logs/*
-
+v1/alert312/*
+v0/*
 
