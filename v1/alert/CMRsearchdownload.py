@@ -121,7 +121,7 @@ def searchCMRGranuleList(granlist):
 #search CMR for last X days. Add new granules to database and return dictionary of urls to download.
 def searchCMR(startdate,enddate):
   #endstring = enddate.strftime("%Y-%m-%dT%H:%M:%SZ")
-  startYJT = startdate.strftime("%Y%jT000000")
+  startYJT = (startdate + datetime.timedelta(days=-1)).strftime("%Y%jT233000")
   startYMD = startdate.strftime("%Y-%m-%d")
   endYJT = enddate.strftime("%Y%jT999999")
   endYMD = enddate.strftime("%Y-%m-%d")
@@ -186,13 +186,15 @@ def searchCMR(startdate,enddate):
 
 #download all the links associated with a granule
 def download_granule(links):
-  if os.path.exists("KILL_download") or os.path.exists("../KILL_ALL"):
+  if os.path.exists("KILL_download") or os.path.exists("KILL_ALL"):
     return "killed"
   img_url = links[0]
   basepath = source +"/" #"/cephfs/glad4/HLS/"
   
   # Extract subdir name from url
   HLS_ID = img_url.split('/')[5]
+  with open("dlog.txt",'a') as dlog:
+    dlog.write(HLS_ID+"\n")
   # Extract info (sensor, tile, year) from HLS_ID using regex
   slices = re.search(r"\.(\w\d{2})\.T(\d{2})(\w)(\w)(\w).(\d{4})", HLS_ID)
   # Handle path and name
@@ -260,12 +262,14 @@ def download_parallel(granuledictionary,Nsim=200):
   processLOG(["Start download", len(granulelist),"granules", starttime])
   #add granules to database with code 1 so that they aren't attempted in the next search
   addGranuleList(list(granuledictionary.keys())) 
+  #processLOG(["added list to download"])
   #print("Start download", len(granulelist),"granules", starttime)
   procPool = Pool(Nsim)
   results = procPool.imap_unordered(download_granule,granulelist)
   Nsuccess = 0
   Nerrors = 0
   for result in results:
+    #print("download in results")
     if result == "killed":
       processLOG(["CMRsearchdownload.py shut down with kill file"])
       sys.exit(1)
@@ -404,7 +408,7 @@ def addGranule(granule,writeNew=True,fromDownload=False):
   sqliteCommand = "INSERT or IGNORE INTO fulltable(HLS_ID,statusFlag,sensingTime,MGRStile,DIST_ID) VALUES(?,?,?,?,?)"
   sqliteTuple = (HLS_ID,statusFlag,sensingTime,MGRStile,DIST_ID)
   updateSqlite(sqliteCommand,sqliteTuple)
-
+  
 #parallel adding of all granules in list
 def addGranuleList(granulelist):
   Nsim = 40

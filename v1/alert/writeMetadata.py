@@ -12,7 +12,7 @@ import parameters
 
 currdir = os.getcwd()
 dbpath = parameters.dbpath#"/gpfs/glad3/HLSDIST/System/database/"
-imagelist = ["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","VEG-DIST-PERC","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","GEN-DIST-PERC"]#,"VEG-LAST-ANOM-DATE","VEG-DIST-NOCOUNT"
+imagelist = ["VEG-DIST-STATUS","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","VEG-DIST-PERC","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","GEN-DIST-PERC"]#,"VEG-LAST-ANOM-DATE","VEG-DIST-NOCOUNT"
 HLSsource = parameters.HLSsource
 
 def xmlToDict(xmlfilename,ID):
@@ -146,11 +146,9 @@ def writeMetadata(ID,sourceXML,outdir,version,prevgranule):
 
     for image in imagelist:
       #os.rename(outdir+"/"+ID+"_"+image+".tif",outdir+"/"+OUT_ID+"_"+image+".tif")
-      os.system("cp "+outdir+"/"+ID+"_"+image+".tif "+outdir+"/"+OUT_ID+"_"+image+".tif")
-    if os.path.exists(outdir+"/"+ID+"_LAND-MASK.tif"):
-      os.system("cp "+outdir+"/"+ID+"_LAND-MASK.tif "+outdir+"/"+OUT_ID+"_LAND-MASK.tif")
-    if os.path.exists(outdir+"/"+ID+"_DATA-MASK.tif"):
-      os.system("cp "+outdir+"/"+ID+"_DATA-MASK.tif "+outdir+"/"+OUT_ID+"_DATA-MASK.tif")
+      os.system("mv "+outdir+"/"+ID+"_"+image+".tif "+outdir+"/"+OUT_ID+"_"+image+".tif")
+    os.system("cp "+outdir+"/"+ID+"_DATA-MASK.tif "+outdir+"/"+OUT_ID+"_DATA-MASK.tif")
+    os.system("cp "+outdir+"/"+ID+"_VEG-IND.tif "+outdir+"/"+OUT_ID+"_VEG-IND.tif")
     #os.rename(outdir+"/"+ID+"_VEG-DIST-PERC.tif",outdir+"/"+OUT_ID+"_VEG-DIST-PERC.tif")
     #os.rename(outdir+"/"+ID+"_GEN-DIST-PERC.tif",outdir+"/"+OUT_ID+"_GEN-DIST-PERC.tif")
     #os.system("cp "+outdir+"/"+ID+"_VEG-DIST-PERC.tif "+outdir+"/"+OUT_ID+"_VEG-DIST-PERC.tif")

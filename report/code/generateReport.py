@@ -32,7 +32,8 @@ import os, sys, math, csv, subprocess, shutil, glob
 dateStr = sys.argv[1]
 reportdir = '/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/'
 indir = '/gpfs/glad3/HLSDIST/System/report/'
-dbPath = '/gpfs/glad3/HLSDIST/System/database/database.db.bak'
+#dbPath = '/gpfs/glad3/HLSDIST/System/database/database.db.bak'
+dbPath = '/gpfs/glad3/HLSDIST/System/v0/database/database.db.bak'
 jsonFile = reportdir + 'report'+dateStr+'.json'
 databaseStr = indir + 'database.db'
 cmd = 'cp '+dbPath+' '+indir
@@ -197,7 +198,7 @@ for row in rowsS30:
 
 conn.close()
 
-outname_report = indir + "ProductStatus_"+dateStartStr+"_"+dateEndStr+".csv"
+outname_report = indir + "backup/ProductStatus_"+dateStartStr+"_"+dateEndStr+".csv"
 col_names_report = ["HLS_ID","DIST_ID","statusFlag","sensingTime","availableTime","downloadTime","processedTime","Error","HLSAvailabeTime","retrievalTime","productTime","fullCycleTime"]
 
 #output all the data, including sensing time, available time, download time, retrieval time and processed time
@@ -265,7 +266,7 @@ out_csv_file.close()
 dfs = pd.read_csv(outname_report)
 
 #write the data accounting report, also write down the time summary for source data available time, production time, retrieval time and full cycle time
-outname_report_datacount = indir + "OPERA_UMD_SDS_Activity_Report_"+dateStartStr+"_"+dateEndStr+".csv"
+outname_report_datacount = indir + "backup/OPERA_UMD_SDS_Activity_Report_"+dateStartStr+"_"+dateEndStr+".csv"
 #time period needs to confirm and update with Amy, it's daily report
 row_dataaccounting_tile = "Title: OPERA UMD SDS Activity Summary Report"+"\n"+\
                           "Period of Performance: "+dateStart+"-"+dateEnd+"\n"+\
@@ -336,7 +337,7 @@ row_stats = "Max retrieval time = " + str(dfs['retrievalTime'].max()) + "\n" + \
     "Min retrieval time = "+ str(dfs['retrievalTime'].min()) + "\n" + \
     "90% Percentile retrieval time = "+ p_90 + "\n"
 
-outname_report_retrieval = indir + "RetrievalTimeReport_"+dateStartStr+"_"+dateEndStr+".csv"
+outname_report_retrieval = indir + "backup/RetrievalTimeReport_"+dateStartStr+"_"+dateEndStr+".csv"
 col_names_report_retrieval = ["OPERA Product Filename","PublicAvailableDateTime","ProductReceivedDateTime","RetrievalTime"]        
 
 with open(outname_report_retrieval,'w') as out_csv_file_retrieval:
@@ -373,7 +374,7 @@ row_stats = "Max production time = " + str(dfs['productTime'].max()) + "\n" + \
     "Min production time = "+ str(dfs['productTime'].min()) + "\n" + \
         "90% Percentile production time = "+ p_90 + "\n"
 
-outname_report_product = indir + "ProductionTimeReport_"+dateStartStr+"_"+dateEndStr+".csv"
+outname_report_product = indir + "backup/ProductionTimeReport_"+dateStartStr+"_"+dateEndStr+".csv"
 col_names_report_product = ["OPERA Product Filename","InputReceivedDateTime","DAACAlertedDateTime","ProductionTime"]       
 
 with open(outname_report_product,'w') as out_csv_file_product:

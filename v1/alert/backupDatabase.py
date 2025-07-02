@@ -67,8 +67,10 @@ def checkBackup(dbfile):
       else:
         with open("errorLOG.txt",'a') as ERR:
           ERR.write("database backup failed, retrying "+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")
-          checkDatabase(dbfile)
-          #print("corrupted database backup "+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")
+        with open("processLOG.txt",'a') as ERR:
+          ERR.write("\n!!!!!!!!!!!!!!!!!!!!!!!!database backup failed, retrying "+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"!!!!!!!!!!!!!!!!\n\n")
+        checkDatabase(dbfile)
+        #print("corrupted database backup "+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")
       subprocess.run(["rm "+dbfile+".baktemp"],shell=True)
     except sqlite3.OperationalError as error:
       if error.args[0] == 'database is locked':

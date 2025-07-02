@@ -5,6 +5,7 @@ import sys
 import json
 import sendToDAACmod
 import parameters
+import time
 
 granfilecount = 21
 reportDate = (datetime.datetime.utcnow() + datetime.timedelta(days=-2)).strftime("%Y%m%d")
@@ -27,7 +28,10 @@ def send(reportDate):
       with open("errorLOG.txt",'a') as ERR:
         now = datetime.datetime.now()
         ERR.write("Error in reconcilicationReport.py "+str(now)+response.stderr.decode())
-
+  else:
+    with open("processLOG.txt",'a') as LOG:
+      LOG.write("/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/sentToLP_v1_"+reportDate+".rpt does not exist\n")
+ 
 def receive(reportDate):
   if os.path.exists("/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/sentToLP_v1_" +reportDate+".rpt"):
     response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws s3 cp s3://lp-prod-reconciliation/reports/sentToLP_v1_"+reportDate+".json /gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/report_v1_"+reportDate+".json"],capture_output=True,shell=True)
@@ -45,7 +49,10 @@ def extractErrors(reportfile,reportDate):
     results = json.loads(line)
   counts = results[0]["OPERA_L3_DIST-ALERT-HLS_V1___1"]
   with open("/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/DAILYSTATS_v1.csv",'a') as DAILY:
-    DAILY.write(reportDate+','+str(int(counts["sent"]/granfilecount))+','+str(int(counts["failed"]/granfilecount))+','+str(int(counts["missing"]/granfilecount))+','+str(int(counts["other"]/granfilecount))+','+str(int(counts["cksum_err"]/granfilecount))+"\n")
+    DAILY.write(reportDate+','+str(int(counts["sent"]/granfilecount))+','+str(int(counts["failed"]/granfilecount))+','+str(int(counts["missing"]/granfilecount))+','+str(int(counts["other"]/granfilecount))+','+str(int(counts["cksum_err"]/granfilecount))+','+datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M")+"\n")
+  with open("processLOG.txt",'a') as LOG:
+    now = datetime.datetime.now()
+    LOG.write("LP sent "+reportDate+" "+','+str(int(counts["sent"]/granfilecount))+','+str(int(counts["failed"]/granfilecount))+','+str(int(counts["missing"]/granfilecount))+','+str(int(counts["other"]/granfilecount))+','+str(int(counts["cksum_err"]/granfilecount))+','+now.strftime("%Y-%m-%d %H:%M")+"\n")
   if int(counts["failed"])+int(counts["missing"])+int(counts["other"])+int(counts["cksum_err"]) > 0:
     errors = {}
     for errfile in counts["report"].keys():
@@ -66,40 +73,48 @@ def extractErrors(reportfile,reportDate):
             HLSdate = datetime.datetime.strptime(sensingTime, "%Y%m%dT%H%M%SZ").strftime("%Y%jT%H%M%S")
             HLS_ID = "HLS."+sensor[0]+"30."+tile+"."+HLSdate+".v2.0"
             out.write(HLS_ID+"\n")
-    #resend(errors)
+    resend(errors,reportDate)
     return errors
   return "NA"
     
-def resend(errors):
+def resend(errors,reportDate):
   failcount =0
   successcount=0
+  backcount = 0
+  forcount = 0
   for flag in errors.keys():
-      #if flag != "failed":
+    #if flag != "cksum_err":
       total = len(errors[flag])
       i = 0
       for g in errors[flag]:
         OUT_ID=g
         i+=1
-        print("\r"+OUT_ID+" "+str(i)+"/"+str(total),end="")
+        #print("\r"+OUT_ID+" "+str(i)+"/"+str(total),end="")
         (OPERA,L3,DIST,Ttile,sensingTime,ProductionDateTimeName,satellite,res,DISTversion) =  OUT_ID.split('_')
         tile = Ttile[1:]
         tilepathstring = tile[0:2]+"/"+tile[2:3]+"/"+tile[3:4]+"/"+tile[4:5]
         year = sensingTime[0:4]
-        jdate = datetime.datetime.strptime(sensingTime, "%Y%m%dT%H%M%SZ").strftime  ("%Y%jT%H%M%S")
+        jdate = datetime.datetime.strptime(sensingTime, "%Y%m%dT%H%M%SZ").strftime("%Y%jT%H%M%S")
         DIST_ID = "DIST-ALERT_"+jdate+"_"+satellite[0:1]+"30_"+Ttile+"_"+DISTversion
         outdir = outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID
         httppath = httpbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID
-        response = sendToDAACmod.sendNotification(OUT_ID,outdir,httppath)
-        if response =="ok":
-          successcount +=1
+        if sensingTime[0:4] == "2023":
+          #response = sendToDAACmod.sendNotification(OUT_ID,outdir,httppath,"backward")
+          backcount+=1
         else:
-          failcount+=1
-          with open("errorLOG.txt",'a') as ERR:
-            now = datetime.datetime.now()
-            ERR.write("Error in sendToDAACmod "+OUT_ID+" "+str(now))
+          response = sendToDAACmod.sendNotification(OUT_ID,outdir,httppath,"forward")
+          forcount+=1
+          if response =="ok":
+            successcount +=1
+          else:
+            failcount+=1
+            with open("errorLOG.txt",'a') as ERR:
+              now = datetime.datetime.now()
+              ERR.write("Error in sendToDAACmod "+OUT_ID+" "+str(now))
+        time.sleep(2)
   with open("processLOG.txt",'a') as LOG:
     now = datetime.datetime.now()
-    LOG.write("resent "+str(successcount) +"granules, " +str(failcount)+" failed to send "+str(now))
+    LOG.write("resent from "+reportDate+" "+str(successcount) +" granules, " +str(failcount)+" failed to send "+str(backcount)+" back "+str(forcount)+" forward "+str(now)+"\n")
       
 
 
@@ -115,6 +130,6 @@ if __name__=='__main__':
     receive(reportDate)
   elif sys.argv[1] == "EXTRACT":
     #reportDate = "20230212"
-    extractErrors("/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/report_v1"+reportDate+".json")
+    extractErrors("/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/report_v1_"+reportDate+".json",reportDate)
   else:
     print("Must enter 'python reconciliationReport.py SEND' or 'python reconciliationReport.py RECEIVE'")
