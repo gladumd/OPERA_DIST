@@ -7,7 +7,6 @@ import os
 import re
 import subprocess
 from contextlib import closing
-import multiprocessing
 import traceback
 import writeMetadata
 import sendToDAACmod
@@ -23,8 +22,8 @@ httpbase = parameters.httpbase #"https://glad.umd.edu/projects/opera/DIST-ALERT"
 dbpath = parameters.dbpath #"/gpfs/glad3/HLSDIST/System/database/"
 imagelist = ["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","LAND-MASK"]
 
-response = subprocess.run(["ssh gladapp17 \'cd "+currdir+"; g++ 03A_alertUpdateVEG.cpp -o 03A_alertUpdateVEG -lgdal -std=gnu++11 -Wno-unused-result\'"],shell=True)
-response = subprocess.run(["ssh gladapp17 \'cd "+currdir+"; g++ 03B_alertUpdateGEN.cpp -o 03B_alertUpdateGEN -lgdal -std=gnu++11 -Wno-unused-result\'"],shell=True)
+response = subprocess.run(["ssh gladapp20 \'cd "+currdir+"; source moduleCpp.sh; g++ 03A_alertUpdateVEG.cpp -o 03A_alertUpdateVEG -lgdal -std=gnu++11 -Wno-unused-result\'"],shell=True)
+response = subprocess.run(["ssh gladapp20 \'cd "+currdir+"; source moduleCpp.sh; g++ 03B_alertUpdateGEN.cpp -o 03B_alertUpdateGEN -lgdal -std=gnu++11 -Wno-unused-result\'"],shell=True)
 
 def sortDates(listtosort):
   datetimeDict = {}
@@ -54,15 +53,13 @@ def runTile(server,Ttile,tempscenes):
     HLS_ID = granule
     DIST_ID = "DIST-ALERT_"+Sdatetime+"_"+sensor+"_"+Ttile+"_"+DISTversion
     year = Sdatetime[0:4]
-    if not (os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-ANOM.tif") and os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-ANOM.tif")):
-      #if not os.path.exists("/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+ "_LAND-MASK.tif"):
-        #DIST_IDv0=DIST_ID[0:-1]+'0'
-      #  subprocess.run("mv /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_IDv0 + " /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID,capture_output=False,shell=True)
-        #subprocess.run("mv /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_IDv0+ "_VEG-IND.tif"+ " /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+ "_VEG-IND.tif",capture_output=False,shell=True)
-       # subprocess.run("mv /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_IDv0+ "_LAND-MASK.tif"+ " /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+ "_LAND-MASK.tif",capture_output=False,shell=True)
-      
-      anom_manager.runGranule(server,granule)
-    if os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-ANOM.tif") and os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-ANOM.tif"):
+    outdir = outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID
+    if updateMode == "SMOKE":
+      outdir = outdir = currdir+"/smoke_test/new/"+DIST_ID
+      anom_manager.runGranule(server,granule,updateMode)
+    if not (os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif") and os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif")):
+      anom_manager.runGranule(server,granule,"ALL")
+    if os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif") and os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
       scenes.append(DIST_ID)
 
   sortedScenes = sortDates(scenes)
@@ -121,11 +118,16 @@ def runTile(server,Ttile,tempscenes):
   elif updateMode == "RESTART":
     previousSource = "first"
   elif updateMode == "SMOKE":
-    previousSource = "first"
+    #previousSource = "first"
+    with open(currdir+"/smoke_test/smoke_input.txt", 'r') as file:
+      previousSource = file.readline()
+      tpfolders = previousSource.split('/')
+      previous = tpfolders[-1]
+      previousID = tpfolders[-2]
   
   if previousSource =="first":
     previousID = "first"
-  else:
+  elif updateMode != "SMOKE":
     previousID = outIDdict[previous]
 
   NscenesTile = len(sortedScenes)
@@ -136,18 +138,18 @@ def runTile(server,Ttile,tempscenes):
 
     outdir = outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID
     if updateMode == "SMOKE":
-      outdir = "/gpfs/glad3/HLSDIST/System/smoke_test/new/"+DIST_ID
+      outdir = currdir+"/smoke_test/new/"+DIST_ID
     httppath = httpbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID
     response = subprocess.run(["python dayDiff.py 2021001 "+year+doy],capture_output=True,shell=True)
     currDate = response.stdout.decode().strip()
 
     if not os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif"):
-      errorLOG("ERROR!!!!!!!!!!!!!! "+outdir+" VEG-ANOM.tif not exist\n")
+      errorLOG("ERROR!!!!!!!!!!!!!! "+outdir+"/"+DIST_ID+"_VEG-ANOM.tif not exist\n")
       sqliteCommand = "UPDATE fulltable SET Errors = 'VEG-ANOM.tif not exist', statusFlag = 104 where DIST_ID=?;"
       sqliteTuple = (DIST_ID,)
       updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
     elif not os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
-      errorLOG("ERROR!!!!!!!!!!!!!! "+outdir+" GEN-ANOM.tif not exist\n")
+      errorLOG("ERROR!!!!!!!!!!!!!!"+ outdir+"/"+DIST_ID+"_GEN-ANOM.tif not exist\n")
       sqliteCommand = "UPDATE fulltable SET Errors = 'GEN-ANOM.tif not exist', statusFlag = 104 where DIST_ID=?;"
       sqliteTuple = (DIST_ID,)
       updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
@@ -157,11 +159,11 @@ def runTile(server,Ttile,tempscenes):
         errveg=""
         with open("previousFile.txt",'a') as prevLog:
           prevLog.write(previousSource+','+DIST_ID+"\n")
-        response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03A_alertUpdateVEG "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
+        response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; source moduleCpp.sh;./03A_alertUpdateVEG "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
         errveg = response.stderr.decode().strip()
         errgen =""
         #if not os.path.exists(outdir+"/"+DIST_ID+"_GEN-DIST-STATUS.tif"):
-        response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";./03B_alertUpdateGEN "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
+        response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; source moduleCpp.sh;./03B_alertUpdateGEN "+previousSource+" "+DIST_ID+" "+currDate+" "+outdir+" "+zone+"\'"],capture_output=True,shell=True)
         errgen = response.stderr.decode().strip()
         #response = subprocess.run(["cp /gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT/"+year+"/"+tilepathstring+"/"+DIST_ID+"/" + DIST_ID + "_GEN*.tif "+outdir],capture_output=True,shell=True)
         if errveg == "" and errgen == "":
@@ -171,9 +173,9 @@ def runTile(server,Ttile,tempscenes):
         else:
           Errors = errveg+" "+errgen
           errorLOG(DIST_ID+Errors +"ERRORs")
-        sout = os.popen("ls "+outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID +"*.tif 2>/dev/null | wc -l")
+        sout = os.popen("ls "+outdir+"/"+DIST_ID +"*.tif 2>/dev/null | wc -l")
         count = int(sout.read().strip())
-        if not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_VEG-DIST-STATUS.tif") or not os.path.exists(outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID+"/"+DIST_ID+"_GEN-DIST-STATUS.tif") or count < 21:
+        if not os.path.exists(outdir+"/"+DIST_ID+"_VEG-DIST-STATUS.tif") or not os.path.exists(outdir+"/"+DIST_ID+"_GEN-DIST-STATUS.tif") or count < 21:
           errorLOG(DIST_ID+"not all time-series layers made")
           statusFlag=105
           sqliteCommand = "UPDATE fulltable SET statusFlag = ?, Errors = 'failed to create time-series layers', softwareVersion = ? where HLS_ID = ?"
@@ -195,7 +197,7 @@ def runTile(server,Ttile,tempscenes):
             updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
           else:
             response = subprocess.run(["rm "+outdir+"/OPERA*"],capture_output=True,shell=True) ###REMOVE LATER
-            (response,OUT_ID,ProductionDateTime) = writeMetadata.writeMetadata(DIST_ID,xmlfile,outdir,DISTversion,previousID)
+            (response,OUT_ID,ProductionDateTime) = writeMetadata.writeMetadata(DIST_ID,xmlfile,outdir,DISTversion,previousID)############REINSTATE
             if response == "ok":
               previousSource = outdir+"/"+OUT_ID
               previousID = OUT_ID
@@ -215,10 +217,11 @@ def runTile(server,Ttile,tempscenes):
               sqliteCommand = "UPDATE fulltable SET statusFlag = ?, Errors = 'failed to write metadata', softwareVersion = ? where HLS_ID = ?"
               sqliteTuple = (statusFlag,softwareVersion, HLS_ID)
               updateSqlite(DIST_ID,sqliteCommand,sqliteTuple)
+              print(response)
               #print("module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+OUT_ID+".notification.json")
               #response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws sns publish --topic-arn arn:aws:sns:us-east-1:998834937316:UMD-LPDACC-OPERA-PROD --message file://"+outdir+"/"+OUT_ID+".notification.json"],capture_output=True,shell=True)
 
-      except:
+      except Exception as e:
         traceback.print_exc()
         errorLOG(DIST_ID+Errors)
         sqliteCommand = "UPDATE fulltable SET statusFlag = 105, Errors = ? where DIST_ID=?;"
@@ -242,7 +245,7 @@ def updateSqlite(ID,sqliteCommand,sqliteTuple):
       else:
         sys.stderr.write(ID+str(error.args))
         break
-    except:
+    except Exception as e:
       sys.stderr.write(ID+str(sys.exc_info()))
       break
 
@@ -268,7 +271,7 @@ def processTileQueue(server,procID,queue,h):
     except ValueError as err:
       running = False
       processLOG(["03_DIST_UPD.py "+str(err)])
-    except:
+    except Exception as e:
       traceback.print_exc()
       errorLOG("ERROR: runTile("+server+","+tile+") process ID:"+procID+": "+str(sys.exc_info()))
   #print(Nprocess,"processed by", server, procID,updateMode)
@@ -317,8 +320,8 @@ def main(filelist,tupdateMode,tsendToDAAC):
   for tile in tiles:
     tileQueue.put(tile)
   
-  #serverlist =  [("01",40),("02",40),("03",40),("04",40),("05",50),("06",60),(17,70)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
-  serverlist =  [(17,75),("01",40),("02",40),("03",40),("04",40)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
+  serverlist =  [("01",40),("02",40),("03",40),(21,30),(23,40)]#(17,75),("01",40),("02",40),("03",40),("04",35),("05",40),("06",40)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
+  #serverlist =  [(17,75),(15,40),(16,40)]#,("03",40),("04",35),("05",40),("06",40)]#,(18,30)]#[(17,60),(16,40),(15,40),(14,40)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp
@@ -350,7 +353,7 @@ if __name__=='__main__':
       sendToDAAC = True
     else:
       sendToDAAC = False
-  except:
+  except Exception as e:
     print("must enter filelist and updateMode ('RESTART' to ignore all existing time-series layers or 'UPDATE' to use the last available VEG-DIST-STATUS.tif/GEN-DIST-STATUS.tif): python DIST_ALL.py filelist.txt updateMode")
     sys.exit()
   

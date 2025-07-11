@@ -195,11 +195,11 @@ for(y=0; y<ysize; y++) {for(x=0; x<xsize; x++) {
         }
       }else if(max[y][x]>=highthresh){
         if(conf[y][x]>=400){status[y][x]=CONFHI;}
-        else if(dur[y][x]==1){status[y][x]=FIRSTHI;}
+        else if(count[y][x]==1){status[y][x]=FIRSTHI;}
         else if(status[y][x]!=CONFHI){status[y][x]=PROVHI;}
       }else if(max[y][x]>=lowthresh){
         if(conf[y][x]>=400){status[y][x]=CONFLO;}
-        else if(dur[y][x]==1){status[y][x]=FIRSTLO;}
+        else if(count[y][x]==1){status[y][x]=FIRSTLO;}
         else if(status[y][x]!=CONFLO){status[y][x]=PROVLO;}
       }else{status[y][x]=NODIST;}
     }
@@ -379,7 +379,7 @@ GDALClose(SGDAL);
 string outfiles[8] = {"GEN-DIST-STATUS","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-PERC","GEN-DIST-DUR","GEN-LAST-DATE"};
 
 for(int i=0;i<8;i++){
-  system(("gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q "+outpath+"/"+DIST_ID+"_"+outfiles[i]+"TEMP.tif "+outpath+"/"+DIST_ID+"_"+outfiles[i]+".tif").c_str());
+  system(("gdal_translate -of COG -co COMPRESS=DEFLATE -q "+outpath+"/"+DIST_ID+"_"+outfiles[i]+"TEMP.tif "+outpath+"/"+DIST_ID+"_"+outfiles[i]+".tif").c_str());
   system(("rm "+outpath+"/"+DIST_ID+"_"+outfiles[i]+"TEMP.tif").c_str());
 }
 

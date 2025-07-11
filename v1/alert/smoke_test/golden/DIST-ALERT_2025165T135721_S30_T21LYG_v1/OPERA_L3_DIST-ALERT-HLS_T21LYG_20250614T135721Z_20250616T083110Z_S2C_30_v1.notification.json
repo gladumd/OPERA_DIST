@@ -1,0 +1,181 @@
+{
+  "version": "1.4",
+  "provider": "UMD_GLAD_OPERA_FWD",
+  "collection": "OPERA_L3_DIST-ALERT-HLS_V1",
+  "submissionTime": "2025-06-16T08:31:10.388457Z",
+  "identifier": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1",
+  "product": {
+    "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1",
+    "dataVersion": "1",
+    "files": [
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-DIST-STATUS.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-DIST-STATUS.tif",
+        "size": 449177,
+        "checksum": "ef6826ff2f80669fb8283feeb1eee1fcdab1ab64644a7477198198cacc0fae6f20a8b10091e9c4724fc1874bc4e74c7f0eb5072b75bd19ca2fa825fbcb6247fb",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-IND.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-IND.tif",
+        "size": 6456871,
+        "checksum": "7d73681a508c037bc779175b1e6e041225cd67581424dadd92706fe976944bab790579aeeccba56aa2e9eae552dfc1b6d05b992e096d011c07cd21a0fe1d0be1",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-ANOM.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-ANOM.tif",
+        "size": 1254537,
+        "checksum": "590f74f780788126348c98b86ec9dc65c1e970f5f7db17c28726476e3cf1c020cfd99038cf7d20a1c1425d655d36521d99393bca15275323d56e9d6ccf2840fd",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-HIST.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-HIST.tif",
+        "size": 822727,
+        "checksum": "3ccc75b263b141f6914f08cb2b5886f5fc44190b1c6bdc7a1dc1227e0262f6fc86e0af4799f3a55b80b0568b0e34e5200f4089dc8ca6e1d827d4c3aa139548c4",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-ANOM-MAX.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-ANOM-MAX.tif",
+        "size": 867144,
+        "checksum": "d96831617c614b81f7bf2aa1466e8e9297c50f2581002c3392cb85c066971237c757139acc9bfbf3488106483c09ab1cdf8e2b902acbdbfaf5b6c8ef11d2038e",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-DIST-CONF.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-DIST-CONF.tif",
+        "size": 1568083,
+        "checksum": "abe6817d6b5cfb4ecda9e288ea524c6f2103d7a33c9eb9597714f09aab7da58c249fbaed8cc2d55f0bcd7c4f5af15ff6f41f2795c3e47862fe424076f03a31e4",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-DIST-DATE.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-DIST-DATE.tif",
+        "size": 700747,
+        "checksum": "b6f7e6c8580bf3d8a64f6e6890f06a97186dbd07cd31e2c4b0358eff5026d5b66a67ed523e29bb70b0015b06036e397d803059993890898d253191b70a955f4b",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-DIST-COUNT.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-DIST-COUNT.tif",
+        "size": 637700,
+        "checksum": "27028276d462c24dca14dbc807f9da604c9a93483cb7713b23cdb14145c1ad30c7954e2c469a4f5033d2491bc84f9caf2c601e91d9171c7dd49551d8365bc856",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-DIST-DUR.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-DIST-DUR.tif",
+        "size": 795269,
+        "checksum": "95cfc75241c957dd8e05befca249c92a16b3e3a3e0d10cbbd924fff15d85917ac86e60e5ca50604c9f9e996e0c8ff3207eb7cfd6cf2023e5391deb4555c36b21",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-LAST-DATE.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-LAST-DATE.tif",
+        "size": 93834,
+        "checksum": "5765be28bdba96699fcaf18472bc1489f28f58dc076ffc7abfc7d923ba9f8167e39e38520036bab40b06188dcb874776af30440bbb59d5899c1c1271b6e57cbd",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_GEN-DIST-STATUS.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_GEN-DIST-STATUS.tif",
+        "size": 491773,
+        "checksum": "6d40a95f0adb164ee8910d63ddea71bf60ca6fc1b830e79543487af4e23466620ae6b5837f0ae7a1c83cdf3ded8bfe7bf11e6d1940986f62923630d664e6bb2c",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_GEN-ANOM.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_GEN-ANOM.tif",
+        "size": 5157502,
+        "checksum": "3c90d59c5282edbfe765886d3e69feb43f2adccb8daa766086d3d3083504dd6d68a9d007b601c39b4799321621de279d929123325f608ef0b69ec0d6246ad7bf",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_GEN-ANOM-MAX.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_GEN-ANOM-MAX.tif",
+        "size": 1149374,
+        "checksum": "ec2cd521b383f12271ef89d501f2853b01e779868a0b7170cfb560096198dbab64ac783e2bf762c9f41a4be649439b6116d3b02f6416a894abdd09c2c94eccce",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_GEN-DIST-CONF.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_GEN-DIST-CONF.tif",
+        "size": 1517829,
+        "checksum": "f5eaa9d3207153b26d55777f50cb5eb91333a28d5f1d9f9ecd03a5ffeb7d2da8c790c79cddee0719817f6c38e02835203f32c03e9b70c4825e620165484ccd62",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_GEN-DIST-DATE.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_GEN-DIST-DATE.tif",
+        "size": 764735,
+        "checksum": "c84c8e1aafe40b203168c0b201b50865cf8356deac7dc83f637fae9f3a14d5748e43d9bf551719bb337be8471af156e27a997c66a455429f0c8787f521b6405c",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_GEN-DIST-COUNT.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_GEN-DIST-COUNT.tif",
+        "size": 651218,
+        "checksum": "af108167d8ac452c225915a649399d3f37a57909ff2dffcbf70269509400a23d0a03b111477371e2e90c7b51486bd88a7c82d7e391b6cd27c6e7bdcbefbce900",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_GEN-DIST-DUR.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_GEN-DIST-DUR.tif",
+        "size": 817379,
+        "checksum": "cc0d2cad885ce940a194d0ad8ef3af4f0b9f7a4aefb1d4286496ac073a5f31cb7994874d6985bb24fe75e10c5fb4ab6a417f7e9747c49920b086057bf5890a41",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_GEN-LAST-DATE.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_GEN-LAST-DATE.tif",
+        "size": 93832,
+        "checksum": "5dc14098a068469d392d0c3c645c5e27e27a59159bda6084e7e08c6a661743a86e91a8d6dd458fc9037410970e9684b5b8ec072ca88861bbbd0494bb8ad4b9a1",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "data",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_DATA-MASK.tif",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_DATA-MASK.tif",
+        "size": 50069,
+        "checksum": "c87deb3a321aa71e8d4dfb19926b2db8e4af6e351a39c45e8d751ed6a96e833c40bb01ffbe3285b3c439946bd246c89832bad50aa099d73e074764b7c76d9f6c",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "metadata",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1.cmr.json",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1.cmr.json",
+        "size": 5881,
+        "checksum": "61f23188912176b15fcaae7c9dbf32a2c345b0bc5dfadc9a70852cb4cf9b77ab6b991600708c0a04526e73faa65f5fa88b2b5c9c946feefb529f68b63fbf4164",
+        "checksumType": "sha512"
+      },
+      {
+        "type": "browse",
+        "uri": "https://gladxfer.umd.edu/projects/opera/DIST-ALERT_v1/2025/21/L/Y/G/DIST-ALERT_2025165T135721_S30_T21LYG_v1/OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-DIST-STATUS.png",
+        "name": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1_VEG-DIST-STATUS.png",
+        "size": 68343,
+        "checksum": "690ab231436126a1e871a10a7a96213f775b574ee8cf76cdc50236e89c05a032231777fd86a7500a7a7fb4eabf59730f168e9f5ea0c7b5f7b04d7d2b5fcaf714",
+        "checksumType": "sha512"
+      }
+    ]
+  }
+}

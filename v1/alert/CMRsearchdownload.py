@@ -13,7 +13,6 @@ Last Updated:
 """
 
 ################################ IMPORT PACKAGES ##############################
-from turtle import down
 import requests
 import math
 import aiohttp
@@ -112,7 +111,7 @@ def searchCMRGranuleList(granlist):
     cmr_pg = get_cmr_pages_urls_granulelist(collections, granlist)
     url_dict = asyncio.run(get_granules_url_dict(cmr_pg))
     return url_dict
-  except:
+  except Exception as e:
     traceback.print_exc()
     with open("errorLOG.txt", 'a') as log:
       log.write("CMR error, unable to search "+str(datetime.datetime.now())+"\n")
@@ -130,7 +129,7 @@ def searchCMR(startdate,enddate):
   try:
     cmr_pg = get_cmr_pages_urls(collections, searchdates)
     url_dict = asyncio.run(get_granules_url_dict(cmr_pg))
-  except:
+  except Exception as e:
     traceback.print_exc()
     with open("errorLOG.txt", 'a') as log:
       log.write("CMR error, unable to search "+str(datetime.datetime.now())+"\n")
@@ -179,7 +178,7 @@ def searchCMR(startdate,enddate):
       else:
         sys.stderr(error.args)
         break
-    except:
+    except Exception as e:
       sys.stderr(sys.exc_info())
       break
   return download_dict
@@ -193,8 +192,8 @@ def download_granule(links):
   
   # Extract subdir name from url
   HLS_ID = img_url.split('/')[5]
-  with open("dlog.txt",'a') as dlog:
-    dlog.write(HLS_ID+"\n")
+  #with open("dlog.txt",'a') as dlog:
+  #  dlog.write(HLS_ID+"\n")
   # Extract info (sensor, tile, year) from HLS_ID using regex
   slices = re.search(r"\.(\w\d{2})\.T(\d{2})(\w)(\w)(\w).(\d{4})", HLS_ID)
   # Handle path and name
@@ -337,7 +336,7 @@ def checkGranule(granule,writeNew=True,fromDownload=False):
   if check == "complete":
     Errors = None
     if fromDownload:
-      downloadTime = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+      downloadTime = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     else:
       downloadTime = getDownloadTime(sourcepath)
     (availTime,satellite) = checkMetadata(sourcepath+"/"+granule+".cmr.xml",DIST_ID,sensor)
@@ -432,7 +431,7 @@ def getGranulesToCheck():
       else:
         sys.stderr(error.args)
         break
-    except:
+    except Exception as e:
       sys.stderr(sys.exc_info())
       break
   return uncheckedGrans
@@ -491,7 +490,7 @@ def updateSqlite(sqliteCommand,sqliteTuple):
       else:
         print(error.args)
         break
-    except:
+    except Exception as e:
       print(sys.exc_info())
       break
 
@@ -519,7 +518,7 @@ def checkSensor(xmlfilename,DIST_ID,sensor):
       #satel = SID[0][0:3]
       satel ="S2"
     return satel
-  except:
+  except Exception as e:
     with open("errorLOG.txt", 'a') as ERR:
       ERR.write(xmlfilename+" is empty\n")
     sqliteCommand = "UPDATE fulltable SET Errors = ?, statusFlag = ? where DIST_ID = ?"
@@ -552,7 +551,7 @@ def getAvailableTime(xmlfilename,DIST_ID):
     with open(xmlfilename) as xml_file:
       dict = xmltodict.parse(xml_file.read())
     return dict['Granule']['InsertTime']
-  except:
+  except Exception as e:
     with open("errorLOG.txt", 'a') as ERR:
       ERR.write(xmlfilename+" is empty\n")
     sqliteCommand = "UPDATE fulltable SET Errors = ?, statusFlag = ? where DIST_ID = ?"
@@ -567,12 +566,12 @@ def getAvailableTime(xmlfilename,DIST_ID):
 #write two new scripts, one that accepts a tile list and dates, and another that is the automatic download. Import CMRsearchdownload and then write just the main portion.
 if __name__=='__main__':
   if len(sys.argv) == 1:
-    enddate = datetime.datetime.utcnow()
+    enddate = datetime.datetime.now(datetime.UTC)
     startdate = (enddate + datetime.timedelta(days=-2)) #15 days may want to shrink
     checkFirst=False
   if len(sys.argv) == 2:
     Ndays = int(sys.argv[1])
-    enddate = datetime.datetime.utcnow()
+    enddate = datetime.datetime.now(datetime.UTC)
     startdate = (enddate + datetime.timedelta(days = (-1*Ndays))) #15 days may want to shrink
     checkFirst=False
   elif len(sys.argv) == 3:

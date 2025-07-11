@@ -1,0 +1,490 @@
+<Granule>
+    <GranuleUR>HLS.S30.T21LYG.2025165T135721.v2.0</GranuleUR>
+    <InsertTime>2025-06-16T01:29:47.712784Z</InsertTime>
+    <LastUpdate>2025-06-16T01:29:47.712791Z</LastUpdate>
+    <Collection>
+        <DataSetId>HLS Sentinel-2 Multi-spectral Instrument Surface Reflectance Daily Global 30m v2.0</DataSetId>
+    </Collection>
+    <DataGranule>
+        <DataGranuleSizeInBytes>147918198</DataGranuleSizeInBytes>
+        <ProducerGranuleId>HLS.S30.T21LYG.2025165T135721</ProducerGranuleId>
+        <DayNightFlag>DAY</DayNightFlag>
+        <ProductionDateTime>2025-06-16T01:28:58.000000Z</ProductionDateTime>
+        <LocalVersionId>2.0</LocalVersionId>
+    <AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.B10.tif</Name><SizeInBytes>2806064</SizeInBytes><Checksum><Value>7cb4bc056417a286df579a6a8afd741b7cc5249db4dfd8c11a643a25c73e510c5760abe02a1f7418203be26fea0d6546181fc39bb7c0e22f1a64384637a5132f</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.Fmask.tif</Name><SizeInBytes>512952</SizeInBytes><Checksum><Value>89e829974fc7e7fddf2f3f26a332790ad1ca8dd853dcf25d031a0b0f9e44337fcfd0075753edc0517337ada08fefc87e63263c9a2d712233704ce6e6d210ef54</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.B07.tif</Name><SizeInBytes>18464687</SizeInBytes><Checksum><Value>2132b5d9c94dfeebe1ba015c32aea66b2933a5504958149c84adcfed8c3bb516b6f49d5a2f8ec28ca726aa86c04d9fa759fd7ffe37db7c61f009e93c84d3f7c7</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.SAA.tif</Name><SizeInBytes>338315</SizeInBytes><Checksum><Value>1bf3a3a3295b73a1c533be2996cc315905f5b942514dce2192729fc40f60ed312b0462b339fb16529aff2bc83eb71fa01e1e8caca3aeeade2ae742b73837f989</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.jpg</Name><SizeInBytes>104475</SizeInBytes><Checksum><Value>91e5a075561ed00ac1c53913e4e23e6e6a938be558226b795ca62219645f44684ded3932d1029df5517b077ee14e9f95b4e6a74e40da418c80e4b0ac73ae67a2</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.B05.tif</Name><SizeInBytes>16322361</SizeInBytes><Checksum><Value>82bf07e22ff6e73355ddbedb67d5d679428baab30255cf08a378eacd84b25388a21c8be9ea8f6c3574a0a79065e802f6d940c7e2aba2a533a7ba0ab38adc5be7</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.B03.tif</Name><SizeInBytes>15116008</SizeInBytes><Checksum><Value>98b6f2fd48368d5e120f7edd8781e954f09fd7c1eee5ddfcd86e23d2f2768798d01796ffd57126e2a361266447cd3be58ea2b1d32579d1aa989e085a47502d4a</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.B06.tif</Name><SizeInBytes>18149727</SizeInBytes><Checksum><Value>7b8eea24da47ca5d8aef66d3817deb87a453580370f5564ccaa559dafb5ff2cd40ec3926689acefeaff3c82cc3b53908961671183a80f9160acd89168a268ffa</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.B08.tif</Name><SizeInBytes>18819771</SizeInBytes><Checksum><Value>3896369bee3e7ae72c6243ec8ca5f963c8bca06bb44343a25851fea1180e3d221fdc0db40483e2eadde9e20e56c53725a7c2b5d0124e4e8f1db3a86b2d1bb5cf</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.B04.tif</Name><SizeInBytes>15070472</SizeInBytes><Checksum><Value>341c07a2764f7978968c3d7b70b2c21f220c3493a817a08569d852d17be191afbae75b0bf7f62a7c69a5a357cdd51ecb4a4b25879f67d2d59b9f74c0032cb134</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.B8A.tif</Name><SizeInBytes>18617629</SizeInBytes><Checksum><Value>ff4e9206e12bcc3980f892c3968672742863f21532fbafd2dabf873b11f69dc3d6c46cb8aa41c582c678b007b523772a34e47e568871198bba2665d499d29923</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.B02.tif</Name><SizeInBytes>13554269</SizeInBytes><Checksum><Value>8e6cf2ef5165d2e1c238be167cd78f834a9d1e17c14be98741b31a5ad753b42d7e634e9b53270fad23ad1ad862a4d5d51c443a0bae76801d3177083a4bfafbdd</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0_stac.json</Name><SizeInBytes>7744</SizeInBytes><Checksum><Value>6bae6c525365157831a08286caf8e5d874219aa9e0c10e3559cc4acbda4c99e517c16882dc49a1822a94becf4a070578f22f666c881a273b5971211d63f9fb49</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.B11.tif</Name><SizeInBytes>17772394</SizeInBytes><Checksum><Value>26d2723195f9605f068bde8c417bcddc237015b0185b67bc5345e62075496852c085ebdb2692f3d440a5b7fd7816c69ba4383bc2bd7280b28446e01df726483e</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.VAA.tif</Name><SizeInBytes>410151</SizeInBytes><Checksum><Value>83b47f314ee55d20e7bef2f00383c3273895c000f4dd33773276f4190585e2448c568d223150681b131ecb51d552fae562adb3c4d2667507e5c0c1d6b5029541</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.B12.tif</Name><SizeInBytes>16248047</SizeInBytes><Checksum><Value>174adaaac35ab287df23ffad9917bbb386d5559557735104e9920bcbc5e33c57209b8464ec89c902fdbd1bbf8d67f9d07bd0482960ce944aac9cd38a01d2bcf4</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.B01.tif</Name><SizeInBytes>6298669</SizeInBytes><Checksum><Value>45679993761f4a59d35c117ece962d8883c01b5f919a419cd1bc217e321d6054d0cba467db24bb1467d327364ab399effb45822b04887301e053b80f92fee554</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.SZA.tif</Name><SizeInBytes>363537</SizeInBytes><Checksum><Value>777c0bfa91bf5a13e3f6f702f20c6e32c8c90df01959d02e258b1af2637ad0b59bbf80427e31393cd6db382efae32bdbd085e039489322c351ba268fa31d14d4</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.B09.tif</Name><SizeInBytes>6551011</SizeInBytes><Checksum><Value>f0f15edc20cfaf503a17ecff3fe38ab2d9b707547dafa31e49f306c0a1f1e01ceed0f914e8dacb5c8e2d313cf99e71b9a2df91ac9f5eb3f5945ccae31ac7bafa</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile><AdditionalFile><Name>HLS.S30.T21LYG.2025165T135721.v2.0.VZA.tif</Name><SizeInBytes>365037</SizeInBytes><Checksum><Value>55ee4d20a776574032fa5498ef9305a7b043be92af77c382a4bd8f263a38313daa13674ea46f2a7a0893db24b1e99c205fab3e37b89f1c57ee20f81f0fe35991</Value><Algorithm>SHA512</Algorithm></Checksum></AdditionalFile></DataGranule>
+    <Temporal>
+        <RangeDateTime>
+            <BeginningDateTime>2025-06-14T14:06:12.468420Z</BeginningDateTime>
+            <EndingDateTime>2025-06-14T14:06:12.468420Z</EndingDateTime>
+        </RangeDateTime>
+    </Temporal>
+    <Spatial>
+        <HorizontalSpatialDomain>
+            <Geometry>
+                <GPolygon>
+                    <Boundary>
+                        <Point>
+                            <PointLongitude>-55.16506954</PointLongitude>
+                            <PointLatitude>-11.75360135</PointLatitude>
+                        </Point>
+                        <Point>
+                            <PointLongitude>-54.33971099</PointLongitude>
+                            <PointLatitude>-11.74710074</PointLatitude>
+                        </Point>
+                        <Point>
+                            <PointLongitude>-54.56001109</PointLongitude>
+                            <PointLatitude>-12.74119072</PointLatitude>
+                        </Point>
+                        <Point>
+                            <PointLongitude>-55.15819755</PointLongitude>
+                            <PointLatitude>-12.74603296</PointLatitude>
+                        </Point>
+                    </Boundary>
+                </GPolygon>
+            </Geometry>
+        </HorizontalSpatialDomain>
+    </Spatial>
+    <Platforms>
+        <Platform>
+            <ShortName>Sentinel-2C</ShortName>
+            <Instruments>
+                <Instrument>
+                    <ShortName>Sentinel-2 MSI</ShortName>
+                </Instrument>
+            </Instruments>
+        </Platform>
+    </Platforms>
+    <AdditionalAttributes>
+        <AdditionalAttribute>
+            <Name>PRODUCT_URI</Name>
+            <Values>
+                <Value>S2C_MSIL1C_20250614T135721_N0511_R067_T21LYG_20250614T171823.SAFE</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>CLOUD_COVERAGE</Name>
+            <Values>
+                <Value>0</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>MGRS_TILE_ID</Name>
+            <Values>
+                <Value>21LYG</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>SPATIAL_COVERAGE</Name>
+            <Values>
+                <Value>70</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>SPATIAL_RESOLUTION</Name>
+            <Values>
+                <Value>30.0</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>HLS_PROCESSING_TIME</Name>
+            <Values>
+                <Value>2025-06-16T01:28:58Z</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>SENSING_TIME</Name>
+            <Values>
+                <Value>2025-06-14T14:06:12.468421Z</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>HORIZONTAL_CS_CODE</Name>
+            <Values>
+                <Value>EPSG:32721</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>HORIZONTAL_CS_NAME</Name>
+            <Values>
+                <Value>WGS84 / UTM zone 21S</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>ULX</Name>
+            <Values>
+                <Value>699960.0</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>ULY</Name>
+            <Values>
+                <Value>-1299960.0</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>SPATIAL_RESAMPLING_ALG</Name>
+            <Values>
+                <Value>Area Weighted Average</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>ADD_OFFSET</Name>
+            <Values>
+                <Value>0</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>REF_SCALE_FACTOR</Name>
+            <Values>
+                <Value>0.0001</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>ANG_SCALE_FACTOR</Name>
+            <Values>
+                <Value>0.01</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>FILLVALUE</Name>
+            <Values>
+                <Value>-9999</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>QA_FILLVALUE</Name>
+            <Values>
+                <Value>255</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>NCOLS</Name>
+            <Values>
+                <Value>3660</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>NROWS</Name>
+            <Values>
+                <Value>3660</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>MEAN_SUN_AZIMUTH_ANGLE</Name>
+            <Values>
+                <Value>32.76315117</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>MEAN_SUN_ZENITH_ANGLE</Name>
+            <Values>
+                <Value>42.20653333</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>MEAN_VIEW_AZIMUTH_ANGLE</Name>
+            <Values>
+                <Value>286.74484136</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>MEAN_VIEW_ZENITH_ANGLE</Name>
+            <Values>
+                <Value>8.88666858</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>NBAR_SOLAR_ZENITH</Name>
+            <Values>
+                <Value>44.20900012</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>MSI_BAND_01_BANDPASS_ADJUSTMENT_SLOPE_AND_OFFSET</Name>
+            <Values>
+                <Value>1.003</Value>
+                <Value>-0.0</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>MSI_BAND_02_BANDPASS_ADJUSTMENT_SLOPE_AND_OFFSET</Name>
+            <Values>
+                <Value>0.9851</Value>
+                <Value>-0.0027</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>MSI_BAND_03_BANDPASS_ADJUSTMENT_SLOPE_AND_OFFSET</Name>
+            <Values>
+                <Value>1.0038</Value>
+                <Value>-0.0009</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>MSI_BAND_04_BANDPASS_ADJUSTMENT_SLOPE_AND_OFFSET</Name>
+            <Values>
+                <Value>0.9718</Value>
+                <Value>0.0011</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>MSI_BAND_11_BANDPASS_ADJUSTMENT_SLOPE_AND_OFFSET</Name>
+            <Values>
+                <Value>0.9994</Value>
+                <Value>-0.0007</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>MSI_BAND_12_BANDPASS_ADJUSTMENT_SLOPE_AND_OFFSET</Name>
+            <Values>
+                <Value>0.991</Value>
+                <Value>0.0004</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>MSI_BAND_8A_BANDPASS_ADJUSTMENT_SLOPE_AND_OFFSET</Name>
+            <Values>
+                <Value>0.9995</Value>
+                <Value>-0.0003</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>AROP_AVE_XSHIFT(METERS)</Name>
+            <Values>
+                <Value>0.0</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>AROP_AVE_YSHIFT(METERS)</Name>
+            <Values>
+                <Value>0.0</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>AROP_NCP</Name>
+            <Values>
+                <Value>0</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>AROP_RMSE(METERS)</Name>
+            <Values>
+                <Value>0.0</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>AROP_S2_REFIMG</Name>
+            <Values>
+                <Value>NONE</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>ACCODE</Name>
+            <Values>
+                <Value>LaSRC v3.5.1.0</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>PROCESSING_BASELINE</Name>
+            <Values>
+                <Value>05.11</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>IDENTIFIER_PRODUCT_DOI</Name>
+            <Values>
+                <Value>10.5067/HLS/HLSS30.002</Value>
+            </Values>
+        </AdditionalAttribute>
+        <AdditionalAttribute>
+            <Name>IDENTIFIER_PRODUCT_DOI_AUTHORITY</Name>
+            <Values>
+                <Value>https://doi.org</Value>
+            </Values>
+        </AdditionalAttribute>
+    </AdditionalAttributes>
+    <OnlineAccessURLs>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B10.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.B10.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.Fmask.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.Fmask.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B07.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.B07.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.SAA.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.SAA.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B05.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.B05.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B03.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.B03.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B06.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.B06.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B08.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.B08.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B04.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.B04.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B8A.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.B8A.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B02.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.B02.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B11.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.B11.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.VAA.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.VAA.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B12.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.B12.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B01.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.B01.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.SZA.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.SZA.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B09.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.B09.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.VZA.tif</URL>
+            <URLDescription>Download HLS.S30.T21LYG.2025165T135721.v2.0.VZA.tif</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B10.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.Fmask.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B07.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.SAA.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B05.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B03.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B06.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B08.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B04.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B8A.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B02.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B11.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.VAA.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B12.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B01.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.SZA.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.B09.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+        <OnlineAccessURL>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.VZA.tif</URL>
+            <URLDescription>This link provides direct download access via S3 to the granule</URLDescription>
+        </OnlineAccessURL>
+    </OnlineAccessURLs>
+    <OnlineResources>
+        <OnlineResource>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-public/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0_stac.json</URL>
+            <Description>Download HLS.S30.T21LYG.2025165T135721.v2.0_stac.json</Description>
+            <Type>EXTENDED METADATA</Type>
+        </OnlineResource>
+        <OnlineResource>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.cmr.xml</URL>
+            <Description>Download HLS.S30.T21LYG.2025165T135721.v2.0.cmr.xml</Description>
+            <Type>EXTENDED METADATA</Type>
+        </OnlineResource>
+        <OnlineResource>
+            <URL>s3://lp-prod-public/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0_stac.json</URL>
+            <Description>This link provides direct download access via S3 to the granule</Description>
+            <Type>EXTENDED METADATA</Type>
+        </OnlineResource>
+        <OnlineResource>
+            <URL>s3://lp-prod-protected/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.cmr.xml</URL>
+            <Description>This link provides direct download access via S3 to the granule</Description>
+            <Type>EXTENDED METADATA</Type>
+        </OnlineResource>
+        <OnlineResource>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/s3credentials</URL>
+            <Description>api endpoint to retrieve temporary credentials valid for same-region direct s3 access</Description>
+            <Type>VIEW RELATED INFORMATION</Type>
+        </OnlineResource>
+    </OnlineResources>
+    <DataFormat>Cloud Optimized GeoTIFF (COG)</DataFormat>
+    <AssociatedBrowseImageUrls>
+        <ProviderBrowseUrl>
+            <URL>https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-public/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.jpg</URL>
+            <Description>Download HLS.S30.T21LYG.2025165T135721.v2.0.jpg</Description>
+        </ProviderBrowseUrl>
+        <ProviderBrowseUrl>
+            <URL>s3://lp-prod-public/HLSS30.020/HLS.S30.T21LYG.2025165T135721.v2.0/HLS.S30.T21LYG.2025165T135721.v2.0.jpg</URL>
+            <Description>This link provides direct download access via S3 to the granule</Description>
+        </ProviderBrowseUrl>
+    </AssociatedBrowseImageUrls>
+</Granule>
