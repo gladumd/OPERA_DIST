@@ -1,5 +1,5 @@
 DISTversion = "v1"
-softwareVersion = "1.0"
+softwareVersion = "1.1"
 HLSsource = "/gpfs/glad3/HLS"
 outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1"#VFModel/Drone/LP-DAAC/DIST-ALERT"#"/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT"#"/gpfs/glad3/HLSDIST/VFModel/Drone/LP-DAAC/DIST-ALERT"
 dbpath = "/gpfs/glad3/HLSDIST/System/v1/database/database.db"

@@ -20,6 +20,7 @@ try:
 	from osgeo import gdal
 except:
 	import gdal
+gdal.UseExceptions()
 
 currdir = os.getcwd()
 softwareVersion = parameters.softwareVersion
@@ -237,7 +238,10 @@ if __name__=='__main__':
     dir2 = tileID[3:4]
     dir3 = tileID[4:5]
     sceneNameOut = "DIST-ALERT_" + timeTag + "_"+sensorTag+"_T"+tileID+"_v1"
-    outdir = outbase + "/" + strYear+"/"+ UTMTile+"/"+dir1+"/"+dir2+"/"+dir3+"/"+sceneNameOut+"/"
+    if len(sys.argv) == 3:
+        outdir = sys.argv[2] + "/"
+    else:
+        outdir = outbase + "/" + strYear+"/"+ UTMTile+"/"+dir1+"/"+dir2+"/"+dir3+"/"+sceneNameOut+"/"
     #sceneNameOut = sys.argv[2]
     #outdir = sys.argv[3]
     #indir = "/gpfs/glad3/HLS/"

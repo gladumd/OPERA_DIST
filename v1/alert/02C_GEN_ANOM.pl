@@ -5,6 +5,7 @@ $output = $ARGV[2];
 $HLSsource = "/gpfs/glad3/HLS";
 @folders = split('/',$output);
 $depth = @folders;
+$currdir = `pwd`; chomp $currdir;
 $calWindow = 31; #number of days of moving window
 $Nyears = 3; #Nyears of baseline
 if(!-d "temp"){mkdir"temp";}
@@ -32,7 +33,7 @@ sub runScene(){
 
 sub compileTileDOY(){
   $doyStr = substr("00$doy",-3);
-  @selectedfiles = readpipe"python hist4bandFiles.py $tile $doy $year $calWindow $Nyears";
+  @selectedfiles = readpipe"source $currdir/modulePython.sh; python hist4bandFiles.py $tile $doy $year $calWindow $Nyears; source $currdir/moduleCpp.sh";
   foreach(@selectedfiles){chomp;}
   $Nsensordates = @selectedfiles;
   
@@ -336,7 +337,7 @@ OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, dist, xsize, ysize, GDT_Int16, 
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
 OUTGDAL->SetMetadata(papszMetadata,\"\");
 GDALClose((GDALDatasetH)OUTGDAL);
-system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q ${filename}TEMP.tif ${filename}.tif\");
+system(\"gdal_translate -of COG -co COMPRESS=DEFLATE -q ${filename}TEMP.tif ${filename}.tif\");
 system(\"rm ${filename}TEMP.tif\");
 ";
 #foreach $met ("count"){

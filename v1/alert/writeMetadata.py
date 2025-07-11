@@ -202,7 +202,7 @@ def writeMetadata(ID,sourceXML,outdir,version,prevgranule):
     sourceFiles = open(outdir+"/additional/HLSsourceFiles.txt").read().split()
     if len(sourceFiles) == 0:
       sourceFiles = ["NA"]
-    outDict['AdditionalAttributes'][3]['Values']= sourceFiles
+    outDict['AdditionalAttributes'][3]['Values']= sourceFiles#.sorted()
     outDict['AdditionalAttributes'][4]['Name'] = 'ValidationLevel'
     outDict['AdditionalAttributes'][4]['Values'] = ["1"]
 

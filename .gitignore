@@ -161,8 +161,10 @@ alert/*pyc
 
 **LOG.txt
 **/temp/*
+**Congo*
 **.pyc
 v1/alert/logs/*
 v1/alert312/*
+v1/alert37/*
 v0/*
 

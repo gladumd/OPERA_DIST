@@ -32,7 +32,7 @@ def runGranule(server,granule,mode="ALL"):
 
   outdir = outbase+"/"+year+"/"+tilepathstring+"/"+DIST_ID
   if mode == "SMOKE":
-      outdir = "../smoke_test/new/"+DIST_ID
+      outdir = currdir+"/smoke_test/new/"+DIST_ID
   if not os.path.isdir(outdir+"/additional"):
       os.makedirs(outdir+"/additional")
 
@@ -44,7 +44,7 @@ def runGranule(server,granule,mode="ALL"):
     response = subprocess.run(["rm "+outdir+"/"+DIST_ID+"_VEG-IND.tif"],capture_output=True,shell=True)
     response = subprocess.run(["rm "+outdir+"/"+DIST_ID+"_VEG-ANOM.tif"],capture_output=True,shell=True)
   if not os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") or not os.path.exists(outdir+"/"+DIST_ID+"_DATA-MASK.tif"):
-    response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; module unload gdal; module load python/3.7/anaconda; source /gpfs/glad3/HLSDIST/SystemTesting/dist-py-env2/bin/activate; python 02B.Veg_Ind.py "+granule+"\' &>>errorLOG.txt"],capture_output=True,shell=True)
+    response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; source modulePython.sh; python 02B.Veg_Ind.py "+granule+" "+outdir+"\' &>>errorLOG.txt"],capture_output=True,shell=True)
     Errors = Errors + str(response.stderr.decode()).split('\n')[-1]
     if not os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif"):
       Errors = Errors +": "+ outdir+"/"+DIST_ID+"_VEG-IND.tif not exist"
@@ -52,39 +52,37 @@ def runGranule(server,granule,mode="ALL"):
   if mode == "VEG_IND":
     if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") and os.path.exists(outdir+"/"+DIST_ID+"_DATA-MASK.tif"):
       sqliteCommand = "UPDATE fulltable SET statusFlag = 3 where HLS_ID=?;"
-      updateSqlite(DIST_ID,sqliteCommand,(HLS_ID,))
+      updateSqlite(DIST_ID,sqliteCommand,(HLS_ID,),mode)
     else:
       Errors = Errors + str(response.stderr.decode())
       Errors.strip("\n")
       errorLOG([DIST_ID+Errors+"\n"])
       sqliteCommand = "UPDATE fulltable SET statusFlag = 103, Errors = ? where HLS_ID=?;"
-      updateSqlite(DIST_ID,sqliteCommand,(Errors,HLS_ID,))
+      updateSqlite(DIST_ID,sqliteCommand,(Errors,HLS_ID,),mode)
   
   elif mode == "ALL" or mode == "SMOKE":
     #create VEG_ANOM
     if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") and not os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif"):
-      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02B_VEG_ANOM_COG.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
+      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";source moduleCpp.sh; perl 02B_VEG_ANOM_COG.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
       Errors = Errors + str(response.stderr.decode())#.split('\n')[-1]
-
     #create GEN_ANOM
     if not os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif"):
-      #response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM_updateWater.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
-      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+"; perl 02C_GEN_ANOM.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
+      response = subprocess.run(["ssh gladapp"+server+" \'cd "+currdir+";source moduleCpp.sh; perl 02C_GEN_ANOM.pl "+granule+" "+DIST_ID+" "+outdir+" 2>>errorLOG.txt\'"],capture_output=True,shell=True)
       Errors = Errors + str(response.stderr.decode())#.split('\n')[-1]
  
     #test for success and update database
     if os.path.exists(outdir+"/"+DIST_ID+"_VEG-IND.tif") and os.path.exists(outdir+"/"+DIST_ID+"_VEG-ANOM.tif") and os.path.exists(outdir+"/"+DIST_ID+"_GEN-ANOM.tif") and os.path.exists(outdir+"/"+DIST_ID+"_DATA-MASK.tif"):
       sqliteCommand = "UPDATE fulltable SET statusFlag = 4, softwareVersion = ? where HLS_ID=?;"
-      updateSqlite(DIST_ID,sqliteCommand,(softwareVersion,HLS_ID,))
+      updateSqlite(DIST_ID,sqliteCommand,(softwareVersion,HLS_ID,),mode)
     else:
       errorLOG(["gladapp"+server+": "+DIST_ID+"not all VEG-IND, VEG-ANOM, GEN-ANOM exist, failed to create."+Errors])
       sqliteCommand = "UPDATE fulltable SET softwareVersion = ?, Errors = 'VEG-IND/VEG-ANOM/GEN-ANOM failed', statusFlag = 104 where HLS_ID=?;"
-      updateSqlite(DIST_ID,sqliteCommand,(softwareVersion,HLS_ID,))
+      updateSqlite(DIST_ID,sqliteCommand,(softwareVersion,HLS_ID,),mode)
 
-def updateSqlite(ID,sqliteCommand,sqliteTuple):
+def updateSqlite(ID,sqliteCommand,sqliteTuple,mode):
   written = False
-  #if mode == "SMOKE":
-  #  written = True
+  if mode == "SMOKE":
+    written = True
   while written == False:
     try:
       with closing(sqlite3.connect(dbpath)) as connection:
@@ -137,7 +135,7 @@ def processGranuleQueue(server,procID,queue):
         statusFlag = 103
       else:
         statusFlag = 104
-      updateSqlite(granule,sqliteCommand,(statusFlag,granule,))
+      updateSqlite(granule,sqliteCommand,(statusFlag,granule,),mode)
   #print(Nprocess,"processed by", server, procID,mode)
   return Nprocess
 
@@ -166,7 +164,7 @@ if __name__=='__main__':
     print("KILL file exists. Delete and rerun.\n")
     sys.exit()
   elif os.path.exists("anom_manager_RUNNING") or os.path.exists("DIST_ALL_RUNNING"):
-    print("Process already running (or died with an error) *_RUNNING exists. Quit anom_manager.y\n")
+    print("Process already running (or died with an error) *_RUNNING exists. Quit anom_manager.py\n")
     sys.exit()
   else:
     with open("anom_manager_RUNNING",'a') as OUT:
@@ -187,7 +185,7 @@ if __name__=='__main__':
 
   processLOG(["starting \"anom_manager.py "+filelist+" "+mode+"\",",Nscenes,"granules ",now])
 
-  serverlist = [(23,60),("01",30),("02",30),("03",30),("04",30),("05",30),("06",30)]#[(17,60),(15,15),(16,20)]
+  serverlist = [(20,60)]#,("01",30),("02",30),("03",30),("04",30),("05",30),("06",30)]#[(17,60),(15,15),(16,20)]
   processes = []
   for sp in serverlist:
     (server,Nprocesses)=sp

@@ -9,10 +9,9 @@ import parameters
 
 
 currdir = os.getcwd()
-collectionName = parameters.collectionName #"OPERA_L3_DIST-ALERT-HLS_PROVISIONAL_V0"
-collectionVersion = parameters.collectionVersion#"0"
+collectionName = parameters.collectionName 
+collectionVersion = parameters.collectionVersion
 imagelist = ["VEG-DIST-STATUS","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-HIST","VEG-IND-MAX","VEG-CONF-COUNT","VEG-CONF-PREV","VEG-LAST-DATE","VEG-IND-3YR-MIN","GEN-DIST-STATUS","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-CONF-COUNT","GEN-CONF-PREV","GEN-LAST-DATE"]
-#["VEG-DIST-STATUS","VEG-IND","VEG-ANOM","VEG-HIST","VEG-ANOM-MAX","VEG-DIST-CONF","VEG-DIST-DATE","VEG-DIST-COUNT","VEG-DIST-DUR","VEG-LAST-DATE","GEN-DIST-STATUS","GEN-ANOM","GEN-ANOM-MAX","GEN-DIST-CONF","GEN-DIST-DATE","GEN-DIST-COUNT","GEN-DIST-DUR","GEN-LAST-DATE","DATA-MASK"]   
 
 def writeJSON(data_dict,outJSONname):
   json_data = json.dumps(data_dict,indent=2)
@@ -36,8 +35,6 @@ def sendNotification(OUT_ID,outdir,httppath):
     #makeBrowse(OUT_ID,outdir)
     if not os.path.exists(outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.png"):
       makeBrowse(OUT_ID,outdir)
-      #response = subprocess.run(["ssh gladapp17 'gdal_translate -of GTiff -outsize 1024 0 -a_nodata 255 " + outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.tif "+ outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.png'"],capture_output=True,shell=True)
-      #response = subprocess.run(["ssh gladapp17 'gdal_translate -of GTiff -outsize 1024 0 -a_nodata 255 " + outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.tif "+ outdir+"/"+OUT_ID+"_VEG-DIST-STATUS.png'"],capture_output=True,shell=True)
 
 
     i=0

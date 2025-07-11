@@ -7,7 +7,7 @@ import sys
 import traceback
 import parameters
 
-dbpath = "/gpfs/glad3/HLSDIST/System/v1/database/database.db"#parameters.dbpath #"/gpfs/glad3/HLSDIST/System/database/"
+dbpath = parameters.dbpath #"/gpfs/glad3/HLSDIST/System/database/"
 dbname = dbpath.split('/')[-1]
 
 def checkDatabase(dbfile):
@@ -60,7 +60,7 @@ def checkBackup(dbfile):
       if integrity[0].strip() == "ok":
         subprocess.run(["cp "+dbfile+".baktemp "+dbfile+".bak"],shell=True)
         subprocess.run(["cp "+dbfile+".baktemp /gpfs/glad3/HLSDIST/database/v1/"+dbname],shell=True)
-        subprocess.run(["cp "+dbfile+".baktemp /gpfs/glad1/Amy/code/database/v1/"+dbname],shell=True)
+        subprocess.run(["cp "+dbfile+".baktemp /gpfs/glad1/Amy/"+dbname],shell=True)
         with open("processLOG.txt",'a') as LOG:
           LOG.write("Database has integrity. Backed up "+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")
           #print("Database has integrity. Backed up"+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")+"\n")

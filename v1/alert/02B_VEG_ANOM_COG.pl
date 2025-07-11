@@ -4,8 +4,9 @@ $outscene = $ARGV[1];
 $output = $ARGV[2];
 @folders = split('/',$output);
 $depth = @folders;
+$currdir = `pwd`; chomp $currdir;
 
-$outbase = join("/",@folders[0..($depth-7)]);#"/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT";
+$outbase = "/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT_v1";#join("/",@folders[0..($depth-7)]);#"/gpfs/glad3/HLSDIST/LP-DAAC/DIST-ALERT";########FIX
 $calWindow = 31; #number of days of moving window
 $Nyears = 3; #Nyears of baseline
 #$version = "v_Newtrain";
@@ -43,31 +44,14 @@ sub runScene(){
 
 sub compileTileDOY(){
   $doyStr = substr("00$doy",-3);
-  #print"python histVFfiles.py $VFsource $tile $doy $year $calWindow $Nyears\n";
-  @selectedfiles = readpipe"python histVFfiles.py $VFsource $tile $doy $year $calWindow $Nyears";#tile,doy,curryear,window size,Nyears
+  @selectedfiles = readpipe"source $currdir/modulePython.sh; python histVFfiles.py $VFsource $tile $doy $year $calWindow $Nyears;source $currdir/moduleCpp.sh;";#tile,doy,curryear,window size,Nyears
   foreach(@selectedfiles){chomp;}
-  #@selectedfilesZ = readpipe"python histVFfilesZhen.py $Z_VFsource $tile $doy $year $calWindow $Nyears";#tile,doy,curryear,window size,Nyears
-  #foreach(@selectedfilesZ){chomp;}
-  #print"@selectedfiles\n";
-  #print"@selectedfilesZ\n";
-  
-  #my %hash=();@oldfiles = ();
-  #foreach$f(@selectedfiles){$hash{$f}=1;}####################NO LONGER MATCHES!!!!!!!!!!!!
-  #foreach$f(@selectedfilesZ){
-  #  ($HLS,$sensor,$Ttile,$datetime,$majorV,$minorV)= split('\.',$f);
-  #  $outscene = "DIST-ALERT_${datetime}_${sensor}_${Ttile}_${DISTversion}";
-  #  if(!exists $hash{$outscene}){push(@oldfiles,$f);}
-  #}
-  #$NsensordatesNew = @selectedfiles;
-  #$NsensordatesZhen = @oldfiles;
-  #$Nsensordates = $NsensordatesNew + $NsensordatesZhen;
-  #print"$scene: $NsensordatesNew hist, $NsensordatesZhen Zhen\n";
+
   $Nsensordates = @selectedfiles;
   if($Nsensordates >-1){
     if(!-d "$output"){print"$output does not exist\n";}
     open(LOG,">$output/additional/VFsourceFiles.txt");
     print LOG"@selectedfiles\n";
-    print LOG"@oldfiles\n";close(LOG);
     
 open (OUT, ">temp/veg_anom_$scene.cpp");
 print OUT"#include <iostream>
@@ -312,7 +296,7 @@ OUTBAND->RasterIO( GF_Write, 0, 0, xsize, ysize, anomaly, xsize, ysize, GDT_Byte
 OUTGDAL->BuildOverviews(\"NEAREST\",Noverviews,overviewList,0,nullptr, GDALDummyProgress, nullptr );
 OUTGDAL->SetMetadata(papszMetadata,\"\");
 GDALClose((GDALDatasetH)OUTGDAL);
-system(\"gdal_translate -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co TILED=YES -q ${filename}TEMP.tif ${filename}.tif\");
+system(\"gdal_translate -of COG -co COMPRESS=DEFLATE -q ${filename}TEMP.tif ${filename}.tif\");
 system(\"rm ${filename}TEMP.tif\");
 
 return 0;

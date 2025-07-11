@@ -1,0 +1,220 @@
+{
+  "MetadataSpecification": {
+    "URL": "https://cdn.earthdata.nasa.gov/umm/granule/v1.6.3",
+    "Name": "UMM-G",
+    "Version": "1.6.3"
+  },
+  "GranuleUR": "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250614T135721Z_20250616T083110Z_S2C_30_v1",
+  "TemporalExtent": {
+    "RangeDateTime": {
+      "BeginningDateTime": "2025-06-14T14:06:12.468420Z",
+      "EndingDateTime": "2025-06-14T14:06:12.468420Z"
+    }
+  },
+  "ProviderDates": [
+    {
+      "Date": "2025-06-16T08:31:10.184451Z",
+      "Type": "Insert"
+    }
+  ],
+  "CollectionReference": {
+    "ShortName": "OPERA_L3_DIST-ALERT-HLS_V1",
+    "Version": "1"
+  },
+  "DataGranule": {
+    "DayNightFlag": "Day",
+    "ProductionDateTime": "2025-06-16T08:31:10.184451Z"
+  },
+  "Platforms": [
+    {
+      "ShortName": "Sentinel-2C",
+      "Instruments": [
+        {
+          "ShortName": "Sentinel-2 MSI"
+        }
+      ]
+    }
+  ],
+  "SpatialExtent": {
+    "HorizontalSpatialDomain": {
+      "Geometry": {
+        "GPolygons": [
+          {
+            "Boundary": {
+              "Points": [
+                {
+                  "Longitude": -55.15819755,
+                  "Latitude": -12.74603296
+                },
+                {
+                  "Longitude": -54.56001109,
+                  "Latitude": -12.74119072
+                },
+                {
+                  "Longitude": -54.33971099,
+                  "Latitude": -11.74710074
+                },
+                {
+                  "Longitude": -55.16506954,
+                  "Latitude": -11.75360135
+                },
+                {
+                  "Longitude": -55.15819755,
+                  "Latitude": -12.74603296
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "CloudCover": 0.0,
+  "AdditionalAttributes": [
+    {
+      "Name": "Input_DIST-ALERT_granule",
+      "Values": [
+        "OPERA_L3_DIST-ALERT-HLS_T21LYG_20250613T135131Z_20250615T140500Z_S2A_30_v1"
+      ]
+    },
+    {
+      "Name": "BaselineCalendarWindow",
+      "Values": [
+        "+/- 15 days"
+      ]
+    },
+    {
+      "Name": "BaselineYearWindow",
+      "Values": [
+        "3"
+      ]
+    },
+    {
+      "Name": "BaselineImageIds",
+      "Values": [
+        "HLS.S30.T21LYG.2022151T140101.v2.0",
+        "HLS.S30.T21LYG.2022153T135109.v2.0",
+        "HLS.S30.T21LYG.2022156T140059.v2.0",
+        "HLS.S30.T21LYG.2022158T134711.v2.0",
+        "HLS.L30.T21LYG.2023161T134351.v2.0",
+        "HLS.L30.T21LYG.2023162T133737.v2.0",
+        "HLS.L30.T21LYG.2023169T134345.v2.0",
+        "HLS.S30.T21LYG.2024178T134711.v2.0",
+        "HLS.S30.T21LYG.2024153T134709.v2.0",
+        "HLS.S30.T21LYG.2024151T135711.v2.0",
+        "HLS.S30.T21LYG.2024156T135709.v2.0",
+        "HLS.L30.T21LYG.2024180T134343.v2.0",
+        "HLS.S30.T21LYG.2024171T135711.v2.0",
+        "HLS.S30.T21LYG.2024158T134711.v2.0",
+        "HLS.S30.T21LYG.2024173T134709.v2.0",
+        "HLS.L30.T21LYG.2024164T134329.v2.0",
+        "HLS.L30.T21LYG.2024165T133730.v2.0",
+        "HLS.S30.T21LYG.2024176T135709.v2.0",
+        "HLS.S30.T21LYG.2023171T135709.v2.0",
+        "HLS.S30.T21LYG.2023173T134711.v2.0",
+        "HLS.S30.T21LYG.2023158T134709.v2.0",
+        "HLS.L30.T21LYG.2022175T133807.v2.0",
+        "HLS.S30.T21LYG.2023156T135711.v2.0",
+        "HLS.L30.T21LYG.2022151T133814.v2.0",
+        "HLS.L30.T21LYG.2022150T134357.v2.0",
+        "HLS.S30.T21LYG.2023153T134711.v2.0",
+        "HLS.S30.T21LYG.2023151T135709.v2.0",
+        "HLS.L30.T21LYG.2022167T133825.v2.0",
+        "HLS.S30.T21LYG.2024181T135711.v2.0",
+        "HLS.S30.T21LYG.2022166T135709.v2.0",
+        "HLS.S30.T21LYG.2022161T135711.v2.0",
+        "HLS.S30.T21LYG.2023176T135711.v2.0",
+        "HLS.S30.T21LYG.2022168T134721.v2.0",
+        "HLS.L30.T21LYG.2022174T134439.v2.0",
+        "HLS.L30.T21LYG.2023170T133743.v2.0",
+        "HLS.S30.T21LYG.2023178T134709.v2.0",
+        "HLS.L30.T21LYG.2023154T133734.v2.0",
+        "HLS.L30.T21LYG.2022159T133747.v2.0",
+        "HLS.L30.T21LYG.2023153T134353.v2.0",
+        "HLS.S30.T21LYG.2024168T134711.v2.0",
+        "HLS.S30.T21LYG.2024163T134709.v2.0",
+        "HLS.L30.T21LYG.2024172T134331.v2.0",
+        "HLS.S30.T21LYG.2024161T135711.v2.0",
+        "HLS.L30.T21LYG.2024156T134347.v2.0",
+        "HLS.S30.T21LYG.2024166T135709.v2.0",
+        "HLS.S30.T21LYG.2023166T135711.v2.0",
+        "HLS.L30.T21LYG.2024173T133728.v2.0",
+        "HLS.S30.T21LYG.2022178T134721.v2.0",
+        "HLS.L30.T21LYG.2022166T134403.v2.0",
+        "HLS.S30.T21LYG.2023163T134711.v2.0",
+        "HLS.S30.T21LYG.2023161T135709.v2.0",
+        "HLS.S30.T21LYG.2022173T134709.v2.0",
+        "HLS.S30.T21LYG.2022171T135721.v2.0",
+        "HLS.S30.T21LYG.2022176T135709.v2.0",
+        "HLS.L30.T21LYG.2024157T133720.v2.0",
+        "HLS.S30.T21LYG.2023168T134709.v2.0"
+      ]
+    },
+    {
+      "Name": "ValidationLevel",
+      "Values": [
+        "1"
+      ]
+    },
+    {
+      "Name": "HLSGranuleUR",
+      "Values": [
+        "HLS.S30.T21LYG.2025165T135721.v2.0"
+      ]
+    },
+    {
+      "Name": "SENSOR_PRODUCT_ID",
+      "Values": [
+        "S2C_MSIL1C_20250614T135721_N0511_R067_T21LYG_20250614T171823.SAFE"
+      ]
+    },
+    {
+      "Name": "SPATIAL_COVERAGE",
+      "Values": [
+        "70"
+      ]
+    },
+    {
+      "Name": "MGRS_TILE_ID",
+      "Values": [
+        "21LYG"
+      ]
+    },
+    {
+      "Name": "HLS_PROCESSING_TIME",
+      "Values": [
+        "2025-06-16T01:28:58Z"
+      ]
+    },
+    {
+      "Name": "SENSING_TIME",
+      "Values": [
+        "2025-06-14T14:06:12.468421Z"
+      ]
+    },
+    {
+      "Name": "HORIZONTAL_CS_CODE",
+      "Values": [
+        "EPSG:32721"
+      ]
+    },
+    {
+      "Name": "HORIZONTAL_CS_NAME",
+      "Values": [
+        "WGS84 / UTM zone 21S"
+      ]
+    },
+    {
+      "Name": "ULX",
+      "Values": [
+        "699960.0"
+      ]
+    },
+    {
+      "Name": "ULY",
+      "Values": [
+        "-1299960.0"
+      ]
+    }
+  ]
+}
