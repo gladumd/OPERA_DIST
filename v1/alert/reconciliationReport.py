@@ -8,7 +8,7 @@ import parameters
 import time
 
 granfilecount = 21
-reportDate = (datetime.datetime.utcnow() + datetime.timedelta(days=-2)).strftime("%Y%m%d")
+reportDate = (datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=-2)).strftime("%Y%m%d")
 outbase = parameters.outbase
 httpbase = parameters.httpbase
 
@@ -33,7 +33,7 @@ def send(reportDate):
       LOG.write("/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/sentToLP_v1_"+reportDate+".rpt does not exist\n")
  
 def receive(reportDate):
-  if os.path.exists("/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/sentToLP_v1_" +reportDate+".rpt"):
+  #if os.path.exists("/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/sentToLP_v1_" +reportDate+".rpt"):
     response = subprocess.run(["module load awscli;source /gpfs/glad3/HLSDIST/System/user.profile; aws s3 cp s3://lp-prod-reconciliation/reports/sentToLP_v1_"+reportDate+".json /gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/report_v1_"+reportDate+".json"],capture_output=True,shell=True)
 
     if response.stderr.decode().strip() != "":
@@ -49,7 +49,7 @@ def extractErrors(reportfile,reportDate):
     results = json.loads(line)
   counts = results[0]["OPERA_L3_DIST-ALERT-HLS_V1___1"]
   with open("/gpfs/glad3/HLSDIST/LP-DAAC/ingestReports/DAILYSTATS_v1.csv",'a') as DAILY:
-    DAILY.write(reportDate+','+str(int(counts["sent"]/granfilecount))+','+str(int(counts["failed"]/granfilecount))+','+str(int(counts["missing"]/granfilecount))+','+str(int(counts["other"]/granfilecount))+','+str(int(counts["cksum_err"]/granfilecount))+','+datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M")+"\n")
+    DAILY.write(reportDate+','+str(int(counts["sent"]/granfilecount))+','+str(int(counts["failed"]/granfilecount))+','+str(int(counts["missing"]/granfilecount))+','+str(int(counts["other"]/granfilecount))+','+str(int(counts["cksum_err"]/granfilecount))+','+datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M")+"\n")
   with open("processLOG.txt",'a') as LOG:
     now = datetime.datetime.now()
     LOG.write("LP sent "+reportDate+" "+','+str(int(counts["sent"]/granfilecount))+','+str(int(counts["failed"]/granfilecount))+','+str(int(counts["missing"]/granfilecount))+','+str(int(counts["other"]/granfilecount))+','+str(int(counts["cksum_err"]/granfilecount))+','+now.strftime("%Y-%m-%d %H:%M")+"\n")
